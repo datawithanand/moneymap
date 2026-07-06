@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${module.displayName})}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar(${'assets-' + module.path})}"></nav>
+    <main class="content">
+        <h1 th:text="${module.displayName}">Module</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                <form method="get" th:action="@{'/assets/' + ${module.path}}">
+                    <select name="tag" onchange="this.form.submit()">
+                        <option value="">All family members</option>
+                        <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"
+                                th:selected="${tag == m.label}"></option>
+                    </select>
+                </form>
+                <a class="btn" th:href="@{'/assets/' + ${module.path} + '/new'}"
+                   th:text="'Add ' + ${module.displayName}">Add</a>
+            </div>
+
+            <table class="data">
+                <thead>
+                <tr>
+                    <th th:each="entry : ${labels}" th:text="${entry.value}"></th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${rows}">
+                    <td th:each="entry : ${labels}" class="mono"
+                        th:text="${fmt.cell(row[entry.key], currentUser)}"></td>
+                    <td style="white-space:nowrap;text-align:right">
+                        <a class="btn btn-sm btn-secondary"
+                           th:href="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/edit'}">Edit</a>
+                        <form class="inline" th:action="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/delete'}"
+                              method="post" onsubmit="return confirm('Delete this record?');">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm btn-secondary">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${rows.isEmpty()}">
+                    <td th:colspan="${labels.size() + 1}" class="muted">Nothing here yet — add your first record.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

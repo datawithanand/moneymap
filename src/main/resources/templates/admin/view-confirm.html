@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Confirm Portfolio View')}"></head>
+<body th:class="${themeClass}">
+
+<div class="wizard-card card">
+    <h2 class="mt0">View user portfolio?</h2>
+    <p>You are about to view <strong th:text="${target.fullName}"></strong>
+        (<span class="mono" th:text="${target.username}"></span>)'s complete financial portfolio.</p>
+    <div class="alert alert-warning">
+        This action is not part of normal administration and will be permanently recorded in the
+        audit log, including your identity, the time, and which user's data was accessed.
+        Proceed only if necessary.
+    </div>
+    <form th:action="@{'/admin/users/' + ${target.id} + '/view'}" method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <button type="submit">Confirm &amp; View</button>
+        <a class="btn btn-secondary" th:href="@{/admin/users}">Cancel</a>
+    </form>
+</div>
+
+</body>
+</html>

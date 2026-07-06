@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('User Management')}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-users')}"></nav>
+    <main class="content">
+        <h1>User Management</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card">
+            <form method="get" th:action="@{/admin/users}">
+                <input type="text" name="q" th:value="${q}" placeholder="Search name, username or email">
+                <button type="submit" class="btn-sm">Search</button>
+            </form>
+
+            <table class="data">
+                <thead>
+                <tr>
+                    <th>Full Name</th><th>Username</th><th>Email</th><th>Registered</th>
+                    <th>Last Active</th><th>Status</th><th>Role</th><th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="u : ${users}">
+                    <td th:text="${u.fullName}"></td>
+                    <td class="mono" th:text="${u.username}"></td>
+                    <td th:text="${u.email}"></td>
+                    <td th:text="${fmt.date(u.createdAt)}"></td>
+                    <td th:text="${fmt.dateTime(u.lastActiveAt)}"></td>
+                    <td>
+                        <span class="pill pill-active" th:if="${u.status.name() == 'ACTIVE'}">Active</span>
+                        <span class="pill pill-disabled" th:if="${u.status.name() == 'DISABLED'}">Disabled</span>
+                        <span class="pill pill-pending" th:if="${u.status.name() == 'PENDING_DELETION'}">Pending Deletion</span>
+                    </td>
+                    <td th:text="${u.role.name()}"></td>
+                    <td style="white-space:nowrap">
+                        <form class="inline" th:if="${currentUser.id != u.id}"
+                              th:action="@{'/admin/users/' + ${u.id} + '/reset-password'}" method="post"
+                              onsubmit="return confirm('Reset this user\'s password? They will be required to set a new password on next login.');">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm btn-secondary">Reset Password</button>
+                        </form>
+                        <a class="btn btn-sm btn-secondary" th:href="@{'/admin/users/' + ${u.id} + '/view'}">View Portfolio</a>
+                        <a class="btn btn-sm btn-secondary" th:href="@{'/admin/users/' + ${u.id} + '/storage'}">Storage</a>
+                        <form class="inline" th:if="${u.status.name() == 'ACTIVE' and currentUser.id != u.id}"
+                              th:action="@{'/admin/users/' + ${u.id} + '/disable'}" method="post"
+                              onsubmit="return confirm('Disable this account? Their current session ends immediately.');">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm btn-secondary">Disable</button>
+                        </form>
+                        <form class="inline" th:if="${u.status.name() == 'DISABLED'}"
+                              th:action="@{'/admin/users/' + ${u.id} + '/enable'}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm btn-secondary">Enable</button>
+                        </form>
+                        <form class="inline" th:if="${u.status.name() == 'PENDING_DELETION'}"
+                              th:action="@{'/admin/users/' + ${u.id} + '/restore'}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm">Restore Account</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

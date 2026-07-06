@@ -1,0 +1,15 @@
+# docker-compose.dev.yml — development override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  moneymap:
+    build:
+      context: .
+    volumes:
+      - ./src:/build/src
+      - ./dev-data:/app/data
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - JVM_OPTS=-Xms128m -Xmx384m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    ports:
+      - "1010:1010"
+      - "5005:5005"   # JDWP remote debugger port

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Family — Full Access View')}"></head>
+<body th:class="${themeClass}">
+
+<div class="banner-context">
+    <strong th:text="'Viewing ' + ${owner.fullName} + '''s data — Full Access (Read Only).'">Read only</strong>
+    <a class="btn btn-sm btn-secondary" th:href="@{/family/dashboard}">Back to Family Dashboard</a>
+</div>
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('family')}"></nav>
+    <main class="content">
+        <h1 th:text="${owner.fullName} + ' — Net Worth'">Member</h1>
+        <div class="card">
+            <p class="hero-networth" th:text="${fmt.money(summary.netWorth, currentUser)}"></p>
+            <div class="bucket-grid">
+                <div><strong>Cash</strong><br><span class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).CASH), currentUser)}"></span></div>
+                <div><strong>Retirement</strong><br><span class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).RETIREMENT), currentUser)}"></span></div>
+                <div><strong>Investments</strong><br><span class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).INVESTMENTS), currentUser)}"></span></div>
+                <div><strong>Liabilities</strong><br><span class="figure" th:text="${fmt.money(summary.totalLiabilities, currentUser)}"></span></div>
+            </div>
+        </div>
+
+        <div class="card" th:each="mt : ${moduleTables}">
+            <h2 th:text="${mt['module'].displayName}">Module</h2>
+            <table class="data">
+                <thead><tr><th th:each="entry : ${mt['labels']}" th:text="${entry.value}"></th></tr></thead>
+                <tbody>
+                <tr th:each="row : ${mt['rows']}">
+                    <td th:each="entry : ${mt['labels']}" class="mono"
+                        th:text="${fmt.cell(row[entry.key], currentUser)}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

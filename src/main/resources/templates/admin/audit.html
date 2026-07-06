@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Audit Log')}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-audit')}"></nav>
+    <main class="content">
+        <h1>Audit Log</h1>
+
+        <div class="card">
+            <form method="get" th:action="@{/admin/audit}">
+                <select name="actionType">
+                    <option value="">All action types</option>
+                    <option th:each="t : ${actionTypes}" th:value="${t}" th:text="${t}"
+                            th:selected="${selectedType != null and selectedType == t.name()}"></option>
+                </select>
+                <input type="text" name="q" th:value="${q}" placeholder="Actor or target username">
+                <button type="submit" class="btn-sm">Filter</button>
+                <a class="btn btn-sm btn-secondary"
+                   th:href="@{/admin/audit/export(actionType=${selectedType}, q=${q})}">Export as CSV</a>
+            </form>
+
+            <table class="data">
+                <thead>
+                <tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${entries}">
+                    <td class="mono" th:text="${fmt.full(e.timestamp)}"></td>
+                    <td th:text="${e.actorUsername}"></td>
+                    <td><span class="pill pill-pending" th:text="${e.actionType}"></span></td>
+                    <td th:text="${e.targetUsername ?: '—'}"></td>
+                    <td th:text="${e.details}"></td>
+                </tr>
+                <tr th:if="${entries.isEmpty()}"><td colspan="5" class="muted">No audit entries.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

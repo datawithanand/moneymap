@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Net Worth Trend')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('trend')}"></nav>
+    <main class="content">
+        <h1>Net Worth Trend</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card">
+            <p>Live net worth today: <strong class="figure" th:text="${fmt.money(live.netWorth, currentUser)}"></strong></p>
+            <form class="inline" th:action="@{/dashboard/snapshot}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button type="submit" class="btn-sm">Take Snapshot Now</button>
+            </form>
+            <p class="hint">Snapshots are manual — MoneyMap keeps no automatic historical ledger,
+                consistent with its manual-entry principle.</p>
+        </div>
+
+        <div class="card" th:if="${chartPoints != null}">
+            <h2>Trend</h2>
+            <svg viewBox="0 0 700 200" style="width:100%;max-width:700px">
+                <polyline th:attr="points=${chartPoints}" fill="none" stroke="var(--primary)" stroke-width="2.5"/>
+            </svg>
+        </div>
+
+        <div class="card">
+            <h2>Snapshots</h2>
+            <table class="data">
+                <thead><tr><th>Date</th><th>Net Worth</th><th>Assets</th><th>Liabilities</th>
+                    <th>Cash</th><th>Retirement</th><th>Investments</th></tr></thead>
+                <tbody>
+                <tr th:each="s : ${snapshots}">
+                    <td th:text="${s.snapshotDate}"></td>
+                    <td class="mono" th:text="${fmt.money(s.totalNetWorth, currentUser)}"></td>
+                    <td class="mono" th:text="${fmt.money(s.totalAssets, currentUser)}"></td>
+                    <td class="mono" th:text="${fmt.money(s.totalLiabilities, currentUser)}"></td>
+                    <td class="mono" th:text="${fmt.money(s.cashBucket, currentUser)}"></td>
+                    <td class="mono" th:text="${fmt.money(s.retirementBucket, currentUser)}"></td>
+                    <td class="mono" th:text="${fmt.money(s.investmentsBucket, currentUser)}"></td>
+                </tr>
+                <tr th:if="${snapshots.isEmpty()}"><td colspan="7" class="muted">No snapshots yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

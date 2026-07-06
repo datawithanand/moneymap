@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Storage Usage')}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-users')}"></nav>
+    <main class="content">
+        <h1 th:text="'Storage usage — ' + ${target.username}">Storage usage</h1>
+        <div class="card">
+            <table class="data">
+                <tr th:each="entry : ${breakdown}">
+                    <td th:text="${entry.key}"></td>
+                    <td class="mono" th:text="${entry.value}"></td>
+                </tr>
+            </table>
+            <p class="hint">Computed on demand — informational only; MoneyMap imposes no storage quotas.</p>
+            <p><a class="btn btn-secondary" th:href="@{/admin/users}">Back</a></p>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

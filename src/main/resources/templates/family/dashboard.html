@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Family Dashboard')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('family')}"></nav>
+    <main class="content">
+        <h1>Family Dashboard</h1>
+        <p class="hint">Shows exactly what other members have chosen to share with you.</p>
+
+        <div class="card" th:if="${!cards.isEmpty()}">
+            <h2>Family Total (shared members)</h2>
+            <p class="hero-networth" th:text="${fmt.money(familyTotal, currentUser)}"></p>
+            <div class="family-cards">
+                <div class="card" th:each="c : ${cards}" style="margin-bottom:0">
+                    <h3 th:text="${c['owner'].fullName}">Member</h3>
+                    <p class="figure" style="font-size:1.4rem" th:text="${fmt.money(c['netWorth'], currentUser)}"></p>
+                    <a th:if="${c['fullAccess']}" class="btn btn-sm btn-secondary"
+                       th:href="@{'/family/view/' + ${c['owner'].id}}">View Details</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" th:if="${!contactMembers.isEmpty()}">
+            <h2>Emergency Contacts Directory</h2>
+            <p class="hint">Nominee and contact details per asset — no financial figure is present in
+                this view at any point.</p>
+            <div th:each="cm : ${contactMembers}">
+                <h3 th:text="${cm['owner'].fullName}">Member</h3>
+                <table class="data">
+                    <thead><tr><th>Asset Type</th><th>Nominee</th><th>Customer Care</th><th>Email</th>
+                        <th>Portal</th><th>Branch / Office</th></tr></thead>
+                    <tbody>
+                    <tr th:each="row : ${cm['contacts']}">
+                        <td th:text="${row['module']}"></td>
+                        <td th:text="${row['nominee'] ?: '—'}"></td>
+                        <td class="mono" th:text="${row['customerCareNumber'] ?: '—'}"></td>
+                        <td th:text="${row['customerCareEmail'] ?: '—'}"></td>
+                        <td><a th:if="${row['portalUrl']}" th:href="${row['portalUrl']}" th:text="'Portal'" target="_blank" rel="noopener"></a>
+                            <span th:unless="${row['portalUrl']}">—</span></td>
+                        <td th:text="${row['branchAddress'] ?: '—'}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" th:if="${cards.isEmpty() and contactMembers.isEmpty()}">
+            <p class="muted">No family members have shared their finances with you yet.</p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

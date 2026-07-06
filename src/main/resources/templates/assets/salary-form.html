@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Salary Profile')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('assets-salary')}"></nav>
+    <main class="content">
+        <h1 th:text="${record.id != null ? 'Edit Salary Profile' : 'Add Salary Profile'}">Salary</h1>
+
+        <div class="card" th:if="${estimatedTax != null}">
+            <h2>Tax preview (<span th:text="${record.financialYear + ' · ' + record.regime + ' regime'}"></span>)</h2>
+            <p>Gross annual: <span class="figure" th:text="${fmt.money(grossAnnual, currentUser)}"></span> ·
+                Taxable (after standard deduction): <span class="figure" th:text="${fmt.money(taxableIncome, currentUser)}"></span> ·
+                Estimated tax: <strong class="figure" th:text="${fmt.money(estimatedTax, currentUser)}"></strong></p>
+            <p class="hint">Estimate uses the instance tax slab set with a clean 87A threshold (marginal relief is
+                out of scope in v1). Old-Regime deductions are aggregated on the Tax Planning dashboard.</p>
+        </div>
+
+        <div class="card">
+            <form th:action="@{/assets/salary/save}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="id" th:value="${record.id}">
+                <div class="row-flex">
+                    <div><label>Employer</label><input type="text" name="employerName" th:value="${record.employerName}" required></div>
+                    <div><label>Designation (optional)</label><input type="text" name="designation" th:value="${record.designation}"></div>
+                    <div><label>Effective Date</label><input type="date" name="effectiveDate" th:value="${record.effectiveDate}" required></div>
+                </div>
+                <div class="row-flex">
+                    <div><label>Financial Year</label><input type="text" name="financialYear" placeholder="2025-26"
+                                                             th:value="${record.financialYear}" required></div>
+                    <div><label>Regime</label>
+                        <select name="regime">
+                            <option th:selected="${record.regime == 'NEW'}">NEW</option>
+                            <option th:selected="${record.regime == 'OLD'}">OLD</option>
+                        </select></div>
+                    <div><label>Family Member</label>
+                        <select name="familyMemberTag">
+                            <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"
+                                    th:selected="${record.familyMemberTag == m.label}"></option>
+                        </select></div>
+                </div>
+
+                <h2 style="margin-top:18px">Earnings (monthly)</h2>
+                <div id="earnings">
+                    <div class="row-flex comp-row" th:each="c : ${record.earnings}">
+                        <div><input type="text" name="earnLabel" th:value="${c.label}" placeholder="Component"></div>
+                        <div><input type="number" step="any" min="0" name="earnAmount" th:value="${c.amount}" placeholder="Amount"></div>
+                        <button type="button" class="btn-sm btn-secondary" onclick="this.parentElement.remove()">Remove</button>
+                    </div>
+                </div>
+                <p><button type="button" class="btn-sm btn-secondary" onclick="addRow('earnings','earn')">+ Add earning</button></p>
+
+                <h2>Deductions (monthly)</h2>
+                <div id="deductions">
+                    <div class="row-flex comp-row" th:each="c : ${record.deductions}">
+                        <div><input type="text" name="dedLabel" th:value="${c.label}" placeholder="Component"></div>
+                        <div><input type="number" step="any" min="0" name="dedAmount" th:value="${c.amount}" placeholder="Amount"></div>
+                        <button type="button" class="btn-sm btn-secondary" onclick="this.parentElement.remove()">Remove</button>
+                    </div>
+                </div>
+                <p><button type="button" class="btn-sm btn-secondary" onclick="addRow('deductions','ded')">+ Add deduction</button></p>
+
+                <p><button type="submit">Save</button>
+                    <a class="btn btn-secondary" th:href="@{/assets/salary}">Cancel</a></p>
+            </form>
+        </div>
+    </main>
+</div>
+<script>
+function addRow(containerId, prefix) {
+    var div = document.createElement('div');
+    div.className = 'row-flex comp-row';
+    div.innerHTML = '<div><input type="text" name="' + prefix + 'Label" placeholder="Component"></div>' +
+        '<div><input type="number" step="any" min="0" name="' + prefix + 'Amount" placeholder="Amount"></div>' +
+        '<button type="button" class="btn-sm btn-secondary" onclick="this.parentElement.remove()">Remove</button>';
+    document.getElementById(containerId).appendChild(div);
+}
+</script>
+</body>
+</html>

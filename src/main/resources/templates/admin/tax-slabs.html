@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tax Slabs')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-tax')}"></nav>
+    <main class="content">
+        <h1>Tax Slab Sets</h1>
+        <p class="hint">Instance-wide reference data shared by all users. Seeded with FY 2025-26
+            rules — update these when a Union Budget changes rates.</p>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card" th:each="set : ${sets}">
+            <h2 th:text="${set.financialYear + ' — ' + set.regime + ' Regime'}">Set</h2>
+            <form th:action="@{/admin/tax-slabs/save}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="id" th:value="${set.id}">
+                <div class="row-flex">
+                    <div><label>Financial Year</label><input type="text" name="financialYear" th:value="${set.financialYear}" required></div>
+                    <div><label>Regime</label>
+                        <select name="regime">
+                            <option th:selected="${set.regime == 'NEW'}">NEW</option>
+                            <option th:selected="${set.regime == 'OLD'}">OLD</option>
+                        </select></div>
+                    <div><label>Standard Deduction</label><input type="number" step="any" name="standardDeduction" th:value="${set.standardDeduction}" required></div>
+                </div>
+                <div class="row-flex">
+                    <div><label>87A Threshold</label><input type="number" step="any" name="rebate87AThreshold" th:value="${set.rebate87AThreshold}" required></div>
+                    <div><label>87A Max Rebate</label><input type="number" step="any" name="rebate87AMaxAmount" th:value="${set.rebate87AMaxAmount}" required></div>
+                    <div><label>Cess %</label><input type="number" step="any" name="cessPercent" th:value="${set.cessPercent}" required></div>
+                </div>
+                <h3>Slabs</h3>
+                <div th:id="'slabs-' + ${set.id}">
+                    <div class="row-flex" th:each="slab : ${set.slabs}">
+                        <div><label>Up to (blank = no cap)</label>
+                            <input type="number" step="any" name="slabUpTo" th:value="${slab.upToAmount}"></div>
+                        <div><label>Rate %</label>
+                            <input type="number" step="any" name="slabRate" th:value="${slab.ratePercent}" required></div>
+                        <button type="button" class="btn-sm btn-secondary" onclick="this.parentElement.remove()">Remove</button>
+                    </div>
+                </div>
+                <p><button type="button" class="btn-sm btn-secondary"
+                           th:attr="data-slabs='slabs-' + ${set.id}"
+                           onclick="addSlab(this.getAttribute('data-slabs'))">+ Add slab</button></p>
+                <p><button type="submit">Save</button></p>
+            </form>
+        </div>
+    </main>
+</div>
+<script>
+function addSlab(containerId) {
+    var div = document.createElement('div');
+    div.className = 'row-flex';
+    div.innerHTML = '<div><label>Up to (blank = no cap)</label><input type="number" step="any" name="slabUpTo"></div>' +
+        '<div><label>Rate %</label><input type="number" step="any" name="slabRate" required></div>' +
+        '<button type="button" class="btn-sm btn-secondary" onclick="this.parentElement.remove()">Remove</button>';
+    document.getElementById(containerId).appendChild(div);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Manage Sharing')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('family')}"></nav>
+    <main class="content">
+        <h1>Manage Sharing &amp; Family Vault</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card">
+            <h2>What you share, per member</h2>
+            <p class="hint">Sharing is directional — what someone shares with you is entirely their own,
+                separate choice. <br>
+                <strong>No Access</strong>: nothing, not even your presence on their dashboard ·
+                <strong>Summary Only</strong>: one number — your total net worth ·
+                <strong>Contacts Only</strong>: nominee &amp; customer-care details per asset, never any amount ·
+                <strong>Full Access</strong>: everything you see, strictly read-only.</p>
+
+            <div th:each="other : ${others}" class="card" style="box-shadow:none">
+                <form th:action="@{/family/sharing/save}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <input type="hidden" name="viewerUserId" th:value="${other.id}">
+                    <h3 th:text="${other.fullName}">Member</h3>
+                    <div class="row-flex">
+                        <div>
+                            <label>Standing Permission Level</label>
+                            <select name="standingLevel">
+                                <option value="NO_ACCESS" th:selected="${rows[other.id] == null or rows[other.id].standingPermissionLevel.name() == 'NO_ACCESS'}">No Access</option>
+                                <option value="SUMMARY_ONLY" th:selected="${rows[other.id] != null and rows[other.id].standingPermissionLevel.name() == 'SUMMARY_ONLY'}">Summary Only</option>
+                                <option value="CONTACTS_ONLY" th:selected="${rows[other.id] != null and rows[other.id].standingPermissionLevel.name() == 'CONTACTS_ONLY'}">Contacts Only</option>
+                                <option value="FULL_ACCESS" th:selected="${rows[other.id] != null and rows[other.id].standingPermissionLevel.name() == 'FULL_ACCESS'}">Full Access</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:inline;font-weight:600">
+                                <input type="checkbox" name="designated" value="true"
+                                       th:checked="${rows[other.id] != null and rows[other.id].designatedEmergencyContact}">
+                                Emergency Contact
+                            </label>
+                        </div>
+                        <div>
+                            <label>Emergency Access Level</label>
+                            <select name="emergencyLevel">
+                                <option value="SUMMARY_ONLY" th:selected="${rows[other.id] != null and rows[other.id].emergencyAccessLevel != null and rows[other.id].emergencyAccessLevel.name() == 'SUMMARY_ONLY'}">Summary Only</option>
+                                <option value="CONTACTS_ONLY" th:selected="${rows[other.id] == null or rows[other.id].emergencyAccessLevel == null or rows[other.id].emergencyAccessLevel.name() == 'CONTACTS_ONLY'}">Contacts Only</option>
+                                <option value="FULL_ACCESS" th:selected="${rows[other.id] != null and rows[other.id].emergencyAccessLevel != null and rows[other.id].emergencyAccessLevel.name() == 'FULL_ACCESS'}">Full Access</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-sm">Save</button>
+                    </div>
+                </form>
+            </div>
+            <p class="muted" th:if="${others.isEmpty()}">No other members in your family group yet.</p>
+        </div>
+
+        <div class="card">
+            <h2>Your Deny Window</h2>
+            <p class="hint">How long a designated emergency contact's request waits before being
+                automatically approved if you don't respond. Applies to future requests only.</p>
+            <form th:action="@{/family/sharing/deny-window}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label>Deny window (days, 1–30)</label>
+                <input type="number" name="days" min="1" max="30" th:value="${denyWindowDays}" required>
+                <p><button type="submit" class="btn-sm">Save</button></p>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

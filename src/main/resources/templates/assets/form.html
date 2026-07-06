@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${module.displayName})}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar(${'assets-' + module.path})}"></nav>
+    <main class="content">
+        <h1 th:text="${(recordId != null ? 'Edit ' : 'Add ') + module.displayName}">Form</h1>
+
+        <div class="card">
+            <form th:action="@{'/assets/' + ${module.path} + '/save'}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="id" th:value="${recordId}">
+
+                <th:block th:each="f : ${module.fields}">
+                    <div th:attr="data-visible-if=${f.visibleIf}">
+                        <th:block th:if="${f.type == 'checkbox'}">
+                            <p><label style="display:inline;font-weight:600">
+                                <input type="checkbox" th:name="${f.name}" value="true"
+                                       th:checked="${values[f.name] == true or values[f.name] == 'true'}">
+                                <span th:text="${f.label}"></span>
+                            </label></p>
+                        </th:block>
+                        <th:block th:unless="${f.type == 'checkbox'}">
+                            <label th:for="${f.name}" th:text="${f.label + (f.required ? '' : ' (optional)')}"></label>
+                            <select th:if="${f.type == 'select'}" th:id="${f.name}" th:name="${f.name}">
+                                <option th:unless="${f.required}" value="">—</option>
+                                <option th:each="o : ${f.options}" th:value="${o}"
+                                        th:text="${#strings.replace(o, '_', ' ')}"
+                                        th:selected="${values[f.name] != null and values[f.name].toString() == o}"></option>
+                            </select>
+                            <input th:if="${f.type == 'text'}" type="text" th:id="${f.name}" th:name="${f.name}"
+                                   th:value="${values[f.name]}" th:required="${f.required}">
+                            <input th:if="${f.type == 'number'}" type="number" step="any" min="0"
+                                   th:id="${f.name}" th:name="${f.name}"
+                                   th:value="${values[f.name]}" th:required="${f.required}">
+                            <input th:if="${f.type == 'date'}" type="date" th:id="${f.name}" th:name="${f.name}"
+                                   th:value="${values[f.name]}" th:required="${f.required}">
+                            <div class="hint" th:if="${f.hint}" th:text="${f.hint}"></div>
+                        </th:block>
+                        <div class="field-error" th:if="${errors != null and errors.containsKey(f.name)}"
+                             th:text="${errors.get(f.name)}"></div>
+                    </div>
+                </th:block>
+
+                <label for="familyMemberTag">Family Member</label>
+                <select id="familyMemberTag" name="familyMemberTag">
+                    <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"
+                            th:selected="${values['familyMemberTag'] != null and values['familyMemberTag'].toString() == m.label}"></option>
+                </select>
+                <div class="hint">Organizes records within your own account — no sharing implication.</div>
+
+                <details style="margin-top:16px">
+                    <summary>Additional Details (nominee &amp; emergency contact info)</summary>
+                    <label for="nominee">Nominee</label>
+                    <input type="text" id="nominee" name="nominee" th:value="${values['nominee']}">
+                    <label for="customerCareNumber">Customer Care Number</label>
+                    <input type="text" id="customerCareNumber" name="customerCareNumber" th:value="${values['customerCareNumber']}">
+                    <label for="customerCareEmail">Customer Care Email</label>
+                    <input type="text" id="customerCareEmail" name="customerCareEmail" th:value="${values['customerCareEmail']}">
+                    <label for="portalUrl">Portal / Website URL</label>
+                    <input type="text" id="portalUrl" name="portalUrl" th:value="${values['portalUrl']}">
+                    <label for="branchAddress">Branch / Office Address</label>
+                    <input type="text" id="branchAddress" name="branchAddress" th:value="${values['branchAddress']}">
+                    <div class="hint">These fields are what a family member with Contacts Only access can see in an
+                        emergency — balances are never shown at that level.</div>
+                </details>
+
+                <p style="margin-top:18px">
+                    <button type="submit">Save</button>
+                    <a class="btn btn-secondary" th:href="@{'/assets/' + ${module.path}}">Cancel</a>
+                </p>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script>
+// Conditional field visibility (e.g. Loan §09's per-type field groups)
+function applyVisibility() {
+    document.querySelectorAll('[data-visible-if]').forEach(function (el) {
+        var cond = el.getAttribute('data-visible-if');
+        if (!cond) return;
+        var eq = cond.indexOf('=');
+        var field = cond.substring(0, eq), wanted = cond.substring(eq + 1).split('|');
+        var src = document.getElementById(field) || document.querySelector('[name="' + field + '"]');
+        if (!src) return;
+        var current = src.type === 'checkbox' ? String(src.checked) : src.value;
+        el.style.display = wanted.indexOf(current) !== -1 ? '' : 'none';
+    });
+}
+document.addEventListener('change', applyVisibility);
+applyVisibility();
+</script>
+</body>
+</html>

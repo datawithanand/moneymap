@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Import Report')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('export')}"></nav>
+    <main class="content">
+        <h1>Import Report</h1>
+        <div class="card">
+            <p>
+                <strong th:text="${report.imported()}"></strong> records imported ·
+                <strong th:text="${report.skipped()}"></strong> skipped ·
+                <strong th:text="${report.errors()}"></strong> errors
+            </p>
+            <details th:if="${!report.details().isEmpty()}">
+                <summary>Per-record detail log</summary>
+                <ul><li th:each="d : ${report.details()}" th:text="${d}"></li></ul>
+            </details>
+            <p><a class="btn" th:href="@{/dashboard}">Go to Dashboard</a></p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

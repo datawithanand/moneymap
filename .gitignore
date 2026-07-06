@@ -1,0 +1,8 @@
+target/
+dev-data/
+data/
+.env
+*.iml
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Settings')}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('settings')}"></nav>
+    <main class="content">
+        <h1>Settings</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <!-- Profile (§5.1) -->
+        <div class="card">
+            <h2>Profile</h2>
+            <form th:action="@{/settings/profile}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label>Username</label>
+                <input type="text" th:value="${user.username}" disabled>
+                <div class="hint">Usernames cannot be changed.</div>
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" name="fullName" th:value="${user.fullName}" required>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" th:value="${user.email}" required>
+                <label for="photo">Profile Photo (JPEG/PNG/WebP, up to 5 MB)</label>
+                <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
+                <p th:if="${user.profilePhotoPath != null}">
+                    <label style="display:inline;font-weight:400">
+                        <input type="checkbox" name="removePhoto" value="1"> Remove current photo
+                    </label>
+                </p>
+                <p><button type="submit">Save Profile</button></p>
+            </form>
+        </div>
+
+        <!-- Regional preferences & theme (§5.2, §5.3) -->
+        <div class="card">
+            <h2>Regional Preferences &amp; Theme</h2>
+            <form th:action="@{/settings/preferences}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="currency">Currency</label>
+                <select id="currency" name="currency">
+                    <option value="INR" th:selected="${user.currencyPreference.name() == 'INR'}">₹ INR</option>
+                    <option value="USD" th:selected="${user.currencyPreference.name() == 'USD'}">$ USD</option>
+                </select>
+                <div class="hint">Changes the display symbol only — values are never converted.</div>
+
+                <label for="dateFormat">Date Format</label>
+                <select id="dateFormat" name="dateFormat">
+                    <option th:selected="${user.dateFormat == 'DD/MM/YYYY'}">DD/MM/YYYY</option>
+                    <option th:selected="${user.dateFormat == 'MM/DD/YYYY'}">MM/DD/YYYY</option>
+                    <option th:selected="${user.dateFormat == 'YYYY-MM-DD'}">YYYY-MM-DD</option>
+                </select>
+
+                <label for="numberFormat">Number Format</label>
+                <select id="numberFormat" name="numberFormat">
+                    <option value="INDIAN" th:selected="${user.numberFormat.name() == 'INDIAN'}">Indian — e.g. 12,34,567.89</option>
+                    <option value="INTERNATIONAL" th:selected="${user.numberFormat.name() == 'INTERNATIONAL'}">International — e.g. 1,234,567.89</option>
+                </select>
+
+                <label for="theme">Theme</label>
+                <select id="theme" name="theme">
+                    <option value="GREEN" th:selected="${user.theme.name() == 'GREEN'}">Green</option>
+                    <option value="SLATE_BLUE" th:selected="${user.theme.name() == 'SLATE_BLUE'}">Slate Blue</option>
+                    <option value="MAROON" th:selected="${user.theme.name() == 'MAROON'}">Maroon</option>
+                    <option value="FOREST_COPPER" th:selected="${user.theme.name() == 'FOREST_COPPER'}">Forest &amp; Copper</option>
+                    <option value="MIDNIGHT" th:selected="${user.theme.name() == 'MIDNIGHT'}">Midnight</option>
+                </select>
+                <p><button type="submit">Save Preferences</button></p>
+            </form>
+        </div>
+
+        <!-- Rates (Section 01B) -->
+        <div class="card">
+            <h2>Rates</h2>
+            <p class="hint">Manual values used only for valuation and display — never fetched automatically.</p>
+            <form th:action="@{/settings/rates}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="goldRate24k">24K Gold Rate (per gram)</label>
+                <input type="number" step="0.01" min="0.01" id="goldRate24k" name="goldRate24k" th:value="${user.goldRate24kPerGram}" required>
+                <label for="goldRate22k">22K Gold Rate (per gram)</label>
+                <input type="number" step="0.01" min="0.01" id="goldRate22k" name="goldRate22k" th:value="${user.goldRate22kPerGram}" required>
+                <label for="usdInrRate">USD / INR Exchange Rate</label>
+                <input type="number" step="0.0001" min="0.0001" id="usdInrRate" name="usdInrRate" th:value="${user.usdInrExchangeRate}" required>
+                <p><button type="submit">Save Rates</button></p>
+            </form>
+        </div>
+
+        <!-- Household members (Section 05 / 17 §1.7) -->
+        <div class="card">
+            <h2>Household Members</h2>
+            <p class="hint">Labels used to tag and filter assets within your own account —
+                they carry no login or sharing permission of any kind.</p>
+            <table class="data">
+                <tr th:each="m : ${household}">
+                    <td th:text="${m.label}">Self</td>
+                    <td style="text-align:right">
+                        <form class="inline" th:if="${!m.defaultEntry}" th:action="@{/settings/household/delete}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <input type="hidden" name="id" th:value="${m.id}">
+                            <button type="submit" class="btn-sm btn-secondary">Remove</button>
+                        </form>
+                        <span class="hint" th:if="${m.defaultEntry}">Default</span>
+                    </td>
+                </tr>
+            </table>
+            <form th:action="@{/settings/household/add}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="label">Add member</label>
+                <input type="text" id="label" name="label" placeholder="e.g. Rohan (Son)" required>
+                <p><button type="submit" class="btn-sm">Add</button></p>
+            </form>
+        </div>
+
+        <!-- Notifications (§5.4) -->
+        <div class="card">
+            <h2>Notifications</h2>
+            <form th:action="@{/settings/notifications}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <p><label style="display:inline;font-weight:400">
+                    <input type="checkbox" name="notifyInApp" value="1" th:checked="${user.notifyInApp}">
+                    In-App Notifications
+                </label></p>
+                <p><label style="display:inline;font-weight:400" th:classappend="${!instanceSettings.smtpEnabled} ? 'muted'">
+                    <input type="checkbox" name="notifyEmail" value="1" th:checked="${user.notifyEmail}"
+                           th:disabled="${!instanceSettings.smtpEnabled}">
+                    Email Notifications
+                </label></p>
+                <p class="hint" th:if="${!instanceSettings.smtpEnabled}">Email notifications require your
+                    administrator to configure an outbound mail server for this instance.</p>
+                <p class="hint">Security-critical alerts (like emergency access requests) always
+                    produce an in-app notification regardless of these toggles.</p>
+                <p><button type="submit">Save Notification Preferences</button></p>
+            </form>
+        </div>
+
+        <!-- Change password (§4.1) -->
+        <div class="card">
+            <h2>Change Password</h2>
+            <form th:action="@{/settings/password}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="currentPassword">Current Password</label>
+                <input type="password" id="currentPassword" name="currentPassword" required>
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" name="newPassword" required>
+                <div class="strength-meter" data-strength-for="newPassword"
+                     th:attr="data-user-terms=${user.username + ',' + user.email}"><div></div></div>
+                <div class="strength-label" data-strength-label-for="newPassword"></div>
+                <div class="hint" th:text="${passwordRule}"></div>
+                <label for="confirmPassword">Confirm New Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+                <p><button type="submit">Change Password</button></p>
+            </form>
+        </div>
+
+        <!-- Danger zone (§5.5) -->
+        <div class="card danger-zone">
+            <h2>Delete My Account</h2>
+            <p>Your account and all its data will be permanently deleted in 30 days. Until then,
+                an administrator can restore it if you change your mind — you will not be able to
+                log in during this period to undo it yourself.</p>
+            <form th:action="@{/settings/delete-account}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="confirmUsername">Type your username to confirm</label>
+                <input type="text" id="confirmUsername" name="confirmUsername" required>
+                <label for="deletePassword">Current Password</label>
+                <input type="password" id="deletePassword" name="currentPassword" required>
+                <p><button type="submit" class="btn-danger">Delete My Account</button></p>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/password-strength.js}"></script>
+</body>
+</html>

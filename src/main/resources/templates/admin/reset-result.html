@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Password Reset')}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-users')}"></nav>
+    <main class="content">
+        <h1>Temporary password created</h1>
+        <div class="card">
+            <p>A temporary password has been set for
+                <strong th:text="${target.fullName} + ' (' + ${target.username} + ')'"></strong>.
+                They must set a new password on next login.</p>
+            <p class="figure" style="font-size:1.4rem" id="tempPw" th:text="${temporaryPassword}"></p>
+            <p><button type="button" class="btn-secondary"
+                       onclick="navigator.clipboard.writeText(document.getElementById('tempPw').textContent)">
+                Copy to clipboard</button></p>
+            <div class="alert alert-warning">This password will not be shown again.
+                Share it with the user securely.</div>
+            <p><a class="btn" th:href="@{/admin/users}">Back to User Management</a></p>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

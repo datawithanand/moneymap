@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('System Health')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-health')}"></nav>
+    <main class="content">
+        <h1>System Health</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+        <div class="card">
+            <table class="data">
+                <tr><td>Registered users</td><td class="mono" th:text="${userCount}"></td></tr>
+                <tr><td>Failed login attempts (last 24h)</td><td class="mono" th:text="${failedLogins24h}"></td></tr>
+                <tr><td>Data directory size</td><td class="mono" th:text="${dataDirSize}"></td></tr>
+                <tr><td>Uptime</td><td class="mono" th:text="${uptime}"></td></tr>
+                <tr><td>Last backup marked</td>
+                    <td class="mono" th:text="${lastBackupMarkedAt != null ? fmt.dateTime(lastBackupMarkedAt) : 'Never'}"></td></tr>
+            </table>
+            <form th:action="@{/admin/health/mark-backup}" method="post" style="margin-top:12px">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button type="submit" class="btn-sm btn-secondary">I just took a backup — mark it</button>
+            </form>
+            <p class="hint">MoneyMap has no built-in backup — back up the data volume per the
+                deployment guide (PRD Section 15 §8).</p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

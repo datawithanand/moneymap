@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Provident Fund')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('assets-pf')}"></nav>
+    <main class="content">
+        <h1>Provident Fund (EPF/VPF)</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card" th:each="acc : ${accounts}">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <h2>UAN <span class="mono" th:text="${acc.uan}"></span>
+                    <span class="hint" th:text="'(' + ${acc.familyMemberTag} + ')'"></span></h2>
+                <div>
+                    <span class="figure" th:text="${fmt.money(totals[acc.id], currentUser)}"></span>
+                    <form class="inline" th:action="@{'/assets/pf/delete-account/' + ${acc.id}}" method="post"
+                          onsubmit="return confirm('Delete this UAN and all its employer records?');">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button type="submit" class="btn-sm btn-secondary">Delete</button>
+                    </form>
+                </div>
+            </div>
+
+            <table class="data">
+                <thead><tr><th>Employer</th><th>PF Member ID</th><th>Period</th><th>Monthly (EE/ER-EPF/EPS/VPF)</th>
+                    <th>Balance</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${children[acc.id]}">
+                    <td th:text="${r.employerName}"></td>
+                    <td class="mono" th:text="${r.pfMemberId}"></td>
+                    <td th:text="${r.employmentStartDate + ' → ' + (r.employmentEndDate ?: 'present')}"></td>
+                    <td class="mono" th:text="${(r.employeeContributionPerMonth ?: 0) + ' / ' + (r.employerEpfContributionPerMonth ?: 0) + ' / ' + (r.employerEpsContributionPerMonth ?: 0) + ' / ' + (r.vpfContributionPerMonth ?: 0)}"></td>
+                    <td class="mono" th:text="${fmt.money(r.currentBalance, currentUser)}"></td>
+                    <td th:text="${r.status}"></td>
+                    <td>
+                        <form class="inline" th:action="@{'/assets/pf/delete-employer/' + ${r.id}}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm btn-secondary">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <details style="margin-top:12px">
+                <summary>Add employer record</summary>
+                <form th:action="@{/assets/pf/save-employer}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <input type="hidden" name="pfAccountId" th:value="${acc.id}">
+                    <div class="row-flex">
+                        <div><label>Employer</label><input type="text" name="employerName" required></div>
+                        <div><label>PF Member ID</label><input type="text" name="pfMemberId" required></div>
+                        <div><label>Start</label><input type="date" name="employmentStartDate" required></div>
+                        <div><label>End (blank = current)</label><input type="date" name="employmentEndDate"></div>
+                    </div>
+                    <div class="row-flex">
+                        <div><label>Employee / month</label><input type="number" step="any" min="0" name="employeeContributionPerMonth"></div>
+                        <div><label>Employer EPF / month</label><input type="number" step="any" min="0" name="employerEpfContributionPerMonth"></div>
+                        <div><label>Employer EPS / month</label><input type="number" step="any" min="0" name="employerEpsContributionPerMonth"></div>
+                        <div><label>VPF / month</label><input type="number" step="any" min="0" name="vpfContributionPerMonth"></div>
+                    </div>
+                    <div class="row-flex">
+                        <div><label>Current Balance</label><input type="number" step="any" min="0" name="currentBalance" required></div>
+                        <div><label>Interest Rate %</label><input type="number" step="any" min="0" name="interestRate"></div>
+                        <div><label>Status</label>
+                            <select name="status"><option>ACTIVE</option><option>TRANSFERRED_OUT</option><option>INACTIVE</option></select>
+                        </div>
+                    </div>
+                    <p><button type="submit" class="btn-sm">Add Employer Record</button></p>
+                </form>
+            </details>
+        </div>
+
+        <div class="card">
+            <h2>Add PF Account (UAN)</h2>
+            <p class="hint">One UAN stays constant across every employer; individual employer balances
+                roll up under it.</p>
+            <form th:action="@{/assets/pf/save-account}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label>UAN (12 digits)</label>
+                <input type="text" name="uan" pattern="\d{12}" required>
+                <label>Family Member</label>
+                <select name="familyMemberTag">
+                    <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"></option>
+                </select>
+                <p><button type="submit">Add PF Account</button></p>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

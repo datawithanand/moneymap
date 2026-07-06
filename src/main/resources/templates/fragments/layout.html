@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(pageTitle)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle} + ' · ' + ${instanceSettings.instanceName}">MoneyMap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+
+<!-- Admin read-only view banner (Section 01 §6.3) -->
+<div th:fragment="adminViewBanner" th:if="${adminViewedUser != null}" class="banner-admin-view">
+    <strong th:text="'Viewing ' + ${adminViewedUser.username} + '''s data as Administrator — Read Only.'">Read only</strong>
+    <form class="inline" th:action="@{/admin/view/exit}" method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <button type="submit" class="btn-sm btn-secondary">Exit Admin View</button>
+    </form>
+</div>
+
+<nav th:fragment="sidebar(active)" class="sidebar">
+    <div class="brand" th:text="${instanceSettings.instanceName}">MoneyMap</div>
+    <a class="nav" th:classappend="${active == 'dashboard'} ? 'active'" th:href="@{/dashboard}">Dashboard</a>
+    <a class="nav" th:classappend="${active == 'notifications'} ? 'active'" th:href="@{/notifications}">
+        Notifications <span th:if="${unreadNotifications > 0}" class="pill pill-pending"
+                            th:text="${unreadNotifications > 9 ? '9+' : unreadNotifications}"></span>
+    </a>
+    <a class="nav" th:classappend="${active == 'family'} ? 'active'" th:href="@{/family}">Family</a>
+
+    <div class="nav-group">Assets &amp; Liabilities</div>
+    <a class="nav nav-sub" th:each="m : ${assetModules}"
+       th:classappend="${active == 'assets-' + m.path} ? 'active'"
+       th:href="@{'/assets/' + ${m.path}}" th:text="${m.displayName}"></a>
+
+    <div class="nav-group">Analytics</div>
+    <a class="nav nav-sub" th:classappend="${active == 'trend'} ? 'active'" th:href="@{/dashboard/trend}">Net Worth Trend</a>
+    <a class="nav nav-sub" th:classappend="${active == 'allocation'} ? 'active'" th:href="@{/dashboard/allocation}">Portfolio Allocation</a>
+    <a class="nav nav-sub" th:classappend="${active == 'tax'} ? 'active'" th:href="@{/dashboard/tax}">Tax Planning</a>
+    <a class="nav nav-sub" th:classappend="${active == 'export'} ? 'active'" th:href="@{/export}">Export / Import</a>
+
+    <a class="nav" th:classappend="${active == 'settings'} ? 'active'" th:href="@{/settings}">Settings</a>
+    <th:block th:if="${currentUser != null and currentUser.role.name() == 'ADMIN'}">
+        <div class="nav-group">Administration</div>
+        <a class="nav nav-sub" th:classappend="${active == 'admin-users'} ? 'active'" th:href="@{/admin/users}">Users</a>
+        <a class="nav nav-sub" th:classappend="${active == 'admin-settings'} ? 'active'" th:href="@{/admin/settings}">Global Settings</a>
+        <a class="nav nav-sub" th:classappend="${active == 'admin-health'} ? 'active'" th:href="@{/admin/health}">System Health</a>
+        <a class="nav nav-sub" th:classappend="${active == 'admin-audit'} ? 'active'" th:href="@{/admin/audit}">Audit Log</a>
+        <a class="nav nav-sub" th:classappend="${active == 'admin-tax'} ? 'active'" th:href="@{/admin/tax-slabs}">Tax Slabs</a>
+    </th:block>
+    <div class="spacer"></div>
+
+    <!-- One-click theme switcher (like the original app) — persists to the user's profile -->
+    <div class="theme-picker" id="themePicker" th:if="${currentUser != null}">
+        <button type="button" class="theme-trigger"
+                onclick="document.getElementById('themePicker').classList.toggle('open')">
+            <span class="dot-preview"></span> Theme <span style="font-size:10px">▾</span>
+        </button>
+        <div class="theme-menu">
+            <form th:action="@{/settings/theme}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="theme" value="GREEN">
+                <input type="hidden" name="returnTo" th:value="${currentPath}">
+                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'GREEN'} ? 'active'">
+                    <span class="sw" style="background:#4a6741"></span> Green <span class="check">✓</span></button>
+            </form>
+            <form th:action="@{/settings/theme}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="theme" value="SLATE_BLUE">
+                <input type="hidden" name="returnTo" th:value="${currentPath}">
+                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'SLATE_BLUE'} ? 'active'">
+                    <span class="sw" style="background:#3b5372"></span> Slate Blue <span class="check">✓</span></button>
+            </form>
+            <form th:action="@{/settings/theme}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="theme" value="MAROON">
+                <input type="hidden" name="returnTo" th:value="${currentPath}">
+                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'MAROON'} ? 'active'">
+                    <span class="sw" style="background:#6e2f34"></span> Maroon <span class="check">✓</span></button>
+            </form>
+            <form th:action="@{/settings/theme}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="theme" value="FOREST_COPPER">
+                <input type="hidden" name="returnTo" th:value="${currentPath}">
+                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'FOREST_COPPER'} ? 'active'">
+                    <span class="sw" style="background:linear-gradient(135deg,#2f4a3c 60%,#b46a3c)"></span> Forest &amp; Copper <span class="check">✓</span></button>
+            </form>
+            <form th:action="@{/settings/theme}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="theme" value="MIDNIGHT">
+                <input type="hidden" name="returnTo" th:value="${currentPath}">
+                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'MIDNIGHT'} ? 'active'">
+                    <span class="sw" style="background:#171a21;border:1px solid #888"></span> Midnight <span class="check">✓</span></button>
+            </form>
+        </div>
+    </div>
+
+    <form th:action="@{/logout}" method="post">
+        <input type="hidden" name="_csrf" th:value="${csrf}">
+        <button type="submit" class="btn-secondary" style="width:100%">Log out</button>
+    </form>
+    <script>
+        document.addEventListener('click', function (e) {
+            var picker = document.getElementById('themePicker');
+            if (picker && !picker.contains(e.target)) picker.classList.remove('open');
+        });
+    </script>
+</nav>
+
+<!-- Flash messages -->
+<th:block th:fragment="flash">
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    <div th:if="${warning}" class="alert alert-warning" th:text="${warning}"></div>
+    <div th:if="${info}" class="alert alert-info" th:text="${info}"></div>
+</th:block>
+
+</body>
+</html>

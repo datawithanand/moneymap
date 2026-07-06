@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Notifications')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('notifications')}"></nav>
+    <main class="content">
+        <h1>Notifications</h1>
+        <form th:action="@{/notifications/read-all}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <button type="submit" class="btn-sm btn-secondary">Mark all as read</button>
+        </form>
+        <div class="card" style="margin-top:14px">
+            <table class="data">
+                <tbody>
+                <tr th:each="n : ${entries}" th:classappend="${!n.read} ? 'notif-unread'">
+                    <td>
+                        <span th:text="${n.message}"></span><br>
+                        <span class="hint" th:text="${fmt.dateTime(n.createdAt)}"></span>
+                    </td>
+                    <td style="text-align:right;white-space:nowrap">
+                        <a th:if="${n.type.name().startsWith('EMERGENCY_ACCESS') or n.type.name().startsWith('FAMILY')}"
+                           class="btn btn-sm btn-secondary" th:href="@{/family}">Open</a>
+                        <form th:if="${!n.read}" class="inline" th:action="@{'/notifications/' + ${n.id} + '/read'}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm btn-secondary">Mark read</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${entries.isEmpty()}"><td class="muted">No notifications.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

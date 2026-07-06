@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body th:class="${themeClass}">
+
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('dashboard')}"></nav>
+    <main class="content">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h1 th:text="'Welcome, ' + ${user.fullName}">Welcome</h1>
+            <form method="get" th:action="@{/dashboard}">
+                <select name="tag" onchange="this.form.submit()">
+                    <option value="">All family members</option>
+                    <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"
+                            th:selected="${tag == m.label}"></option>
+                </select>
+            </form>
+        </div>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <!-- Hero: total net worth + delta (§25) -->
+        <div class="card">
+            <h2>Total Net Worth</h2>
+            <p class="hero-networth" th:text="${fmt.money(summary.netWorth, user)}">₹ —</p>
+            <p th:if="${delta != null}" class="hint">
+                <span th:text="${delta.signum() >= 0 ? '▲ ' : '▼ '} + ${fmt.money(delta, user)}"></span>
+                since your last snapshot (<span th:text="${fmt.date(lastSnapshot.createdAt)}"></span>)
+            </p>
+            <!-- Asset vs Liability bar -->
+            <div class="al-bar" th:if="${summary.totalAssets.signum() > 0 or summary.totalLiabilities.signum() > 0}">
+                <div th:style="'background:var(--primary);flex:' + ${summary.totalAssets}"></div>
+                <div th:style="'background:var(--danger);flex:' + ${summary.totalLiabilities}"></div>
+            </div>
+            <div class="legend">
+                <span style="color:var(--primary)" th:text="'Assets ' + ${fmt.money(summary.totalAssets, user)}"></span>
+                <span style="color:var(--danger)" th:text="'Liabilities ' + ${fmt.money(summary.totalLiabilities, user)}"></span>
+            </div>
+        </div>
+
+        <!-- 3-bucket breakdown + allocation donut -->
+        <div class="bucket-grid">
+            <div class="card">
+                <h3>Cash</h3>
+                <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).CASH), user)}"></p>
+            </div>
+            <div class="card">
+                <h3>Retirement</h3>
+                <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).RETIREMENT), user)}"></p>
+            </div>
+            <div class="card">
+                <h3>Investments</h3>
+                <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).INVESTMENTS), user)}"></p>
+            </div>
+            <div class="card">
+                <h3>Allocation</h3>
+                <div class="donut" th:style="'width:130px;height:130px;border-radius:50%;background:' + ${donutGradient}"></div>
+                <div class="legend" style="margin-top:8px">
+                    <span th:each="a : ${allocationClasses}" th:if="${a['percent'].signum() > 0}"
+                          th:style="'color:' + ${a['color']}"
+                          th:text="${a['name']} + ' ' + ${a['percent']} + '%'"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module summary cards -->
+        <div class="card">
+            <h2>Modules</h2>
+            <table class="data">
+                <thead><tr><th>Module</th><th>Records</th><th>Total</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="ms : ${summary.moduleSummaries}">
+                    <td th:text="${ms.displayName}"></td>
+                    <td th:text="${ms.count}"></td>
+                    <td class="mono" th:text="${ms.bucket.name() == 'NONE' ? '—' : fmt.money(ms.total, user)}"></td>
+                    <td><a class="btn btn-sm btn-secondary" th:href="@{'/assets/' + ${ms.path}}">Open</a></td>
+                </tr>
+                <tr th:if="${summary.moduleSummaries.isEmpty()}">
+                    <td colspan="4" class="muted">Add your first asset from the sidebar to light up this dashboard.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Goal SIP summary (§25) -->
+        <div class="card" th:if="${!goalRows.isEmpty()}">
+            <h2>Goals — required monthly SIP</h2>
+            <table class="data">
+                <thead><tr><th>Goal</th><th>Target</th><th>By</th><th>SIP (nominal)</th><th>SIP (inflation-adjusted)</th></tr></thead>
+                <tbody>
+                <tr th:each="g : ${goalRows}">
+                    <td th:text="${g['goal'].goalName}"></td>
+                    <td class="mono" th:text="${fmt.money(g['goal'].targetAmountToday, user)}"></td>
+                    <td th:text="${g['goal'].targetDate}"></td>
+                    <td class="mono" th:text="${fmt.money(g['nominalSip'], user)}"></td>
+                    <td class="mono" th:text="${fmt.money(g['inflationAdjustedSip'], user)}"></td>
+                </tr>
+                </tbody>
+            </table>
+            <p><a th:href="@{/assets/goals}">View all goals →</a></p>
+        </div>
+
+        <!-- Quick actions -->
+        <p>
+            <form class="inline" th:action="@{/dashboard/snapshot}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button type="submit" class="btn-secondary">Take Net Worth Snapshot</button>
+            </form>
+            <a class="btn btn-secondary" th:href="@{/family/dashboard}">Family Dashboard</a>
+        </p>
+    </main>
+</div>
+
+</body>
+</html>

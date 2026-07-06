@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Portfolio Allocation')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('allocation')}"></nav>
+    <main class="content">
+        <h1>Portfolio Allocation</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card">
+            <div style="display:flex;gap:30px;flex-wrap:wrap;align-items:center">
+                <div class="donut" th:style="'width:200px;height:200px;border-radius:50%;background:' + ${donutGradient}"></div>
+                <table class="data" style="max-width:520px">
+                    <thead><tr><th>Class</th><th>Value</th><th>Actual %</th><th>Target %</th><th>Drift</th></tr></thead>
+                    <tbody>
+                    <tr th:each="a : ${allocationClasses}">
+                        <td><span th:style="'color:' + ${a['color']}">●</span> <span th:text="${a['name']}"></span></td>
+                        <td class="mono" th:text="${fmt.money(a['value'], currentUser)}"></td>
+                        <td class="mono" th:text="${a['percent']} + '%'"></td>
+                        <td class="mono" th:switch="${a['cls'].name()}">
+                            <span th:case="'EQUITY'" th:text="${target != null ? target.equityTargetPercent + '%' : '—'}"></span>
+                            <span th:case="'DEBT'" th:text="${target != null ? target.debtTargetPercent + '%' : '—'}"></span>
+                            <span th:case="'GOLD'" th:text="${target != null ? target.goldTargetPercent + '%' : '—'}"></span>
+                            <span th:case="'REAL_ESTATE'" th:text="${target != null ? target.realEstateTargetPercent + '%' : '—'}"></span>
+                            <span th:case="'CASH'" th:text="${target != null ? target.cashTargetPercent + '%' : '—'}"></span>
+                            <span th:case="'ALTERNATIVE'" th:text="${target != null ? target.alternativeTargetPercent + '%' : '—'}"></span>
+                        </td>
+                        <td class="mono" th:switch="${a['cls'].name()}">
+                            <span th:case="'EQUITY'" th:text="${target != null ? a['percent'].subtract(target.equityTargetPercent) + '%' : '—'}"></span>
+                            <span th:case="'DEBT'" th:text="${target != null ? a['percent'].subtract(target.debtTargetPercent) + '%' : '—'}"></span>
+                            <span th:case="'GOLD'" th:text="${target != null ? a['percent'].subtract(target.goldTargetPercent) + '%' : '—'}"></span>
+                            <span th:case="'REAL_ESTATE'" th:text="${target != null ? a['percent'].subtract(target.realEstateTargetPercent) + '%' : '—'}"></span>
+                            <span th:case="'CASH'" th:text="${target != null ? a['percent'].subtract(target.cashTargetPercent) + '%' : '—'}"></span>
+                            <span th:case="'ALTERNATIVE'" th:text="${target != null ? a['percent'].subtract(target.alternativeTargetPercent) + '%' : '—'}"></span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="hint">Allocation is computed over gross asset value — liabilities are never part
+                of this view.</p>
+        </div>
+
+        <div class="card">
+            <h2>Target Allocation</h2>
+            <form th:action="@{/dashboard/allocation/target}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="row-flex">
+                    <div><label>Equity %</label><input type="number" step="any" min="0" max="100" name="equity"
+                        th:value="${target != null ? target.equityTargetPercent : 50}" required></div>
+                    <div><label>Debt %</label><input type="number" step="any" min="0" max="100" name="debt"
+                        th:value="${target != null ? target.debtTargetPercent : 25}" required></div>
+                    <div><label>Gold %</label><input type="number" step="any" min="0" max="100" name="gold"
+                        th:value="${target != null ? target.goldTargetPercent : 10}" required></div>
+                    <div><label>Real Estate %</label><input type="number" step="any" min="0" max="100" name="realEstate"
+                        th:value="${target != null ? target.realEstateTargetPercent : 5}" required></div>
+                    <div><label>Cash %</label><input type="number" step="any" min="0" max="100" name="cash"
+                        th:value="${target != null ? target.cashTargetPercent : 10}" required></div>
+                    <div><label>Alternative %</label><input type="number" step="any" min="0" max="100" name="alternative"
+                        th:value="${target != null ? target.alternativeTargetPercent : 0}" required></div>
+                </div>
+                <p><button type="submit">Save Targets</button></p>
+                <p class="hint">Must sum to exactly 100.</p>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

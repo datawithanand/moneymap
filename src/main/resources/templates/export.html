@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Export / Import')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('export')}"></nav>
+    <main class="content">
+        <h1>Export / Import</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card">
+            <h2>Export</h2>
+            <p>Export everything, lock in nothing — full data portability at all times.</p>
+            <p>
+                <a class="btn" th:href="@{/export/json}">Export All My Data (JSON)</a>
+                <a class="btn btn-secondary" th:href="@{/export/excel}">Export as Excel</a>
+                <a class="btn btn-secondary" th:href="@{/export/pdf}">Export Summary as PDF</a>
+            </p>
+            <p class="hint">JSON is the only round-trip format — Excel and PDF are one-way,
+                presentation-only exports.</p>
+        </div>
+
+        <div class="card">
+            <h2>Import (JSON)</h2>
+            <form th:action="@{/import/json}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label>MoneyMap JSON export file</label>
+                <input type="file" name="file" accept="application/json,.json" required>
+
+                <label>Mode</label>
+                <label style="display:block;font-weight:400">
+                    <input type="radio" name="mode" value="MERGE" checked onchange="toggleReplace()">
+                    Merge — add records; duplicates (matched by business key, e.g. folio/policy number)
+                    are skipped and reported
+                </label>
+                <label style="display:block;font-weight:400">
+                    <input type="radio" name="mode" value="REPLACE" onchange="toggleReplace()">
+                    Replace — delete ALL of your existing data first, then import fresh
+                </label>
+
+                <div id="replaceConfirm" style="display:none">
+                    <div class="alert alert-warning">Replace mode deletes your entire existing dataset
+                        before importing. Confirm with your username and password.</div>
+                    <label>Type your username to confirm</label>
+                    <input type="text" name="confirmUsername">
+                    <label>Current Password</label>
+                    <input type="password" name="currentPassword">
+                </div>
+
+                <p><button type="submit">Import</button></p>
+            </form>
+        </div>
+    </main>
+</div>
+<script>
+function toggleReplace() {
+    var replace = document.querySelector('input[name=mode][value=REPLACE]').checked;
+    document.getElementById('replaceConfirm').style.display = replace ? '' : 'none';
+}
+</script>
+</body>
+</html>

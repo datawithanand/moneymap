@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Create account')}"></head>
+<body class="theme-green">
+
+<div class="login-wrap">
+    <div class="login-left">
+        <div class="brand" th:text="${instanceSettings.instanceName}">MoneyMap</div>
+        <h1>Create your account.</h1>
+        <ul>
+            <li>Your data stays on this server — nowhere else</li>
+            <li>Track every asset, policy and loan in one dashboard</li>
+            <li>Family emergency access, on your terms</li>
+        </ul>
+    </div>
+    <div class="login-right">
+        <div class="card login-card">
+            <th:block th:if="${inviteOnly}">
+                <h2 class="mt0">Registration is by invitation only</h2>
+                <p>Ask your instance administrator for an invite link.</p>
+                <p><a th:href="@{/login}">Log in instead</a></p>
+            </th:block>
+
+            <th:block th:unless="${inviteOnly}">
+                <h2 class="mt0">Create an account</h2>
+                <form th:action="@{/register}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <input type="hidden" name="invite" th:value="${invite}">
+
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="fullName" th:value="${fullName}" required>
+                    <div class="field-error" th:if="${errors != null and errors.containsKey('fullName')}" th:text="${errors.get('fullName')}"></div>
+
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" th:value="${username}" required>
+                    <div class="hint">3–30 characters; cannot be changed later.</div>
+                    <div class="field-error" th:if="${errors != null and errors.containsKey('username')}" th:text="${errors.get('username')}"></div>
+
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" th:value="${email}" required>
+                    <div class="field-error" th:if="${errors != null and errors.containsKey('email')}" th:text="${errors.get('email')}"></div>
+
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                    <a href="#" class="hint" data-toggle-visibility="password">Show / hide</a>
+                    <div class="strength-meter" data-strength-for="password"><div></div></div>
+                    <div class="strength-label" data-strength-label-for="password"></div>
+                    <div class="hint">Minimum 8 characters, including at least one special character.</div>
+                    <div class="field-error" th:if="${errors != null and errors.containsKey('password')}" th:text="${errors.get('password')}"></div>
+
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    <div class="field-error" th:if="${errors != null and errors.containsKey('confirmPassword')}" th:text="${errors.get('confirmPassword')}"></div>
+
+                    <p><button type="submit" style="width:100%">Create Account</button></p>
+                </form>
+                <p><a th:href="@{/login}">Log in instead</a></p>
+            </th:block>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/password-strength.js}"></script>
+</body>
+</html>

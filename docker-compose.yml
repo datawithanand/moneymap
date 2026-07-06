@@ -1,0 +1,46 @@
+# MoneyMap — Production Docker Compose
+# Usage:
+#   docker compose up -d --build    (first run, or after source changes)
+#   docker compose up -d            (subsequent starts, image already built)
+#   docker compose down             (stop and remove containers)
+#   docker compose logs -f moneymap (follow logs)
+
+services:
+  moneymap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moneymap
+    restart: unless-stopped
+
+    ports:
+      # HOST_PORT:CONTAINER_PORT — change the left side to use a different host port
+      - "1010:1010"
+
+    volumes:
+      # Named volume — all JSON data files live here.
+      # DO NOT remove this volume unless you intend to wipe all user data.
+      - moneymap-data:/app/data
+
+    environment:
+      - PORT=1010
+      - DATA_DIR=/app/data
+      - TZ=Asia/Kolkata
+      - JVM_OPTS=-Xms128m -Xmx384m
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:1010/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  moneymap-data:
+    name: moneymap-data

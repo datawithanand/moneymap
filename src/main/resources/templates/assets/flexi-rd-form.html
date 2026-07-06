@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('iWISH / Flexi RD')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('assets-flexi-rds')}"></nav>
+    <main class="content">
+        <h1 th:text="${record.id != null ? 'Edit Flexi RD' : 'Add Flexi RD'}">Flexi RD</h1>
+        <div class="card">
+            <form th:action="@{/assets/flexi-rds/save}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <input type="hidden" name="id" th:value="${record.id}">
+                <label>Bank Name</label>
+                <input type="text" name="bankName" th:value="${record.bankName}" required>
+                <label>Account Number (optional)</label>
+                <input type="text" name="accountNumber" th:value="${record.accountNumber}">
+                <label>Target Maturity Date (optional)</label>
+                <input type="date" name="targetMaturityDate" th:value="${record.targetMaturityDate}">
+                <label>Interest Rate % (optional)</label>
+                <input type="number" step="any" min="0" name="interestRate" th:value="${record.interestRate}">
+                <label>Current Value Override (optional)</label>
+                <input type="number" step="any" min="0" name="currentValueOverride" th:value="${record.currentValueOverride}">
+                <div class="hint">If set, this replaces the computed sum of deposits in net worth.</div>
+                <label>Currency</label>
+                <select name="currency">
+                    <option th:selected="${record.currency == 'INR'}">INR</option>
+                    <option th:selected="${record.currency == 'USD'}">USD</option>
+                </select>
+                <label>Family Member</label>
+                <select name="familyMemberTag">
+                    <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"
+                            th:selected="${record.familyMemberTag == m.label}"></option>
+                </select>
+
+                <h2 style="margin-top:20px">Deposits</h2>
+                <div id="deposits">
+                    <div class="row-flex deposit-row" th:each="d : ${record.deposits}">
+                        <div><label>Date</label><input type="date" name="depositDate" th:value="${d.depositDate}" required></div>
+                        <div><label>Amount</label><input type="number" step="any" min="0" name="depositAmount" th:value="${d.amount}" required></div>
+                        <button type="button" class="btn-sm btn-secondary" onclick="this.parentElement.remove()">Remove</button>
+                    </div>
+                </div>
+                <p><button type="button" class="btn-sm btn-secondary" onclick="addDeposit()">+ Add deposit</button></p>
+
+                <p><button type="submit">Save</button>
+                    <a class="btn btn-secondary" th:href="@{/assets/flexi-rds}">Cancel</a></p>
+            </form>
+        </div>
+    </main>
+</div>
+<script>
+function addDeposit() {
+    var div = document.createElement('div');
+    div.className = 'row-flex deposit-row';
+    div.innerHTML = '<div><label>Date</label><input type="date" name="depositDate" required></div>' +
+        '<div><label>Amount</label><input type="number" step="any" min="0" name="depositAmount" required></div>' +
+        '<button type="button" class="btn-sm btn-secondary" onclick="this.parentElement.remove()">Remove</button>';
+    document.getElementById('deposits').appendChild(div);
+}
+if (document.querySelectorAll('.deposit-row').length === 0) addDeposit();
+</script>
+</body>
+</html>

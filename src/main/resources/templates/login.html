@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Log in')}"></head>
+<body class="theme-green"><!-- login is pre-auth: always the default Green theme (§2.4) -->
+
+<div class="login-wrap">
+    <div class="login-left">
+        <a class="brand" th:href="@{/}" style="text-decoration:none"
+           th:text="${instanceSettings.instanceName}">MoneyMap</a>
+        <h1>Your entire financial life, in one place — and nowhere else.</h1>
+        <div th:replace="~{fragments/mapviz :: mapviz}"></div>
+        <ul>
+            <li>Self-hosted — your data never leaves your own server</li>
+            <li>Built for Indian families — nominees, policies, and emergency access</li>
+        </ul>
+    </div>
+    <div class="login-right">
+        <div class="card login-card">
+            <h2 class="mt0">Log in</h2>
+            <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+            <form th:action="@{/login}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="identifier">Username or Email</label>
+                <input type="text" id="identifier" name="identifier" th:value="${identifier}" required autofocus>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+                <a href="#" class="hint" data-toggle-visibility="password">Show / hide password</a>
+
+                <p><label style="display:inline;font-weight:400">
+                    <input type="checkbox" name="rememberMe" value="1"> Remember me for 30 days
+                </label></p>
+
+                <button type="submit" style="width:100%">Log In</button>
+            </form>
+
+            <p th:if="${registrationOpen}"><a th:href="@{/register}">Create an account</a></p>
+            <details>
+                <summary class="hint">Forgot password?</summary>
+                <p class="hint">MoneyMap does not send password reset emails by default.
+                    Contact your instance administrator to reset your password.</p>
+            </details>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/password-strength.js}"></script>
+</body>
+</html>

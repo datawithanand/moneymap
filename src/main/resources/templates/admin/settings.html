@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Global Settings')}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-settings')}"></nav>
+    <main class="content">
+        <h1>Global Settings</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div th:if="${inviteLink}" class="alert alert-success">
+            Invite link created (single-use, expires in 7 days):
+            <span class="mono" th:text="${inviteLink}"></span>
+        </div>
+
+        <div class="card">
+            <form th:action="@{/admin/settings}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <h2>Branding</h2>
+                <label for="instanceName">Instance Name</label>
+                <input type="text" id="instanceName" name="instanceName"
+                       th:value="${instanceSettings.instanceName}" minlength="2" maxlength="60" required>
+                <div class="hint">Shown in the browser tab title and on the login page.</div>
+
+                <h2>Security &amp; Access</h2>
+                <label for="sessionTimeoutMinutes">Session Timeout (minutes, 5–1440)</label>
+                <input type="number" id="sessionTimeoutMinutes" name="sessionTimeoutMinutes"
+                       th:value="${instanceSettings.sessionTimeoutMinutes}" min="5" max="1440" required>
+                <label for="maxFailedLoginAttempts">Max Failed Login Attempts (3–10)</label>
+                <input type="number" id="maxFailedLoginAttempts" name="maxFailedLoginAttempts"
+                       th:value="${instanceSettings.maxFailedLoginAttempts}" min="3" max="10" required>
+                <label for="lockoutDurationMinutes">Account Lockout Duration (minutes, 1–1440)</label>
+                <input type="number" id="lockoutDurationMinutes" name="lockoutDurationMinutes"
+                       th:value="${instanceSettings.lockoutDurationMinutes}" min="1" max="1440" required>
+
+                <label for="registrationMode">Registration Mode</label>
+                <select id="registrationMode" name="registrationMode">
+                    <option value="OPEN" th:selected="${instanceSettings.registrationMode.name() == 'OPEN'}">Open</option>
+                    <option value="INVITE_ONLY" th:selected="${instanceSettings.registrationMode.name() == 'INVITE_ONLY'}">Invite only</option>
+                </select>
+
+                <p><button type="submit">Save Settings</button></p>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Registration Invites</h2>
+            <p class="hint">For invite-only mode: generate a single-use registration link (7-day expiry).</p>
+            <form th:action="@{/admin/settings/invite}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button type="submit" class="btn-secondary">Generate Invite Link</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Email (SMTP) &amp; Defaults for New Users</h2>
+            <p class="hint">No email of any kind is sent while SMTP is disabled. The SMTP password is
+                stored reversibly encrypted (AES) using the MONEYMAP_ENCRYPTION_KEY environment variable —
+                the one deliberate exception to "always hash" (PRD Section 01B).</p>
+            <form th:action="@{/admin/settings/smtp}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <p><label style="display:inline;font-weight:600">
+                    <input type="checkbox" name="smtpEnabled" value="true" th:checked="${instanceSettings.smtpEnabled}">
+                    Enable outbound email (SMTP)
+                </label></p>
+                <div class="row-flex">
+                    <div><label>SMTP Host</label><input type="text" name="smtpHost" th:value="${instanceSettings.smtpHost}"></div>
+                    <div><label>Port</label><input type="number" name="smtpPort" min="1" max="65535" th:value="${instanceSettings.smtpPort}"></div>
+                </div>
+                <div class="row-flex">
+                    <div><label>Username</label><input type="text" name="smtpUsername" th:value="${instanceSettings.smtpUsername}"></div>
+                    <div><label>Password (leave blank to keep current)</label><input type="password" name="smtpPassword"></div>
+                    <div><label>From Address</label><input type="text" name="smtpFromAddress" th:value="${instanceSettings.smtpFromAddress}"></div>
+                </div>
+                <div class="row-flex">
+                    <div><label>Default Currency (new users)</label>
+                        <select name="defaultCurrency">
+                            <option value="INR" th:selected="${instanceSettings.defaultCurrency.name() == 'INR'}">INR</option>
+                            <option value="USD" th:selected="${instanceSettings.defaultCurrency.name() == 'USD'}">USD</option>
+                        </select></div>
+                    <div><label>Default Theme (new users)</label>
+                        <select name="defaultTheme">
+                            <option value="GREEN" th:selected="${instanceSettings.defaultTheme.name() == 'GREEN'}">Green</option>
+                            <option value="SLATE_BLUE" th:selected="${instanceSettings.defaultTheme.name() == 'SLATE_BLUE'}">Slate Blue</option>
+                            <option value="MAROON" th:selected="${instanceSettings.defaultTheme.name() == 'MAROON'}">Maroon</option>
+                            <option value="FOREST_COPPER" th:selected="${instanceSettings.defaultTheme.name() == 'FOREST_COPPER'}">Forest &amp; Copper</option>
+                            <option value="MIDNIGHT" th:selected="${instanceSettings.defaultTheme.name() == 'MIDNIGHT'}">Midnight</option>
+                        </select></div>
+                </div>
+                <p><button type="submit">Save Email &amp; Defaults</button></p>
+            </form>
+            <form th:if="${instanceSettings.smtpEnabled}" th:action="@{/admin/settings/smtp-test}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button type="submit" class="btn-sm btn-secondary">Send Test Email</button>
+            </form>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

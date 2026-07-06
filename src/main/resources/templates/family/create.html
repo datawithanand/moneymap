@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Family')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('family')}"></nav>
+    <main class="content">
+        <h1>Family</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card" th:if="${!myInvitations.isEmpty()}">
+            <h2>Pending invitations for you</h2>
+            <div th:each="inv : ${myInvitations}" style="margin-bottom:10px">
+                <span>You've been invited to join a family group.</span>
+                <form class="inline" th:action="@{'/family/invitations/' + ${inv.id} + '/accept'}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <button type="submit" class="btn-sm">Accept</button>
+                </form>
+                <form class="inline" th:action="@{'/family/invitations/' + ${inv.id} + '/decline'}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <button type="submit" class="btn-sm btn-secondary">Decline</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Create a Family Group</h2>
+            <p class="muted">Family groups don't automatically share anything. Everyone keeps full
+                control over what they share, and with whom.</p>
+            <form th:action="@{/family/create}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="groupName">Family Group Name</label>
+                <input type="text" id="groupName" name="groupName" placeholder="e.g. The Sharma Family"
+                       minlength="3" maxlength="60" required>
+                <p><button type="submit">Create Family Group</button></p>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

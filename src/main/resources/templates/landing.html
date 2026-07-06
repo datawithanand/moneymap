@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${instanceSettings.instanceName} + ' — Every rupee, accounted for.'">MoneyMap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <style>
+        .lp-wrap { max-width: 1180px; margin: 0 auto; padding: 0 40px; }
+        .lp-nav { display: flex; justify-content: space-between; align-items: center; padding: 26px 0; }
+        .lp-brand { display: flex; align-items: center; gap: 10px; }
+        .lp-brand-mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--primary));
+            display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 700; color: #fff; font-size: 17px; }
+        .lp-brand-name { font-family: 'Fraunces', serif; font-size: 21px; font-weight: 600; }
+        .lp-hero { padding: 48px 0 30px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 50px; align-items: center; }
+        .lp-eyebrow { display: inline-flex; align-items: center; gap: 7px; background: var(--surface-alt); color: var(--primary-strong);
+            font-size: 12.5px; font-weight: 600; padding: 6px 13px; border-radius: 20px; margin-bottom: 20px; }
+        .lp-hero h1 { font-size: 46px; line-height: 1.14; font-weight: 600; margin: 0 0 18px; letter-spacing: -0.5px; }
+        .lp-hero h1 em { font-style: normal; color: var(--primary); }
+        .lp-hero p.lead { font-size: 16px; color: var(--text-muted); line-height: 1.6; max-width: 480px; margin-bottom: 28px; }
+        .lp-trust { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 28px; font-size: 12.5px; color: var(--text-muted); }
+        .lp-dark { background: var(--primary-strong); color: #f0ede2; border-radius: 24px; padding: 54px 50px; margin: 44px 0; position: relative; overflow: hidden; }
+        .lp-dark::before { content: ""; position: absolute; left: -100px; top: -100px; width: 380px; height: 380px;
+            background: radial-gradient(circle, rgba(185,139,62,.22), transparent 70%); }
+        .lp-dark h3, .lp-dark h2 { color: #fff; }
+        .lp-stat-label { font-size: 13px; color: var(--accent); text-transform: uppercase; letter-spacing: 1.4px; font-weight: 600; margin-bottom: 10px; }
+        .lp-stat { font-family: 'Fraunces', serif; font-size: 54px; font-weight: 600; line-height: 1.05; margin-bottom: 18px; color: #fff; }
+        .lp-stat span { color: var(--accent); }
+        .lp-cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 50px; position: relative; z-index: 1; align-items: center; }
+        .lp-sub { font-size: 15.5px; color: rgba(240,237,226,.85); line-height: 1.65; max-width: 460px; }
+        .lp-quote { font-family: 'Fraunces', serif; font-style: italic; font-size: 18px; line-height: 1.5; color: #fff;
+            border-left: 3px solid var(--accent); padding-left: 18px; margin-top: 22px; }
+        .lp-source { font-size: 11.5px; color: rgba(240,237,226,.6); margin-top: 10px; }
+        .bd-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+        .bd-label { font-size: 13px; width: 150px; color: rgba(240,237,226,.85); }
+        .bd-bar { flex: 1; height: 9px; background: rgba(255,255,255,.12); border-radius: 5px; overflow: hidden; }
+        .bd-fill { height: 100%; border-radius: 5px; background: var(--accent); }
+        .bd-val { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; width: 96px; text-align: right; color: #fff; }
+        .lp-why { margin-top: 40px; padding-top: 34px; border-top: 1px solid rgba(255,255,255,.14); position: relative; z-index: 1; }
+        .lp-why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        .lp-why-card { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 18px; }
+        .lp-why-card .n { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); margin-bottom: 8px; }
+        .lp-why-card p { font-size: 13.5px; color: rgba(240,237,226,.9); line-height: 1.55; margin: 0; }
+        .lp-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 30px; position: relative; z-index: 1; }
+        .lp-pcard { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 18px; }
+        .lp-pcard .ic { font-size: 20px; margin-bottom: 10px; }
+        .lp-pcard b { display: block; font-size: 13.5px; margin-bottom: 5px; color: #fff; }
+        .lp-pcard span { font-size: 12px; color: rgba(240,237,226,.8); line-height: 1.5; }
+        .lp-section { padding: 52px 0; }
+        .lp-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
+        .lp-2col h2 { font-size: 32px; margin: 0 0 16px; line-height: 1.2; }
+        .lp-vault-item { display: flex; gap: 13px; align-items: flex-start; margin-bottom: 16px; }
+        .lp-vault-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--surface-alt);
+            display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+        .lp-vault-item b { font-size: 14px; display: block; margin-bottom: 2px; }
+        .lp-vault-item span { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+        .lp-entry { display: flex; justify-content: space-between; align-items: center; padding: 11px 0;
+            border-bottom: 1px solid var(--border); font-size: 13px; }
+        .lp-entry:last-child { border: none; }
+        .lp-entry .meta { color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
+        .lp-entry .saved { color: var(--primary); font-size: 11.5px; font-weight: 600; }
+        .lp-head { text-align: center; max-width: 620px; margin: 0 auto 40px; }
+        .lp-head h2 { font-size: 32px; margin: 0 0 10px; }
+        .lp-head p { color: var(--text-muted); font-size: 15px; line-height: 1.6; }
+        table.lp-compare { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 16px;
+            overflow: hidden; border: 1px solid var(--border); }
+        table.lp-compare th, table.lp-compare td { padding: 14px 18px; text-align: center; font-size: 13.5px; border-bottom: 1px solid var(--border); }
+        table.lp-compare th { background: var(--surface-alt); font-weight: 600; font-size: 12.5px; }
+        table.lp-compare td:first-child, table.lp-compare th:first-child { text-align: left; font-weight: 500; }
+        table.lp-compare tr:last-child td { border-bottom: none; }
+        .yes { color: var(--primary); font-weight: 700; }
+        .no { color: var(--text-muted); }
+        .partial { color: var(--accent); font-size: 12px; font-weight: 500; }
+        .mm-col { background: var(--surface-alt); font-weight: 600; }
+        .lp-reasons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 30px; }
+        .lp-reason { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+        .lp-reason .ic { width: 36px; height: 36px; border-radius: 9px; background: var(--surface-alt);
+            display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 12px; }
+        .lp-reason h4 { font-size: 15.5px; font-weight: 600; margin: 0 0 6px; }
+        .lp-reason p { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; margin: 0; }
+        .lp-cta { text-align: center; padding: 46px 0 72px; }
+        .lp-cta h2 { font-size: 30px; margin: 0 0 12px; }
+        .lp-cta p { color: var(--text-muted); margin-bottom: 26px; }
+        .lp-footer { border-top: 1px solid var(--border); padding: 26px 0; display: flex; justify-content: space-between;
+            font-size: 12px; color: var(--text-muted); }
+        .btn-lg { padding: 14px 26px; font-size: 15px; border-radius: 10px; }
+        @media (max-width: 860px) {
+            .lp-hero, .lp-cols, .lp-2col { grid-template-columns: 1fr; }
+            .lp-why-grid, .lp-grid4, .lp-reasons { grid-template-columns: 1fr 1fr; }
+            .lp-wrap { padding: 0 18px; }
+            .lp-hero h1 { font-size: 34px; }
+        }
+    </style>
+</head>
+<body class="theme-green">
+<div class="lp-wrap">
+
+    <nav class="lp-nav">
+        <div class="lp-brand">
+            <div class="lp-brand-mark">M</div>
+            <div class="lp-brand-name" th:text="${instanceSettings.instanceName}">MoneyMap</div>
+        </div>
+        <div>
+            <a class="btn btn-secondary" th:href="@{/login}">Sign In</a>
+            <a class="btn" th:if="${registrationOpen}" th:href="@{/register}">Get Started Free</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <div class="lp-hero">
+        <div>
+            <div class="lp-eyebrow">🇮🇳 Built for the Indian financial ecosystem</div>
+            <h1>Know what<br>you <em>actually</em> own.</h1>
+            <p class="lead">Salary to stocks, PF to property — track every asset class you actually hold,
+                see your real net worth, and make sure your family can always find it.</p>
+            <p>
+                <a class="btn btn-lg" th:if="${registrationOpen}" th:href="@{/register}">Create your free account</a>
+                <a class="btn btn-lg" th:unless="${registrationOpen}" th:href="@{/login}">Sign in</a>
+            </p>
+            <div class="lp-trust">
+                <span>🔒 Self-hosted — private by default</span>
+                <span>📤 Export anytime — JSON, Excel, PDF</span>
+                <span>🚫 No bank linking, ever</span>
+            </div>
+        </div>
+        <div th:replace="~{fragments/mapviz :: mapviz}"></div>
+    </div>
+
+    <!-- UNCLAIMED MONEY HOOK -->
+    <div class="lp-dark">
+        <div class="lp-cols">
+            <div>
+                <div class="lp-stat-label">Sitting unclaimed in India, right now</div>
+                <div class="lp-stat">₹<span>2.2 lakh crore</span></div>
+                <p class="lp-sub">Spread across bank deposits, EPF, insurance, mutual funds and shares —
+                    money that legally belongs to someone, that nobody is using.</p>
+                <div class="lp-quote">"In many cases, assets are not lost — they are simply invisible to the
+                    people who are entitled to them."</div>
+                <div class="lp-source">— BusinessToday, April 2026, citing government &amp; regulatory data</div>
+            </div>
+            <div>
+                <div class="bd-row"><div class="bd-label">Shares &amp; dividends</div><div class="bd-bar"><div class="bd-fill" style="width:100%"></div></div><div class="bd-val">₹89,004 Cr</div></div>
+                <div class="bd-row"><div class="bd-label">Insurance policies</div><div class="bd-bar"><div class="bd-fill" style="width:23%"></div></div><div class="bd-val">₹20,062 Cr</div></div>
+                <div class="bd-row"><div class="bd-label">EPF accounts</div><div class="bd-bar"><div class="bd-fill" style="width:12%"></div></div><div class="bd-val">₹10,915 Cr</div></div>
+                <div class="bd-row"><div class="bd-label">Mutual funds</div><div class="bd-bar"><div class="bd-fill" style="width:4%"></div></div><div class="bd-val">₹3,452 Cr</div></div>
+                <div class="bd-row"><div class="bd-label">Bank deposits &amp; rest</div><div class="bd-bar"><div class="bd-fill" style="width:88%"></div></div><div class="bd-val">₹78,000+ Cr</div></div>
+            </div>
+        </div>
+        <div class="lp-why">
+            <h3 style="font-size:22px;margin:0 0 20px">This doesn't happen by accident. It happens for three quiet reasons:</h3>
+            <div class="lp-why-grid">
+                <div class="lp-why-card"><div class="n">01</div><p>Outdated KYC and contact details mean institutions can't reach the rightful owner — or their family — when it matters.</p></div>
+                <div class="lp-why-card"><div class="n">02</div><p>Missing or invalid nominee details turn a simple claim into a legal maze for whoever is left behind.</p></div>
+                <div class="lp-why-card"><div class="n">03</div><p>Families simply don't know what exists — no single record of accounts, policies, or who to call.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRIVACY -->
+    <div class="lp-dark" style="background:var(--primary)">
+        <div style="position:relative;z-index:1;max-width:560px">
+            <div class="lp-stat-label" style="color:#cfe8d9">While other apps read your SMS</div>
+            <h3 style="font-family:'Fraunces',serif;font-size:32px;font-weight:600;margin:8px 0 14px;line-height:1.25">
+                Your data is none of anyone's business. Literally.</h3>
+            <p class="lp-sub">Most "free" finance apps make money by reading your transaction messages and selling
+                spending patterns. MoneyMap runs on your own server: it doesn't connect to your bank, doesn't read
+                your SMS, and there is no company on the other side to sell anything to anyone.</p>
+        </div>
+        <div class="lp-grid4">
+            <div class="lp-pcard"><div class="ic">🏠</div><b>Your server, your rules</b><span>The entire app and every byte of data lives on hardware you control.</span></div>
+            <div class="lp-pcard"><div class="ic">🚫</div><b>Nothing sold, ever</b><span>No advertisers, no data brokers, no "anonymized insights" — structurally impossible.</span></div>
+            <div class="lp-pcard"><div class="ic">📤</div><b>Leave anytime</b><span>Full JSON, Excel and PDF export at all times. Zero lock-in, by design.</span></div>
+            <div class="lp-pcard"><div class="ic">👪</div><b>Family-safe by design</b><span>Choose exactly what each family member can see — full detail or just emergency contacts.</span></div>
+        </div>
+    </div>
+
+    <!-- FAMILY VAULT -->
+    <div class="lp-section">
+        <div class="lp-2col">
+            <div>
+                <div class="lp-eyebrow">For breadwinners</div>
+                <h2>One login. Everything your family would ever need to find.</h2>
+                <p style="color:var(--text-muted);font-size:15.5px;line-height:1.65;margin-bottom:26px">
+                    Family Vault is built directly for the problem above. Everything you hold — and exactly
+                    who to call about it — lives in one place, with access that unlocks only when it's actually needed.</p>
+                <div class="lp-vault-item"><div class="lp-vault-icon">🔑</div>
+                    <div><b>Granular family access</b><span>Decide who sees full numbers, and who only sees "who to contact" — per family member, not all-or-nothing.</span></div></div>
+                <div class="lp-vault-item"><div class="lp-vault-icon">⏳</div>
+                    <div><b>Request &amp; wait, not instant unlock</b><span>A family member requests access. You get notified and have time to decline. If you can't respond, it opens automatically.</span></div></div>
+                <div class="lp-vault-item"><div class="lp-vault-icon">📇</div>
+                    <div><b>Every contact, attached</b><span>Customer care numbers, branch addresses, nominee names, policy portals — stored right next to the asset they belong to.</span></div></div>
+                <p><a class="btn btn-lg" th:if="${registrationOpen}" th:href="@{/register}">Set up your Family Vault</a></p>
+            </div>
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                    <h3 style="margin:0">"If I'm Not Around" Summary</h3>
+                    <span class="pill pill-active">Preview</span>
+                </div>
+                <div class="lp-entry"><div><div>HDFC Term Insurance</div><div class="meta">Policy #HT-2291045 · Nominee: Spouse</div></div><div class="saved">📇 Contact saved</div></div>
+                <div class="lp-entry"><div><div>SBI Fixed Deposit</div><div class="meta">A/C ending 4821 · Matures Mar 2028</div></div><div class="saved">📇 Contact saved</div></div>
+                <div class="lp-entry"><div><div>ICICI Pru Bluechip Fund</div><div class="meta">Folio 88291004 · 412 units</div></div><div class="saved">📇 Contact saved</div></div>
+                <div class="lp-entry"><div><div>EPFO — UAN 100928374651</div><div class="meta">3 employer records linked</div></div><div class="saved">📇 Contact saved</div></div>
+                <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--text-muted)">
+                    <span>Access granted to: <b style="color:var(--primary)">Spouse, 1 child</b></span>
+                    <span>Last reviewed: today</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPARISON -->
+    <div class="lp-section">
+        <div class="lp-head">
+            <div class="lp-eyebrow" style="display:inline-flex">The honest comparison</div>
+            <h2>What others don't give you</h2>
+            <p>Most apps are either Indian and shallow, or deep and not built for India. Here's the real difference.</p>
+        </div>
+        <table class="lp-compare">
+            <tr><th></th><th>SMS-based<br>Indian apps</th><th>Global net-worth<br>trackers</th><th class="mm-col">MoneyMap</th></tr>
+            <tr><td>PF, PPF, NPS, SSY tracking</td><td class="partial">EPF only, no depth</td><td class="no">—</td><td class="mm-col yes">✓ Full depth</td></tr>
+            <tr><td>True multi-asset net worth</td><td class="no">—</td><td class="yes">✓</td><td class="mm-col yes">✓</td></tr>
+            <tr><td>Family Vault &amp; emergency access</td><td class="no">—</td><td class="no">Limited</td><td class="mm-col yes">✓</td></tr>
+            <tr><td>Nominee &amp; contact per asset</td><td class="no">—</td><td class="no">Rare</td><td class="mm-col yes">✓</td></tr>
+            <tr><td>Old vs new tax regime, live</td><td class="no">—</td><td class="no">—</td><td class="mm-col yes">✓</td></tr>
+            <tr><td>No bank data sold, manual-first</td><td class="no">Often sold</td><td class="no">Varies</td><td class="mm-col yes">✓</td></tr>
+            <tr><td>Self-hostable, your own server</td><td class="no">—</td><td class="no">—</td><td class="mm-col yes">✓</td></tr>
+        </table>
+
+        <div class="lp-reasons">
+            <div class="lp-reason"><div class="ic">🧮</div><h4>Your actual payslip, not a template</h4>
+                <p>Build your salary breakup exactly as your employer structures it. Switch tax regimes and see the real difference.</p></div>
+            <div class="lp-reason"><div class="ic">🎯</div><h4>Goals with real math behind them</h4>
+                <p>Required monthly SIP, shown both inflation-adjusted and in today's money — side by side.</p></div>
+            <div class="lp-reason"><div class="ic">🪙</div><h4>One gold rate, everywhere</h4>
+                <p>Update today's 22K/24K price once. Every gold holding revalues instantly.</p></div>
+            <div class="lp-reason"><div class="ic">👪</div><h4>One login for the whole household</h4>
+                <p>Tag every asset to a family member. View individually or as one combined household net worth.</p></div>
+            <div class="lp-reason"><div class="ic">🎨</div><h4>Looks the way you want it to</h4>
+                <p>Five full themes — every chart, card, and accent repaints instantly, saved to your profile.</p></div>
+            <div class="lp-reason"><div class="ic">🧾</div><h4>Your data leaves whenever you want</h4>
+                <p>Export to JSON, Excel, or a print-ready PDF anytime. It was always yours.</p></div>
+        </div>
+    </div>
+
+    <div class="lp-cta">
+        <h2>Make sure your money is never invisible.</h2>
+        <p>Runs on your own server. Your data stays yours — always.</p>
+        <a class="btn btn-lg" th:if="${registrationOpen}" th:href="@{/register}">Create your free account</a>
+        <a class="btn btn-lg" th:unless="${registrationOpen}" th:href="@{/login}">Sign in</a>
+    </div>
+
+    <footer class="lp-footer">
+        <div>© 2026 MoneyMap. Built for people — and families — who take their money seriously.</div>
+        <div>Self-hosted · Private · Exportable</div>
+    </footer>
+</div>
+</body>
+</html>

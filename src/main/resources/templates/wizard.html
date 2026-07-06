@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Setup')}"></head>
+<body th:class="${themeClass}">
+
+<div class="wizard-card card">
+    <div class="wizard-dots">
+        <span th:classappend="${step >= 1} ? 'on'"></span>
+        <span th:classappend="${step >= 2} ? 'on'"></span>
+        <span th:classappend="${step >= 3} ? 'on'"></span>
+        <span th:classappend="${step >= 4} ? 'on'"></span>
+    </div>
+    <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+    <!-- Step 1 — Currency (§1.2) -->
+    <th:block th:if="${step == 1}">
+        <h2 class="mt0">Choose your currency</h2>
+        <p class="muted">Sets the display currency across every module. MoneyMap does not convert
+            values — everything you enter is assumed to already be in this currency.</p>
+        <form th:action="@{/setup/step1}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <div class="option-cards">
+                <label class="opt"><input type="radio" name="currency" value="INR" checked> ₹ INR (Recommended)</label>
+                <label class="opt"><input type="radio" name="currency" value="USD"> $ USD</label>
+            </div>
+            <p><button type="submit">Continue</button></p>
+        </form>
+    </th:block>
+
+    <!-- Step 2 — Theme (§1.2) -->
+    <th:block th:if="${step == 2}">
+        <h2 class="mt0">Pick a theme</h2>
+        <form th:action="@{/setup/step2}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <div class="theme-swatches">
+                <label class="swatch"><input type="radio" name="theme" value="GREEN" checked>
+                    <div class="chip" style="background:#4a6741"></div>Green</label>
+                <label class="swatch"><input type="radio" name="theme" value="SLATE_BLUE">
+                    <div class="chip" style="background:#3b5372"></div>Slate Blue</label>
+                <label class="swatch"><input type="radio" name="theme" value="MAROON">
+                    <div class="chip" style="background:#6e2f34"></div>Maroon</label>
+                <label class="swatch"><input type="radio" name="theme" value="FOREST_COPPER">
+                    <div class="chip" style="background:linear-gradient(90deg,#2f4a3c 60%,#b46a3c)"></div>Forest &amp; Copper</label>
+                <label class="swatch"><input type="radio" name="theme" value="MIDNIGHT">
+                    <div class="chip" style="background:#171a21"></div>Midnight</label>
+            </div>
+            <p>
+                <button type="submit">Continue</button>
+                <button type="submit" class="btn-secondary" th:attr="formaction=@{/setup/back}">Back</button>
+            </p>
+        </form>
+        <script>
+            // Live re-skin as the user picks a theme (§1.2 Step 2)
+            document.querySelectorAll('input[name=theme]').forEach(function (r) {
+                r.addEventListener('change', function () {
+                    document.body.className = 'theme-' + r.value.toLowerCase().replace('_', '-');
+                });
+            });
+        </script>
+    </th:block>
+
+    <!-- Step 3 — Family group (§1.2, deferrable) -->
+    <th:block th:if="${step == 3}">
+        <h2 class="mt0">Family group</h2>
+        <p class="muted">Creating or joining a family group arrives with the Family module —
+            you can set it up any time later from the Family section.</p>
+        <form th:action="@{/setup/step3}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <div class="option-cards">
+                <label class="opt muted">Create a Family Group — available soon</label>
+                <label class="opt muted">Join an Existing Family Group — available soon</label>
+                <label class="opt"><strong>Skip for now — I'll set this up later</strong></label>
+            </div>
+            <p>
+                <button type="submit">Continue</button>
+                <button type="submit" class="btn-secondary" th:attr="formaction=@{/setup/back}">Back</button>
+            </p>
+        </form>
+    </th:block>
+
+    <!-- Step 4 — Gold rate (§1.2) -->
+    <th:block th:if="${step == 4}">
+        <h2 class="mt0">Gold rate</h2>
+        <p class="muted">Used as the default valuation rate for any gold you track under Physical
+            Assets. You can update this anytime, and override it per asset. This is a manual value —
+            MoneyMap never fetches market data.</p>
+        <form th:action="@{/setup/step4}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <label for="goldRate24k">Current gold rate (per gram, 24K, in your selected currency)</label>
+            <input type="number" step="0.01" min="0.01" id="goldRate24k" name="goldRate24k" placeholder="e.g. 7200" required>
+            <label for="goldRate22k">22K rate (optional — defaults to the 24K rate)</label>
+            <input type="number" step="0.01" min="0.01" id="goldRate22k" name="goldRate22k" placeholder="e.g. 6600">
+            <p>
+                <button type="submit">Finish Setup</button>
+                <button type="submit" class="btn-secondary" th:attr="formaction=@{/setup/back}">Back</button>
+            </p>
+        </form>
+    </th:block>
+</div>
+
+</body>
+</html>

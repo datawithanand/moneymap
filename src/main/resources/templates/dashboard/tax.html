@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tax Planning')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('tax')}"></nav>
+    <main class="content">
+        <h1>Tax Planning</h1>
+        <p class="hint">Old-Regime deduction tracking, aggregated across your modules. Informational
+            only — consult a tax professional for filing.</p>
+
+        <div class="card">
+            <h2>Section 80C (limit ₹1,50,000)</h2>
+            <table class="data">
+                <tbody>
+                <tr><td>PPF yearly contributions</td><td class="mono" th:text="${fmt.money(ppf, currentUser)}"></td></tr>
+                <tr><td>EPF/VPF employee contributions (annualized, active employments)</td>
+                    <td class="mono" th:text="${fmt.money(epf, currentUser)}"></td></tr>
+                <tr><td>ELSS SIPs (annualized, active)</td><td class="mono" th:text="${fmt.money(elss, currentUser)}"></td></tr>
+                <tr><td>Life insurance premiums (80C-flagged, annualized)</td>
+                    <td class="mono" th:text="${fmt.money(lifePremiums, currentUser)}"></td></tr>
+                <tr><th>Total tracked</th><th class="mono" th:text="${fmt.money(total80C, currentUser)}"></th></tr>
+                <tr><th>Against limit</th>
+                    <th class="mono" th:text="${total80C.min(cap80C)} + ' / 150000'"></th></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Section 80D — Health insurance premiums</h2>
+            <p class="figure" th:text="${fmt.money(health80D, currentUser)}"></p>
+            <p class="hint">Age-based limits apply (typically ₹25,000, or ₹50,000 for senior citizens).</p>
+        </div>
+
+        <div class="card" th:if="${hasNpsTier1}">
+            <h2>Section 80CCD(1B) — NPS Tier 1</h2>
+            <p>You hold an NPS Tier 1 account — up to ₹50,000 of contributions qualify over and above 80C.</p>
+        </div>
+
+        <div class="card">
+            <h2>Salary profiles</h2>
+            <table class="data">
+                <thead><tr><th>Employer</th><th>FY</th><th>Regime</th><th>Gross monthly</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="p : ${salaryProfiles}">
+                    <td th:text="${p.employerName}"></td>
+                    <td th:text="${p.financialYear}"></td>
+                    <td th:text="${p.regime}"></td>
+                    <td class="mono" th:text="${fmt.money(p.grossMonthly(), currentUser)}"></td>
+                    <td><a class="btn btn-sm btn-secondary" th:href="@{'/assets/salary/' + ${p.id} + '/edit'}">Open (tax preview)</a></td>
+                </tr>
+                <tr th:if="${salaryProfiles.isEmpty()}"><td colspan="5" class="muted">No salary profiles yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>
