@@ -1,0 +1,15 @@
+TC_ID,Category,Priority,Field/Scenario,Preconditions,Test Steps,Test Data,Expected Result
+SWP-001,Positive,High,Above-sustainable withdrawal (finite depletion),Logged in,Submit withdrawal above sustainable rate,"corpus=5000000, monthlyWithdrawal=40000, annualReturnPercent=8",perpetual=false; monthsUntilDepletion ~270
+SWP-002,Positive,High,Below-sustainable withdrawal (perpetual),Logged in,Submit withdrawal below sustainable rate,"corpus=5000000, monthlyWithdrawal=30000, annualReturnPercent=8",perpetual=true, "Sustainable indefinitely" shown
+SWP-003,Boundary,Medium,Exactly at sustainable rate,Logged in,Submit withdrawal = corpus*monthlyRate exactly,"corpus=5000000, monthlyWithdrawal=33333.33, annualReturnPercent=8",Boundary case - verify consistent perpetual/finite classification, not flip-flopping due to rounding
+SWP-004,Boundary,High,corpus = 0,Logged in,Submit corpus=0 with nonzero withdrawal,"corpus=0, monthlyWithdrawal=10000, annualReturnPercent=8",Depletes in month 1 (or immediately); no crash
+SWP-005,Negative,High,monthlyWithdrawal negative,Logged in,Submit negative withdrawal,"corpus=5000000, monthlyWithdrawal=-10000, annualReturnPercent=8",Should be rejected - currently accepted; negative withdrawal actually grows the corpus (semantically becomes a SIP), misleading output
+SWP-006,Negative,High,corpus negative,Logged in,Submit negative corpus,"corpus=-5000000, monthlyWithdrawal=10000, annualReturnPercent=8",Should be rejected - currently accepted
+SWP-007,Boundary,Medium,annualReturnPercent = 0,Logged in,Submit 0% return,"corpus=1000000, monthlyWithdrawal=10000, annualReturnPercent=0",Depletes linearly over 100 months; no division-by-zero
+SWP-008,Boundary,Medium,Very high withdrawal relative to corpus (fast depletion),Logged in,Submit withdrawal > corpus,"corpus=100000, monthlyWithdrawal=500000, annualReturnPercent=8",Depletes in month 1, finalCorpus=0
+SWP-009,Boundary,Low,600-month cap reached exactly,Logged in,Submit values that barely deplete near month 600,"corpus=10000000, monthlyWithdrawal=41667, annualReturnPercent=5",monthsUntilDepletion caps at 600 if not yet depleted - verify no infinite loop
+SWP-010,Negative,High,Missing required field,Logged in,Omit annualReturnPercent,"corpus=5000000, monthlyWithdrawal=40000",400 Bad Request, graceful error
+SWP-011,Security,High,XSS in numeric field,Logged in,Submit corpus=<script>alert(1)</script>,"corpus=<script>alert(1)</script>",Rejected as invalid number
+SWP-012,Security,Medium,CSRF token missing,Logged in,POST without _csrf,valid data minus _csrf,403 Forbidden
+SWP-013,Security,High,Unauthenticated access,Logged out,GET and POST /calculators/swp,none,Redirect to /login
+SWP-014,EndUser,Low,Decimal withdrawal amount,Logged in,Submit fractional withdrawal,"corpus=2500000.50, monthlyWithdrawal=15000.25, annualReturnPercent=7.5",Computes correctly to 2 decimal places

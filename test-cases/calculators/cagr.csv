@@ -1,0 +1,14 @@
+TC_ID,Category,Priority,Field/Scenario,Preconditions,Test Steps,Test Data,Expected Result
+CAGR-001,Positive,High,Happy path growth,Logged in,Submit valid growth values,"startValue=100000, endValue=200000, years=5",cagrPercent ~ 14.87%
+CAGR-002,Positive,Medium,Exact 1-year doubling-ish,Logged in,Submit 1 year 50% growth,"startValue=100, endValue=150, years=1",cagrPercent = exactly 50.00%
+CAGR-003,Boundary,Critical,startValue = 0 (division by zero),Logged in,Submit startValue=0,"startValue=0, endValue=200000, years=5","ratio = endValue/0 = Infinity -> Math.pow(Infinity,...) -> Infinity -> result likely shows ""Infinity%"" to the user. Real bug: no guard against zero start value"
+CAGR-004,Negative,High,startValue negative,Logged in,Submit negative start,"startValue=-100000, endValue=200000, years=5","ratio = negative -> Math.pow(negative, fractional exponent) = NaN in Java. Real bug: page likely renders ""NaN%"" to the user instead of a validation error"
+CAGR-005,Negative,High,endValue negative,Logged in,Submit negative end,"startValue=100000, endValue=-50000, years=5",ratio negative -> same NaN issue as CAGR-004
+CAGR-006,Boundary,Critical,years = 0 (division by zero in exponent),Logged in,Submit years=0,"startValue=100000, endValue=200000, years=0","1/years = division by zero -> Infinity exponent -> Math.pow(2, Infinity) = Infinity. Real bug: no guard against years=0"
+CAGR-007,Negative,High,years negative,Logged in,Submit negative years,"startValue=100000, endValue=200000, years=-5",Should be rejected - currently accepted; produces a mathematically valid but likely unintended negative-exponent result
+CAGR-008,Boundary,Medium,endValue = 0 (total loss),Logged in,Submit endValue=0,"startValue=100000, endValue=0, years=5",ratio=0, cagrPercent = -100.00% exactly; verify no crash
+CAGR-009,Negative,High,Missing required field,Logged in,Omit years,"startValue=100000, endValue=200000",400 Bad Request, graceful error
+CAGR-010,Security,High,XSS in numeric field,Logged in,Submit startValue=<script>alert(1)</script>,"startValue=<script>alert(1)</script>",Rejected as invalid number
+CAGR-011,Security,Medium,CSRF token missing,Logged in,POST without _csrf,valid data minus _csrf,403 Forbidden
+CAGR-012,Security,High,Unauthenticated access,Logged out,GET and POST /calculators/cagr,none,Redirect to /login
+CAGR-013,EndUser,Low,Very small fractional years,Logged in,Submit years=0.01,"startValue=100000, endValue=101000, years=0.01",Extremely large annualized % (expected mathematically, but may look alarming to end users) - verify no crash

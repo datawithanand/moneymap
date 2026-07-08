@@ -1,0 +1,14 @@
+TC_ID,Category,Priority,Field/Scenario,Preconditions,Test Steps,Test Data,Expected Result
+PPF-001,Positive,High,Happy path 15-year projection,Logged in,Submit valid inputs,"openingBalance=0, annualContribution=150000, annualRatePercent=7.1, years=15",maturityValue ~ 40.6-40.7 lakh; 15 year-end balances shown
+PPF-002,Positive,Medium,Pre-fill from existing single PPF account,User has exactly 1 PPF account,GET /calculators/ppf,none,openingBalance/annualContribution/annualRatePercent pre-filled from that account
+PPF-003,EndUser,Medium,Multiple PPF accounts - no auto pre-fill,User has 2+ PPF accounts,GET /calculators/ppf,none,Fields left blank (per design, ambiguous which account to use) - verify no wrong account silently chosen
+PPF-004,Boundary,High,annualContribution exceeds statutory limit (₹1.5L),Logged in,Submit contribution above cap,"openingBalance=0, annualContribution=500000, annualRatePercent=7.1, years=15",Should be rejected or capped at 1,50,000 - currently NOT enforced server-side (only client-side max attribute, bypassable via curl)
+PPF-005,Negative,High,annualContribution negative,Logged in,Submit negative contribution,"openingBalance=0, annualContribution=-150000, annualRatePercent=7.1, years=15",Should be rejected - currently accepted, corpus shrinks below zero possibly
+PPF-006,Boundary,Medium,years = 0,Logged in,Submit years=0,"openingBalance=100000, annualContribution=150000, annualRatePercent=7.1, years=0",maturityValue = openingBalance unchanged, empty yearEndBalances list, no crash
+PPF-007,Negative,High,years negative,Logged in,Submit years=-5,"openingBalance=0, annualContribution=150000, annualRatePercent=7.1, years=-5",Should be rejected - currently accepted (loop doesn't execute, returns opening balance silently)
+PPF-008,Boundary,Critical,Extremely large years (DoS - unbounded yearEndBalances list),Logged in,Submit years=10000000,"openingBalance=0, annualContribution=150000, annualRatePercent=7.1, years=10000000",No upper bound on years in code/template loop over 10 million rows - potential DoS/slow response
+PPF-009,Boundary,Medium,openingBalance omitted (optional field),Logged in,Submit without openingBalance,"annualContribution=150000, annualRatePercent=7.1, years=15",Controller passes null to CalculatorMath.ppf which null-checks openingBalance -> treated as 0; should not NPE
+PPF-010,Negative,High,Missing required annualContribution,Logged in,Omit annualContribution,"annualRatePercent=7.1, years=15",400 Bad Request, graceful error
+PPF-011,Security,High,XSS in numeric field,Logged in,Submit annualContribution=<script>alert(1)</script>,"annualContribution=<script>alert(1)</script>",Rejected as invalid number
+PPF-012,Security,Medium,CSRF token missing,Logged in,POST without _csrf,valid data minus _csrf,403 Forbidden
+PPF-013,Security,High,Unauthenticated access,Logged out,GET and POST /calculators/ppf,none,Redirect to /login

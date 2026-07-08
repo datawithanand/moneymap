@@ -1,0 +1,14 @@
+TC_ID,Category,Priority,Field/Scenario,Preconditions,Test Steps,Test Data,Expected Result
+TAX-001,Positive,High,New regime wins at rebate threshold,Logged in,Submit income at 87A NEW threshold,"financialYear=2025-26, grossIncome=1200000, oldRegimeDeductions=0",taxNew = 0 (rebate); taxOld > 0; betterRegime=NEW
+TAX-002,Positive,Medium,Old regime wins with large deductions,Logged in,Submit high deductions favoring OLD,"financialYear=2025-26, grossIncome=1500000, oldRegimeDeductions=400000",Compare both; verify betterRegime picks the lower actual tax
+TAX-003,Negative,High,Unknown financial year,Logged in,Submit a FY with no seeded slabs,"financialYear=1999-00, grossIncome=1200000",error model attribute shown: "No tax slabs configured..." — not a 500 error
+TAX-004,Security,Medium,Free-text financialYear injection attempt,Logged in,Submit SQL/script-like string,"financialYear=' OR '1'='1, grossIncome=1200000",No match found -> graceful "no slabs configured" message; no injection risk (in-memory list match, not SQL) but verify no exception/stack trace and value is HTML-escaped when redisplayed
+TAX-005,Boundary,High,grossIncome = 0,Logged in,Submit zero income,"financialYear=2025-26, grossIncome=0",Both regimes show tax = 0 (computeTax already checks signum<=0)
+TAX-006,Negative,High,grossIncome negative,Logged in,Submit negative income,"financialYear=2025-26, grossIncome=-500000",taxableOld/New clamped to 0 via .max(ZERO) in controller - both taxes = 0; verify this clamp actually works (was added deliberately)
+TAX-007,Negative,Medium,oldRegimeDeductions negative,Logged in,Submit negative deductions,"financialYear=2025-26, grossIncome=1200000, oldRegimeDeductions=-100000",Should be rejected/ignored - currently accepted; negative deduction INCREASES taxable income under Old regime (subtracting a negative), verify this odd-but-not-crashing behavior
+TAX-008,Boundary,Medium,oldRegimeDeductions larger than gross income,Logged in,Submit deductions > income,"financialYear=2025-26, grossIncome=500000, oldRegimeDeductions=10000000",taxableOld clamped to 0 via .max(ZERO); taxOld = 0, no crash
+TAX-009,Negative,High,Missing required grossIncome,Logged in,Omit grossIncome,"financialYear=2025-26",400 Bad Request, graceful error
+TAX-010,Security,High,XSS in numeric field,Logged in,Submit grossIncome=<script>alert(1)</script>,"financialYear=2025-26, grossIncome=<script>alert(1)</script>",Rejected as invalid number
+TAX-011,Security,Medium,CSRF token missing,Logged in,POST without _csrf,valid data minus _csrf,403 Forbidden
+TAX-012,Security,High,Unauthenticated access,Logged out,GET and POST /calculators/tax-regime,none,Redirect to /login
+TAX-013,EndUser,Low,Financial year with unexpected format,Logged in,Submit "FY26" instead of "2025-26",FY26,No slabs match -> graceful error message, not a crash
