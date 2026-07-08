@@ -14,7 +14,12 @@ public final class CalculatorMath {
 
     private CalculatorMath() {}
 
+    /** Defense-in-depth: BigDecimal.valueOf throws on NaN/Infinity, so guard with a clear message. */
     private static BigDecimal money(double v) {
+        if (!Double.isFinite(v)) {
+            throw new CalculatorValidation.ValidationException(
+                    "That combination of inputs produces an undefined or too-large result — please adjust the values.");
+        }
         return BigDecimal.valueOf(v).setScale(2, RoundingMode.HALF_UP);
     }
 
@@ -113,6 +118,7 @@ public final class CalculatorMath {
     public record FdReverseResult(BigDecimal requiredPrincipal) {}
 
     public static FdForwardResult fdForward(BigDecimal principal, BigDecimal annualRatePercent, BigDecimal years) {
+        if (principal == null) throw new CalculatorValidation.ValidationException("Principal is required.");
         double r = annualRatePercent.doubleValue() / 100.0;
         double maturity = principal.doubleValue() * Math.pow(1 + r / 4, 4 * years.doubleValue());
         BigDecimal maturityValue = money(maturity);
@@ -121,6 +127,7 @@ public final class CalculatorMath {
     }
 
     public static FdReverseResult fdReverse(BigDecimal targetMaturityValue, BigDecimal annualRatePercent, BigDecimal years) {
+        if (targetMaturityValue == null) throw new CalculatorValidation.ValidationException("Target maturity value is required.");
         double r = annualRatePercent.doubleValue() / 100.0;
         double principal = targetMaturityValue.doubleValue() / Math.pow(1 + r / 4, 4 * years.doubleValue());
         return new FdReverseResult(money(principal));

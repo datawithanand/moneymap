@@ -37,6 +37,10 @@
             </form>
         </div>
 
+        <div class="card" th:if="${error != null}">
+            <p class="field-error" th:text="${error}"></p>
+        </div>
+
         <div class="card" th:if="${result != null}">
             <h2>Result</h2>
             <p class="figure" th:text="${fmt.money(result.maturityValue(), currentUser)}"></p>

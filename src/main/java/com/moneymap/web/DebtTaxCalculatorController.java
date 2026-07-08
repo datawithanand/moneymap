@@ -1,6 +1,7 @@
 package com.moneymap.web;
 
 import com.moneymap.calculator.CalculatorMath;
+import com.moneymap.calculator.CalculatorValidation.ValidationException;
 import com.moneymap.model.TaxSlabSet;
 import com.moneymap.service.TaxService;
 import org.springframework.stereotype.Controller;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+
+import static com.moneymap.calculator.CalculatorValidation.*;
 
 /** Loan/EMI (+ prepayment simulation) and Old-vs-New tax regime comparison. */
 @Controller
@@ -41,17 +44,27 @@ public class DebtTaxCalculatorController {
         model.addAttribute("principal", principal);
         model.addAttribute("annualRatePercent", annualRatePercent);
         model.addAttribute("tenureMonths", tenureMonths);
-        model.addAttribute("result", CalculatorMath.loan(principal, annualRatePercent, tenureMonths));
 
         boolean doPrepay = Boolean.TRUE.equals(simulatePrepayment)
                 && prepaymentAmount != null && prepaymentMonth != null && prepaymentMode != null;
         model.addAttribute("simulatePrepayment", doPrepay);
-        if (doPrepay) {
-            model.addAttribute("prepaymentAmount", prepaymentAmount);
-            model.addAttribute("prepaymentMonth", prepaymentMonth);
-            model.addAttribute("prepaymentMode", prepaymentMode);
-            model.addAttribute("prepaymentResult", CalculatorMath.prepay(principal, annualRatePercent, tenureMonths,
-                    prepaymentAmount, prepaymentMonth, prepaymentMode));
+        try {
+            check(positive(principal, "Loan amount"),
+                    nonNegative(annualRatePercent, "Annual interest rate %"),
+                    range(tenureMonths, 1, 600, "Tenure (months)"));
+            model.addAttribute("result", CalculatorMath.loan(principal, annualRatePercent, tenureMonths));
+
+            if (doPrepay) {
+                check(positive(prepaymentAmount, "Prepayment amount"),
+                        range(prepaymentMonth, 1, tenureMonths, "Prepayment month"));
+                model.addAttribute("prepaymentAmount", prepaymentAmount);
+                model.addAttribute("prepaymentMonth", prepaymentMonth);
+                model.addAttribute("prepaymentMode", prepaymentMode);
+                model.addAttribute("prepaymentResult", CalculatorMath.prepay(principal, annualRatePercent, tenureMonths,
+                        prepaymentAmount, prepaymentMonth, prepaymentMode));
+            }
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
         }
         return "calculators/loan";
     }
@@ -73,6 +86,13 @@ public class DebtTaxCalculatorController {
         model.addAttribute("financialYear", financialYear);
         model.addAttribute("grossIncome", grossIncome);
         model.addAttribute("oldRegimeDeductions", oldRegimeDeductions);
+
+        String validationError = firstOf(nonNegative(grossIncome, "Gross annual income"),
+                nonNegative(oldRegimeDeductions, "Old-regime deductions"));
+        if (validationError != null) {
+            model.addAttribute("error", validationError);
+            return "calculators/tax-regime";
+        }
 
         Optional<TaxSlabSet> oldSet = taxService.findSet(financialYear, "OLD");
         Optional<TaxSlabSet> newSet = taxService.findSet(financialYear, "NEW");

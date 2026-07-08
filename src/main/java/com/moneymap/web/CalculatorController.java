@@ -1,6 +1,7 @@
 package com.moneymap.web;
 
 import com.moneymap.calculator.CalculatorMath;
+import com.moneymap.calculator.CalculatorValidation.ValidationException;
 import com.moneymap.model.User;
 import com.moneymap.service.PortfolioAggregationService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
+
+import static com.moneymap.calculator.CalculatorValidation.*;
 
 /** Calculators landing page, plus FIRE / SIP / CAGR — pure projections, nothing persisted. */
 @Controller
@@ -53,8 +56,17 @@ public class CalculatorController {
         model.addAttribute("currentCorpus", currentCorpus);
         model.addAttribute("monthlyInvestment", monthlyInvestment);
         model.addAttribute("expectedReturnPercent", expectedReturnPercent);
-        model.addAttribute("result",
-                CalculatorMath.fire(annualExpense, swrPercent, currentCorpus, monthlyInvestment, expectedReturnPercent));
+        try {
+            check(positive(annualExpense, "Annual expense"),
+                    positive(swrPercent, "Safe withdrawal rate %"),
+                    nonNegative(currentCorpus, "Current corpus"),
+                    nonNegative(monthlyInvestment, "Monthly investment"),
+                    nonNegative(expectedReturnPercent, "Expected annual return %"));
+            model.addAttribute("result",
+                    CalculatorMath.fire(annualExpense, swrPercent, currentCorpus, monthlyInvestment, expectedReturnPercent));
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
         return "calculators/fire";
     }
 
@@ -80,8 +92,17 @@ public class CalculatorController {
         model.addAttribute("stepUpPercent", stepUpPercent);
         model.addAttribute("inflationAdjust", adjust);
         model.addAttribute("inflationPercent", inflationPercent);
-        model.addAttribute("result",
-                CalculatorMath.sip(monthlyAmount, annualReturnPercent, years, stepUpPercent, adjust, inflationPercent));
+        try {
+            check(positive(monthlyAmount, "Monthly SIP amount"),
+                    range(years, 1, 100, "Tenure (years)"),
+                    stepUpPercent == null ? null : (stepUpPercent.signum() < 0 || stepUpPercent.compareTo(BigDecimal.valueOf(100)) > 0
+                            ? "Yearly step-up % must be between 0 and 100." : null),
+                    nonNegative(inflationPercent, "Expected annual inflation %"));
+            model.addAttribute("result",
+                    CalculatorMath.sip(monthlyAmount, annualReturnPercent, years, stepUpPercent, adjust, inflationPercent));
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
         return "calculators/sip";
     }
 
@@ -100,7 +121,14 @@ public class CalculatorController {
         model.addAttribute("startValue", startValue);
         model.addAttribute("endValue", endValue);
         model.addAttribute("years", years);
-        model.addAttribute("result", CalculatorMath.cagr(startValue, endValue, years));
+        try {
+            check(positive(startValue, "Start value"),
+                    nonNegative(endValue, "End value"),
+                    positive(years, "Years"));
+            model.addAttribute("result", CalculatorMath.cagr(startValue, endValue, years));
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
         return "calculators/cagr";
     }
 }

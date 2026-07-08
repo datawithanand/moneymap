@@ -1,6 +1,7 @@
 package com.moneymap.web;
 
 import com.moneymap.calculator.CalculatorMath;
+import com.moneymap.calculator.CalculatorValidation.ValidationException;
 import com.moneymap.model.User;
 import com.moneymap.model.asset.NpsAccount;
 import com.moneymap.model.asset.PpfAccount;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 import java.util.List;
+
+import static com.moneymap.calculator.CalculatorValidation.*;
 
 /** SWP, NPS projector, FD (forward + reverse), PPF projector — pure projections, nothing persisted. */
 @Controller
@@ -44,7 +47,14 @@ public class FixedIncomeCalculatorController {
         model.addAttribute("corpus", corpus);
         model.addAttribute("monthlyWithdrawal", monthlyWithdrawal);
         model.addAttribute("annualReturnPercent", annualReturnPercent);
-        model.addAttribute("result", CalculatorMath.swp(corpus, monthlyWithdrawal, annualReturnPercent));
+        try {
+            check(nonNegative(corpus, "Starting corpus"),
+                    nonNegative(monthlyWithdrawal, "Monthly withdrawal"),
+                    nonNegative(annualReturnPercent, "Expected annual return %"));
+            model.addAttribute("result", CalculatorMath.swp(corpus, monthlyWithdrawal, annualReturnPercent));
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
         return "calculators/swp";
     }
 
@@ -74,8 +84,17 @@ public class FixedIncomeCalculatorController {
         model.addAttribute("annualReturnPercent", annualReturnPercent);
         model.addAttribute("yearsToRetirement", yearsToRetirement);
         model.addAttribute("mandatoryAnnuityPercent", mandatoryAnnuityPercent);
-        model.addAttribute("result", CalculatorMath.nps(currentCorpus, monthlyContribution, annualReturnPercent,
-                yearsToRetirement, mandatoryAnnuityPercent));
+        try {
+            check(nonNegative(currentCorpus, "Current NPS corpus"),
+                    nonNegative(monthlyContribution, "Monthly contribution"),
+                    nonNegative(annualReturnPercent, "Expected annual return %"),
+                    range(yearsToRetirement, 1, 100, "Years to retirement"),
+                    percentRange(mandatoryAnnuityPercent, "Mandatory annuity %"));
+            model.addAttribute("result", CalculatorMath.nps(currentCorpus, monthlyContribution, annualReturnPercent,
+                    yearsToRetirement, mandatoryAnnuityPercent));
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
         return "calculators/nps";
     }
 
@@ -98,10 +117,19 @@ public class FixedIncomeCalculatorController {
         model.addAttribute("targetMaturityValue", targetMaturityValue);
         model.addAttribute("annualRatePercent", annualRatePercent);
         model.addAttribute("years", years);
-        if ("REVERSE".equals(mode)) {
-            model.addAttribute("reverseResult", CalculatorMath.fdReverse(targetMaturityValue, annualRatePercent, years));
-        } else {
-            model.addAttribute("forwardResult", CalculatorMath.fdForward(principal, annualRatePercent, years));
+        try {
+            check(nonNegative(annualRatePercent, "Annual interest rate %"),
+                    positive(years, "Tenure (years)"),
+                    years == null || years.compareTo(BigDecimal.valueOf(100)) <= 0 ? null : "Tenure (years) must be at most 100.");
+            if ("REVERSE".equals(mode)) {
+                check(positive(targetMaturityValue, "Target maturity value"));
+                model.addAttribute("reverseResult", CalculatorMath.fdReverse(targetMaturityValue, annualRatePercent, years));
+            } else {
+                check(positive(principal, "Principal"));
+                model.addAttribute("forwardResult", CalculatorMath.fdForward(principal, annualRatePercent, years));
+            }
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
         }
         return "calculators/fd";
     }
@@ -132,7 +160,17 @@ public class FixedIncomeCalculatorController {
         model.addAttribute("annualContribution", annualContribution);
         model.addAttribute("annualRatePercent", annualRatePercent);
         model.addAttribute("years", years);
-        model.addAttribute("result", CalculatorMath.ppf(openingBalance, annualContribution, annualRatePercent, years));
+        try {
+            check(nonNegative(openingBalance, "Opening balance"),
+                    positive(annualContribution, "Annual contribution"),
+                    annualContribution == null || annualContribution.compareTo(BigDecimal.valueOf(150000)) <= 0
+                            ? null : "Annual contribution cannot exceed the statutory PPF limit of Rs 1,50,000.",
+                    nonNegative(annualRatePercent, "Annual interest rate %"),
+                    range(years, 1, 50, "Tenure (years)"));
+            model.addAttribute("result", CalculatorMath.ppf(openingBalance, annualContribution, annualRatePercent, years));
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
         return "calculators/ppf";
     }
 }

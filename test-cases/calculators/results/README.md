@@ -1,12 +1,17 @@
 # Calculators — Test Execution Results
 
-`automated-run-2026-07-08.csv` is a **real execution log** against the running app (built jar,
-registered/onboarded a test user, drove authenticated HTTP requests with CSRF tokens exactly like
-a browser), not a simulation. Manual test cases per calculator (positive, negative, boundary,
+`automated-run-2026-07-08.csv` is the **pre-fix** real execution log against the running app (built
+jar, registered/onboarded a test user, drove authenticated HTTP requests with CSRF tokens exactly
+like a browser), not a simulation. Manual test cases per calculator (positive, negative, boundary,
 security/hacker, and end-user scenarios) live in the sibling `test-cases/calculators/*.csv` files;
 this run automated the highest-risk subset of those (crash risks, missing validation, CSRF).
 
-36 checks ran: **12 confirmed bugs**, 24 passed.
+36 checks ran pre-fix: **12 confirmed bugs**, 24 passed.
+
+`automated-run-2026-07-08-postfix.csv` is the **post-fix** re-run: all 12 bug scenarios now return
+a clean HTTP 200 with a specific validation message instead of a 500/crash/silent-wrong-answer, and
+all 9 reference-value happy-path calculations were re-verified with no regressions. See "Fixes
+applied" below.
 
 ## Confirmed bugs
 
@@ -49,6 +54,27 @@ error:
 ### 4. NPS lump-sum can go negative
 `NPS-003` — `mandatoryAnnuityPercent=150` is accepted (should be capped at 100), producing
 `lumpSumWithdrawal = -₹27,14,068.74` — a nonsensical negative result silently displayed to the user.
+
+## Fixes applied
+
+- **`CalculatorMath.money()`** now checks `Double.isFinite(v)` and throws a clear
+  `CalculatorValidation.ValidationException` instead of letting `BigDecimal.valueOf()` crash with
+  an unhandled `NumberFormatException` on `Infinity`/`NaN`.
+- **`CalculatorMath.fdForward`/`fdReverse`** now null-check their required argument and throw a
+  clear validation exception instead of an unhandled `NullPointerException`.
+- **New `CalculatorValidation` helper** (`positive`, `nonNegative`, `percentRange`, `range`,
+  `check`) is used in all three calculator controllers to reject invalid input *before* it reaches
+  the math — negative amounts/rates, zero/negative SWR, zero-or-negative years, out-of-range
+  percentages, and the PPF statutory contribution cap (₹1,50,000) are now all rejected with a
+  specific message shown on the same page (new `${error}` block added to every calculator
+  template, matching the pattern already used on `tax-regime.html`).
+- **Range caps double as DoS/overflow guards**: SIP tenure capped to 1–100 years, Loan/EMI tenure
+  capped to 1–600 months, PPF tenure capped to 1–50 years, NPS horizon capped to 1–100 years — the
+  same caps that reject nonsensical input also prevent the `double`-overflow-to-`Infinity` crash
+  that extreme (but technically valid) values like `years=2,000,000` triggered.
+- **NPS mandatory annuity %** is now validated to the `[0, 100]` range, which also eliminates the
+  negative lump-sum-withdrawal bug (no separate clamp needed — the invalid input is rejected
+  outright with a message).
 
 ## Confirmed correct (no action needed)
 
