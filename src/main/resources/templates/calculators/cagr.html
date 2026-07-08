@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('CAGR Calculator')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-cagr')}"></nav>
+    <main class="content">
+        <h1>CAGR Calculator</h1>
+        <p class="hint">Compound Annual Growth Rate between a start and end value over a number
+            of years.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/cagr}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="startValue">Start Value</label>
+                <input type="number" step="any" min="0.01" id="startValue" name="startValue"
+                       th:value="${startValue}" required>
+
+                <label for="endValue">End Value</label>
+                <input type="number" step="any" min="0" id="endValue" name="endValue"
+                       th:value="${endValue}" required>
+
+                <label for="years">Years</label>
+                <input type="number" step="any" min="0.01" id="years" name="years" th:value="${years}" required>
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result</h2>
+            <p class="figure" th:text="${result.cagrPercent()} + '%'"></p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

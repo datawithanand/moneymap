@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('SIP Calculator')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-sip')}"></nav>
+    <main class="content">
+        <h1>SIP Calculator</h1>
+        <p class="hint">Project a monthly SIP's future value, with an optional yearly step-up and
+            an inflation-adjusted view.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/sip}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="monthlyAmount">Monthly SIP Amount</label>
+                <input type="number" step="any" min="0" id="monthlyAmount" name="monthlyAmount"
+                       th:value="${monthlyAmount}" required>
+
+                <label for="annualReturnPercent">Expected Annual Return %</label>
+                <input type="number" step="any" min="0" id="annualReturnPercent" name="annualReturnPercent"
+                       th:value="${annualReturnPercent}" required>
+
+                <label for="years">Tenure (years)</label>
+                <input type="number" step="1" min="1" id="years" name="years" th:value="${years}" required>
+
+                <label for="stepUpPercent">Yearly Step-up % (optional)</label>
+                <input type="number" step="any" min="0" id="stepUpPercent" name="stepUpPercent"
+                       th:value="${stepUpPercent}">
+                <div class="hint">Leave blank or 0 for a flat SIP with no step-up.</div>
+
+                <p><label style="display:inline;font-weight:600">
+                    <input type="checkbox" id="inflationAdjust" name="inflationAdjust" value="true"
+                           th:checked="${inflationAdjust == true}">
+                    <span>Show inflation-adjusted value</span>
+                </label></p>
+
+                <label for="inflationPercent">Expected Annual Inflation %</label>
+                <input type="number" step="any" min="0" id="inflationPercent" name="inflationPercent"
+                       th:value="${inflationPercent}">
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result</h2>
+            <table class="data">
+                <tbody>
+                <tr><td>Total invested</td><td class="mono" th:text="${fmt.money(result.totalInvested(), currentUser)}"></td></tr>
+                <tr><td>Future value (nominal)</td><td class="mono" th:text="${fmt.money(result.futureValueNominal(), currentUser)}"></td></tr>
+                <tr th:if="${result.futureValueInflationAdjusted() != null}">
+                    <td>Future value (inflation-adjusted, today's money)</td>
+                    <td class="mono" th:text="${fmt.money(result.futureValueInflationAdjusted(), currentUser)}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

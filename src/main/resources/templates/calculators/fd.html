@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Fixed Deposit Calculator')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-fd')}"></nav>
+    <main class="content">
+        <h1>Fixed Deposit Calculator</h1>
+        <p class="hint">Solve forward (principal → maturity value) or in reverse (target maturity
+            → required principal), with quarterly compounding.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/fd}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="mode">Mode</label>
+                <select id="mode" name="mode" onchange="this.form.submit()">
+                    <option value="FORWARD" th:selected="${mode == null or mode == 'FORWARD'}">Principal → Maturity Value</option>
+                    <option value="REVERSE" th:selected="${mode == 'REVERSE'}">Target Maturity Value → Required Principal</option>
+                </select>
+
+                <th:block th:if="${mode == null or mode == 'FORWARD'}">
+                    <label for="principal">Principal</label>
+                    <input type="number" step="any" min="0" id="principal" name="principal"
+                           th:value="${principal}" required>
+                </th:block>
+                <th:block th:if="${mode == 'REVERSE'}">
+                    <label for="targetMaturityValue">Target Maturity Value</label>
+                    <input type="number" step="any" min="0" id="targetMaturityValue" name="targetMaturityValue"
+                           th:value="${targetMaturityValue}" required>
+                </th:block>
+
+                <label for="annualRatePercent">Annual Interest Rate %</label>
+                <input type="number" step="any" min="0" id="annualRatePercent" name="annualRatePercent"
+                       th:value="${annualRatePercent}" required>
+
+                <label for="years">Tenure (years)</label>
+                <input type="number" step="any" min="0.01" id="years" name="years" th:value="${years}" required>
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${forwardResult != null}">
+            <h2>Result</h2>
+            <table class="data">
+                <tbody>
+                <tr><td>Maturity value</td><td class="mono" th:text="${fmt.money(forwardResult.maturityValue(), currentUser)}"></td></tr>
+                <tr><td>Total interest earned</td><td class="mono" th:text="${fmt.money(forwardResult.totalInterest(), currentUser)}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card" th:if="${reverseResult != null}">
+            <h2>Result</h2>
+            <table class="data">
+                <tbody>
+                <tr><td>Required principal</td><td class="mono" th:text="${fmt.money(reverseResult.requiredPrincipal(), currentUser)}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

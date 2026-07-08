@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('NPS Projector')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-nps')}"></nav>
+    <main class="content">
+        <h1>NPS Projector</h1>
+        <p class="hint">Projects your NPS corpus at retirement and the mandatory annuity /
+            lump-sum split. Not a substitute for your fund manager's official projection.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/nps}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="currentCorpus">Current NPS Corpus</label>
+                <input type="number" step="any" min="0" id="currentCorpus" name="currentCorpus"
+                       th:value="${currentCorpus}" required>
+                <div class="hint" th:if="${npsAccountCount != null and npsAccountCount > 0}"
+                     th:text="'Pre-filled from ' + ${npsAccountCount} + ' NPS account(s) on file — adjust as needed.'"></div>
+
+                <label for="monthlyContribution">Monthly Contribution</label>
+                <input type="number" step="any" min="0" id="monthlyContribution" name="monthlyContribution"
+                       th:value="${monthlyContribution}" required>
+
+                <label for="annualReturnPercent">Expected Annual Return %</label>
+                <input type="number" step="any" min="0" id="annualReturnPercent" name="annualReturnPercent"
+                       th:value="${annualReturnPercent}" required>
+
+                <label for="yearsToRetirement">Years to Retirement</label>
+                <input type="number" step="1" min="1" id="yearsToRetirement" name="yearsToRetirement"
+                       th:value="${yearsToRetirement}" required>
+
+                <label for="mandatoryAnnuityPercent">Mandatory Annuity %</label>
+                <input type="number" step="any" min="0" max="100" id="mandatoryAnnuityPercent" name="mandatoryAnnuityPercent"
+                       th:value="${mandatoryAnnuityPercent} ?: 40" required>
+                <div class="hint">40% is the current regulatory minimum annuitization on retirement.</div>
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result</h2>
+            <table class="data">
+                <tbody>
+                <tr><td>Projected corpus at retirement</td><td class="mono" th:text="${fmt.money(result.projectedCorpus(), currentUser)}"></td></tr>
+                <tr><td>Mandatory annuity corpus</td><td class="mono" th:text="${fmt.money(result.annuityCorpus(), currentUser)}"></td></tr>
+                <tr><td>Lump-sum withdrawal</td><td class="mono" th:text="${fmt.money(result.lumpSumWithdrawal(), currentUser)}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

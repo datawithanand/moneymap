@@ -39,6 +39,18 @@
     <a class="nav nav-sub" th:classappend="${active == 'tax'} ? 'active'" th:href="@{/dashboard/tax}">Tax Planning</a>
     <a class="nav nav-sub" th:classappend="${active == 'export'} ? 'active'" th:href="@{/export}">Export / Import</a>
 
+    <div class="nav-group">Calculators</div>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-index'} ? 'active'" th:href="@{/calculators}">All Calculators</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-fire'} ? 'active'" th:href="@{/calculators/fire}">FIRE</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-sip'} ? 'active'" th:href="@{/calculators/sip}">SIP</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-swp'} ? 'active'" th:href="@{/calculators/swp}">SWP</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-nps'} ? 'active'" th:href="@{/calculators/nps}">NPS Projector</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-fd'} ? 'active'" th:href="@{/calculators/fd}">FD</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-loan'} ? 'active'" th:href="@{/calculators/loan}">Loan / EMI</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-ppf'} ? 'active'" th:href="@{/calculators/ppf}">PPF Projector</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-tax'} ? 'active'" th:href="@{/calculators/tax-regime}">Tax Regime Compare</a>
+    <a class="nav nav-sub" th:classappend="${active == 'calc-cagr'} ? 'active'" th:href="@{/calculators/cagr}">CAGR</a>
+
     <a class="nav" th:classappend="${active == 'settings'} ? 'active'" th:href="@{/settings}">Settings</a>
     <th:block th:if="${currentUser != null and currentUser.role.name() == 'ADMIN'}">
         <div class="nav-group">Administration</div>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tax Regime Comparison')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-tax')}"></nav>
+    <main class="content">
+        <h1>Tax Regime Comparison</h1>
+        <p class="hint">Compares Old vs. New regime tax on your income for a financial year.
+            Informational only — consult a tax professional for filing.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/tax-regime}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="financialYear">Financial Year</label>
+                <input type="text" id="financialYear" name="financialYear"
+                       th:value="${financialYear} ?: '2025-26'" required>
+
+                <label for="grossIncome">Gross Annual Income</label>
+                <input type="number" step="any" min="0" id="grossIncome" name="grossIncome"
+                       th:value="${grossIncome}" required>
+
+                <label for="oldRegimeDeductions">Old-Regime Deductions (80C, 80D, HRA, etc.)</label>
+                <input type="number" step="any" min="0" id="oldRegimeDeductions" name="oldRegimeDeductions"
+                       th:value="${oldRegimeDeductions}">
+                <div class="hint">Total of all deductions you'd claim under the Old regime (in addition
+                    to the standard deduction, which is applied automatically).</div>
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${error != null}">
+            <p class="field-error" th:text="${error}"></p>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result</h2>
+            <table class="data">
+                <tbody>
+                <tr><td>Tax under Old regime</td><td class="mono" th:text="${fmt.money(result.taxOld(), currentUser)}"></td></tr>
+                <tr><td>Tax under New regime</td><td class="mono" th:text="${fmt.money(result.taxNew(), currentUser)}"></td></tr>
+                <tr><th>Better regime for you</th><th th:text="${result.betterRegime()}"></th></tr>
+                <tr><td>Savings by choosing the better regime</td><td class="mono" th:text="${fmt.money(result.savings(), currentUser)}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>
