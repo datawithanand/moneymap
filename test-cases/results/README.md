@@ -1,10 +1,14 @@
 # Automated Test Execution Results
 
-`automated-run-2026-07-08.csv` is a **real execution log**, not a manual test case list. It was
-produced by building `moneymap.jar`, running it locally against a fresh JSON data directory, and
-driving the actual HTTP endpoints (registration → onboarding wizard → login → CSRF-protected
-`/assets/{module}/save` form submissions) with a Python `requests` script — the same flow a
-browser would use.
+`automated-run-2026-07-08.csv` and `automated-run-2026-07-08-postfix.csv` are **real execution
+logs**, not manual test case lists. They were produced by building `moneymap.jar`, running it
+locally against a fresh JSON data directory, and driving the actual HTTP endpoints (registration →
+onboarding wizard → login → CSRF-protected `/assets/{module}/save` form submissions) with a Python
+`requests` script — the same flow a browser would use.
+
+`automated-run-2026-07-08.csv` is the **pre-fix** run (147/149 passed, 2 real defects found).
+`automated-run-2026-07-08-postfix.csv` is the **post-fix** re-run against the same script after
+patching `RecordBinder.java` (149/149 passed — see "Defects found" below, now fixed).
 
 For each of the 22 generic-CRUD modules (all modules except `pf`, `flexi-rds`, `salary`, which use
 bespoke controllers/forms and were not driven by this script), the run executed:
@@ -19,17 +23,18 @@ bespoke controllers/forms and were not driven by this script), the run executed:
 149 checks ran; 147 passed, 2 failed (both genuine defects — see below). Results are columns:
 `Module, TC_ID, Category, Description, Result, Detail`.
 
-## Defects found
+## Defects found (FIXED)
 
-1. **`recurring-deposits` NEG-002** — `tenureMonths` accepts a negative value (e.g. `-5`) without
-   error. Root cause: `RecordBinder.bind()` only rejects negative values for `BigDecimal`-typed
-   fields (`bd.signum() < 0`); `tenureMonths` is an `Integer`, so the negativity check never runs.
-2. **`bonds` NEG-002` — same root cause: `unitsHeld` is `Integer`, so a negative units count is
+1. **`recurring-deposits` NEG-002** — `tenureMonths` accepted a negative value (e.g. `-5`) without
+   error. Root cause: `RecordBinder.bind()` only rejected negative values for `BigDecimal`-typed
+   fields (`bd.signum() < 0`); `tenureMonths` is an `Integer`, so the negativity check never ran.
+2. **`bonds` NEG-002** — same root cause: `unitsHeld` is `Integer`, so a negative units count was
    silently accepted.
 
-**Fix recommendation:** extend the negativity check in
-`src/main/java/com/moneymap/module/RecordBinder.java` to also cover `Integer`/`int` values, not
-just `BigDecimal`.
+**Fix applied:** `src/main/java/com/moneymap/module/RecordBinder.java` now also rejects negative
+`Integer` values (`value instanceof Integer i && i < 0`), alongside the existing `BigDecimal`
+check. Verified by re-running the full script post-fix: 149/149 checks passed
+(`automated-run-2026-07-08-postfix.csv`).
 
 ## Not covered by this automated run
 
