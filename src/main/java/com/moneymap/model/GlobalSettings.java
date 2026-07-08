@@ -24,6 +24,8 @@ public class GlobalSettings {
     private User.CurrencyPreference defaultCurrency = User.CurrencyPreference.INR;
     private User.Theme defaultTheme = User.Theme.GREEN;
     private Instant lastBackupMarkedAt;
+    private Instant fundMasterLastSyncedAt;
+    private Integer fundMasterSchemeCount;
     private Instant updatedAt;
 
     public String getInstanceName() { return instanceName; }
@@ -54,6 +56,10 @@ public class GlobalSettings {
     public void setDefaultTheme(User.Theme defaultTheme) { this.defaultTheme = defaultTheme; }
     public Instant getLastBackupMarkedAt() { return lastBackupMarkedAt; }
     public void setLastBackupMarkedAt(Instant lastBackupMarkedAt) { this.lastBackupMarkedAt = lastBackupMarkedAt; }
+    public Instant getFundMasterLastSyncedAt() { return fundMasterLastSyncedAt; }
+    public void setFundMasterLastSyncedAt(Instant fundMasterLastSyncedAt) { this.fundMasterLastSyncedAt = fundMasterLastSyncedAt; }
+    public Integer getFundMasterSchemeCount() { return fundMasterSchemeCount; }
+    public void setFundMasterSchemeCount(Integer fundMasterSchemeCount) { this.fundMasterSchemeCount = fundMasterSchemeCount; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

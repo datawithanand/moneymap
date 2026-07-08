@@ -21,6 +21,13 @@
         </div>
 
         <div class="card">
+            <h2>Import from CAS Statement</h2>
+            <p>Bulk-import your mutual fund holdings from your CAMS/KFintech Consolidated Account
+                Statement (CAS) PDF — review every detected holding before it's saved.</p>
+            <p><a class="btn btn-secondary" th:href="@{/import/cas}">Import CAS Statement</a></p>
+        </div>
+
+        <div class="card">
             <h2>Import (JSON)</h2>
             <form th:action="@{/import/json}" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="_csrf" th:value="${csrf}">

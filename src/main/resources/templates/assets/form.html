@@ -13,6 +13,22 @@
                 <input type="hidden" name="_csrf" th:value="${csrf}">
                 <input type="hidden" name="id" th:value="${recordId}">
 
+                <div th:if="${module.path == 'mutual-funds'}" class="card" style="background:var(--surface-alt);margin-bottom:18px">
+                    <label for="fundPickerCategory">Find a fund (optional — auto-fills the fields below)</label>
+                    <select id="fundPickerCategory">
+                        <option value="">All categories</option>
+                        <option value="EQUITY">Equity</option>
+                        <option value="DEBT">Debt</option>
+                        <option value="HYBRID">Hybrid</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                    <input type="text" id="fundPickerSearch" placeholder="Search fund name..." autocomplete="off">
+                    <div class="hint">Pulled from the cached fund list — ask an administrator to run
+                        "Fetch latest list" under Admin &gt; Fund Master List if a fund isn't showing up.</div>
+                    <ul id="fundPickerResults" style="list-style:none;padding:0;margin:6px 0 0;max-height:220px;overflow-y:auto"></ul>
+                    <input type="hidden" id="schemeCode" name="schemeCode" th:value="${values['schemeCode']}">
+                </div>
+
                 <th:block th:each="f : ${module.fields}">
                     <div th:attr="data-visible-if=${f.visibleIf}">
                         <th:block th:if="${f.type == 'checkbox'}">
@@ -92,6 +108,53 @@ function applyVisibility() {
 }
 document.addEventListener('change', applyVisibility);
 applyVisibility();
+</script>
+
+<script th:if="${module.path == 'mutual-funds'}">
+(function () {
+    var searchBox = document.getElementById('fundPickerSearch');
+    var categorySelect = document.getElementById('fundPickerCategory');
+    var resultsList = document.getElementById('fundPickerResults');
+    var debounceTimer;
+
+    function runSearch() {
+        var q = searchBox.value.trim();
+        if (q.length < 2) { resultsList.innerHTML = ''; return; }
+        var url = '/assets/mutual-funds/fund-search?q=' + encodeURIComponent(q)
+                + '&category=' + encodeURIComponent(categorySelect.value);
+        fetch(url).then(function (r) { return r.json(); }).then(function (items) {
+            resultsList.innerHTML = '';
+            items.forEach(function (item) {
+                var li = document.createElement('li');
+                li.style.cursor = 'pointer';
+                li.style.padding = '4px 0';
+                li.textContent = item.schemeName + (item.fundHouse ? ' — ' + item.fundHouse : '');
+                li.addEventListener('click', function () { selectFund(item.schemeCode); });
+                resultsList.appendChild(li);
+            });
+        });
+    }
+
+    function selectFund(schemeCode) {
+        fetch('/assets/mutual-funds/fund-detail/' + schemeCode).then(function (r) { return r.json(); })
+            .then(function (detail) {
+                if (detail.error) { alert(detail.error); return; }
+                document.getElementById('schemeCode').value = detail.schemeCode;
+                document.getElementById('fundName').value = detail.schemeName;
+                if (detail.fundHouse) document.getElementById('amcName').value = detail.fundHouse;
+                if (detail.latestNav) document.getElementById('currentNavPerUnit').value = detail.latestNav;
+                if (detail.navAsOfDate) document.getElementById('navAsOfDate').value = detail.navAsOfDate;
+                resultsList.innerHTML = '';
+                searchBox.value = detail.schemeName;
+            });
+    }
+
+    searchBox.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runSearch, 300);
+    });
+    categorySelect.addEventListener('change', runSearch);
+})();
 </script>
 </body>
 </html>

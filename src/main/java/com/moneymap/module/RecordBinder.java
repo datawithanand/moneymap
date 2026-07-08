@@ -13,7 +13,8 @@ import java.util.Map;
 public final class RecordBinder {
 
     private static final List<String> COMMON =
-            List.of("familyMemberTag", "nominee", "customerCareNumber", "customerCareEmail", "portalUrl", "branchAddress");
+            List.of("familyMemberTag", "nominee", "customerCareNumber", "customerCareEmail", "portalUrl", "branchAddress",
+                    "schemeCode");
 
     private RecordBinder() {}
 
