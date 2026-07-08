@@ -47,6 +47,10 @@ public final class RecordBinder {
                     errors.put(f.name(), f.label() + " cannot be negative.");
                     continue;
                 }
+                if (value instanceof Integer i && i < 0) {
+                    errors.put(f.name(), f.label() + " cannot be negative.");
+                    continue;
+                }
                 bw.setPropertyValue(f.name(), value);
             } catch (Exception e) {
                 errors.put(f.name(), "Invalid value for " + f.label() + ".");

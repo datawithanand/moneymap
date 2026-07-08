@@ -1,0 +1,150 @@
+Module,TC_ID,Category,Description,Result,Detail
+savings-accounts,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+savings-accounts,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+savings-accounts,NEG-001,Negative,Missing required field 'bankName',PASS,"HTTP 200, error shown=True"
+savings-accounts,NEG-002,Negative,Negative value in 'currentBalance',PASS,"HTTP 200, error shown=True"
+savings-accounts,NEG-003,Negative,Invalid enum value in 'accountType',PASS,"HTTP 200, error shown=True"
+savings-accounts,SEC-001,Security,XSS payload in 'bankName',PASS,"HTTP 302, saved & escaped_in_list=True"
+savings-accounts,SEC-002,Security,SQLi-style payload in 'bankName',PASS,HTTP 302
+cash-in-hand,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+cash-in-hand,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+cash-in-hand,NEG-001,Negative,Missing required field 'label',PASS,"HTTP 200, error shown=True"
+cash-in-hand,NEG-002,Negative,Negative value in 'amount',PASS,"HTTP 200, error shown=True"
+cash-in-hand,SEC-001,Security,XSS payload in 'label',PASS,"HTTP 302, saved & escaped_in_list=True"
+cash-in-hand,SEC-002,Security,SQLi-style payload in 'label',PASS,HTTP 302
+fixed-deposits,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+fixed-deposits,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+fixed-deposits,NEG-001,Negative,Missing required field 'maturityDate',PASS,"HTTP 200, error shown=True"
+fixed-deposits,NEG-002,Negative,Negative value in 'principalAmount',PASS,"HTTP 200, error shown=True"
+fixed-deposits,NEG-003,Negative,Invalid enum value in 'payoutType',PASS,"HTTP 200, error shown=True"
+fixed-deposits,SEC-001,Security,XSS payload in 'bankName',PASS,"HTTP 302, saved & escaped_in_list=True"
+fixed-deposits,SEC-002,Security,SQLi-style payload in 'bankName',PASS,HTTP 302
+recurring-deposits,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+recurring-deposits,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+recurring-deposits,NEG-001,Negative,Missing required field 'monthlyInstallmentAmount',PASS,"HTTP 200, error shown=True"
+recurring-deposits,NEG-002,Negative,Negative value in 'tenureMonths',PASS,"HTTP 200, error shown=True"
+recurring-deposits,SEC-001,Security,XSS payload in 'bankName',PASS,"HTTP 302, saved & escaped_in_list=True"
+recurring-deposits,SEC-002,Security,SQLi-style payload in 'bankName',PASS,HTTP 302
+ppf,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+ppf,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+ppf,NEG-001,Negative,Missing required field 'accountNumber',PASS,"HTTP 200, error shown=True"
+ppf,NEG-002,Negative,Negative value in 'currentBalance',PASS,"HTTP 200, error shown=True"
+ppf,SEC-001,Security,XSS payload in 'bankOrPostOffice',PASS,"HTTP 302, saved & escaped_in_list=True"
+ppf,SEC-002,Security,SQLi-style payload in 'bankOrPostOffice',PASS,HTTP 302
+nps,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+nps,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+nps,NEG-001,Negative,Missing required field 'pran',PASS,"HTTP 200, error shown=True"
+nps,NEG-002,Negative,Negative value in 'currentCorpus',PASS,"HTTP 200, error shown=True"
+nps,NEG-003,Negative,Invalid enum value in 'tier',PASS,"HTTP 200, error shown=True"
+nps,SEC-001,Security,XSS payload in 'pensionFundManager',PASS,"HTTP 302, saved & escaped_in_list=True"
+nps,SEC-002,Security,SQLi-style payload in 'pensionFundManager',PASS,HTTP 302
+gratuity,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+gratuity,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+gratuity,NEG-001,Negative,Missing required field 'employerName',PASS,"HTTP 200, error shown=True"
+gratuity,NEG-002,Negative,Negative value in 'expectedGratuityAmount',PASS,"HTTP 200, error shown=True"
+gratuity,SEC-001,Security,XSS payload in 'employerName',PASS,"HTTP 302, saved & escaped_in_list=True"
+gratuity,SEC-002,Security,SQLi-style payload in 'employerName',PASS,HTTP 302
+government-schemes,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+government-schemes,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+government-schemes,NEG-001,Negative,Missing required field 'accountNumber',PASS,"HTTP 200, error shown=True"
+government-schemes,NEG-002,Negative,Negative value in 'currentBalance',PASS,"HTTP 200, error shown=True"
+government-schemes,NEG-003,Negative,Invalid enum value in 'schemeType',PASS,"HTTP 200, error shown=True"
+government-schemes,SEC-001,Security,XSS payload in 'bankOrPostOffice',PASS,"HTTP 302, saved & escaped_in_list=True"
+government-schemes,SEC-002,Security,SQLi-style payload in 'bankOrPostOffice',PASS,HTTP 302
+mutual-funds,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+mutual-funds,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+mutual-funds,NEG-001,Negative,Missing required field 'folioNumber',PASS,"HTTP 200, error shown=True"
+mutual-funds,NEG-002,Negative,Negative value in 'unitsHeld',PASS,"HTTP 200, error shown=True"
+mutual-funds,NEG-003,Negative,Invalid enum value in 'category',PASS,"HTTP 200, error shown=True"
+mutual-funds,SEC-001,Security,XSS payload in 'fundName',PASS,"HTTP 302, saved & escaped_in_list=True"
+mutual-funds,SEC-002,Security,SQLi-style payload in 'fundName',PASS,HTTP 302
+stocks,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+stocks,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+stocks,NEG-001,Negative,Missing required field 'tickerSymbol',PASS,"HTTP 200, error shown=True"
+stocks,NEG-002,Negative,Negative value in 'quantity',PASS,"HTTP 200, error shown=True"
+stocks,NEG-003,Negative,Invalid enum value in 'exchange',PASS,"HTTP 200, error shown=True"
+stocks,SEC-001,Security,XSS payload in 'stockName',PASS,"HTTP 302, saved & escaped_in_list=True"
+stocks,SEC-002,Security,SQLi-style payload in 'stockName',PASS,HTTP 302
+bonds,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+bonds,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+bonds,NEG-001,Negative,Missing required field 'issuerName',PASS,"HTTP 200, error shown=True"
+bonds,NEG-002,Negative,Negative value in 'unitsHeld',PASS,"HTTP 200, error shown=True"
+bonds,NEG-003,Negative,Invalid enum value in 'bondType',PASS,"HTTP 200, error shown=True"
+bonds,SEC-001,Security,XSS payload in 'issuerName',PASS,"HTTP 302, saved & escaped_in_list=True"
+bonds,SEC-002,Security,SQLi-style payload in 'issuerName',PASS,HTTP 302
+crypto,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+crypto,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+crypto,NEG-001,Negative,Missing required field 'coinSymbol',PASS,"HTTP 200, error shown=True"
+crypto,NEG-002,Negative,Negative value in 'quantity',PASS,"HTTP 200, error shown=True"
+crypto,SEC-001,Security,XSS payload in 'coinName',PASS,"HTTP 302, saved & escaped_in_list=True"
+crypto,SEC-002,Security,SQLi-style payload in 'coinName',PASS,HTTP 302
+esops,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+esops,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+esops,NEG-001,Negative,Missing required field 'companyName',PASS,"HTTP 200, error shown=True"
+esops,NEG-002,Negative,Negative value in 'totalUnitsGranted',PASS,"HTTP 200, error shown=True"
+esops,NEG-003,Negative,Invalid enum value in 'grantType',PASS,"HTTP 200, error shown=True"
+esops,SEC-001,Security,XSS payload in 'companyName',PASS,"HTTP 302, saved & escaped_in_list=True"
+esops,SEC-002,Security,SQLi-style payload in 'companyName',PASS,HTTP 302
+lic-policies,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+lic-policies,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+lic-policies,NEG-001,Negative,Missing required field 'policyNumber',PASS,"HTTP 200, error shown=True"
+lic-policies,NEG-002,Negative,Negative value in 'sumAssured',PASS,"HTTP 200, error shown=True"
+lic-policies,NEG-003,Negative,Invalid enum value in 'policyType',PASS,"HTTP 200, error shown=True"
+lic-policies,SEC-001,Security,XSS payload in 'insurerName',PASS,"HTTP 302, saved & escaped_in_list=True"
+lic-policies,SEC-002,Security,SQLi-style payload in 'insurerName',PASS,HTTP 302
+term-insurance,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+term-insurance,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+term-insurance,NEG-001,Negative,Missing required field 'policyNumber',PASS,"HTTP 200, error shown=True"
+term-insurance,NEG-002,Negative,Negative value in 'sumAssured',PASS,"HTTP 200, error shown=True"
+term-insurance,NEG-003,Negative,Invalid enum value in 'premiumFrequency',PASS,"HTTP 200, error shown=True"
+term-insurance,SEC-001,Security,XSS payload in 'insurerName',PASS,"HTTP 302, saved & escaped_in_list=True"
+term-insurance,SEC-002,Security,SQLi-style payload in 'insurerName',PASS,HTTP 302
+health-insurance,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+health-insurance,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+health-insurance,NEG-001,Negative,Missing required field 'policyNumber',PASS,"HTTP 200, error shown=True"
+health-insurance,NEG-002,Negative,Negative value in 'sumInsured',PASS,"HTTP 200, error shown=True"
+health-insurance,NEG-003,Negative,Invalid enum value in 'policyType',PASS,"HTTP 200, error shown=True"
+health-insurance,SEC-001,Security,XSS payload in 'insurerName',PASS,"HTTP 302, saved & escaped_in_list=True"
+health-insurance,SEC-002,Security,SQLi-style payload in 'insurerName',PASS,HTTP 302
+loans,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+loans,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+loans,NEG-001,Negative,Missing required field 'lenderName',PASS,"HTTP 200, error shown=True"
+loans,NEG-002,Negative,Negative value in 'outstandingBalance',PASS,"HTTP 200, error shown=True"
+loans,NEG-003,Negative,Invalid enum value in 'loanType',PASS,"HTTP 200, error shown=True"
+loans,SEC-001,Security,XSS payload in 'lenderName',PASS,"HTTP 302, saved & escaped_in_list=True"
+loans,SEC-002,Security,SQLi-style payload in 'lenderName',PASS,HTTP 302
+real-estate,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+real-estate,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+real-estate,NEG-001,Negative,Missing required field 'city',PASS,"HTTP 200, error shown=True"
+real-estate,NEG-002,Negative,Negative value in 'purchaseValue',PASS,"HTTP 200, error shown=True"
+real-estate,NEG-003,Negative,Invalid enum value in 'propertyType',PASS,"HTTP 200, error shown=True"
+real-estate,SEC-001,Security,XSS payload in 'city',PASS,"HTTP 302, saved & escaped_in_list=True"
+real-estate,SEC-002,Security,SQLi-style payload in 'city',PASS,HTTP 302
+gold,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+gold,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+gold,NEG-001,Negative,Missing required field 'label',PASS,"HTTP 200, error shown=True"
+gold,NEG-002,Negative,Negative value in 'weightGrams',PASS,"HTTP 200, error shown=True"
+gold,NEG-003,Negative,Invalid enum value in 'goldType',PASS,"HTTP 200, error shown=True"
+gold,SEC-001,Security,XSS payload in 'label',PASS,"HTTP 302, saved & escaped_in_list=True"
+gold,SEC-002,Security,SQLi-style payload in 'label',PASS,HTTP 302
+physical-assets,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+physical-assets,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+physical-assets,NEG-001,Negative,Missing required field 'assetName',PASS,"HTTP 200, error shown=True"
+physical-assets,NEG-002,Negative,Negative value in 'purchaseValue',PASS,"HTTP 200, error shown=True"
+physical-assets,NEG-003,Negative,Invalid enum value in 'assetType',PASS,"HTTP 200, error shown=True"
+physical-assets,SEC-001,Security,XSS payload in 'assetName',PASS,"HTTP 302, saved & escaped_in_list=True"
+physical-assets,SEC-002,Security,SQLi-style payload in 'assetName',PASS,HTTP 302
+goals,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+goals,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+goals,NEG-001,Negative,Missing required field 'goalName',PASS,"HTTP 200, error shown=True"
+goals,NEG-002,Negative,Negative value in 'targetAmountToday',PASS,"HTTP 200, error shown=True"
+goals,NEG-003,Negative,Invalid enum value in 'goalType',PASS,"HTTP 200, error shown=True"
+goals,SEC-001,Security,XSS payload in 'goalName',PASS,"HTTP 302, saved & escaped_in_list=True"
+goals,SEC-002,Security,SQLi-style payload in 'goalName',PASS,HTTP 302
+other-income,POS-001,Positive,Create valid record & verify in list,PASS,list contains marker=True
+other-income,POS-001-cleanup,Cleanup,Delete created record,PASS,HTTP 302
+other-income,NEG-001,Negative,Missing required field 'description',PASS,"HTTP 200, error shown=True"
+other-income,NEG-002,Negative,Negative value in 'amount',PASS,"HTTP 200, error shown=True"
+other-income,NEG-003,Negative,Invalid enum value in 'sourceType',PASS,"HTTP 200, error shown=True"
+other-income,SEC-001,Security,XSS payload in 'description',PASS,"HTTP 302, saved & escaped_in_list=True"
+other-income,SEC-002,Security,SQLi-style payload in 'description',PASS,HTTP 302
