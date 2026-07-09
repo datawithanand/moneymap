@@ -21,6 +21,9 @@
             <div class="card">
                 <h3>EMI / Income</h3>
                 <p class="figure" th:text="${emiToIncomePercent != null ? emiToIncomePercent + '%' : '—'}"></p>
+                <div class="bar-track" th:if="${emiBarPercent != null}"><div class="bar-fill"
+                        th:classappend="${highDebtBurden ? 'bar-danger' : ''}"
+                        th:style="'width:' + ${emiBarPercent} + '%'"></div></div>
                 <p class="hint" th:if="${emiToIncomePercent == null}">Add a salary profile to see this ratio.</p>
                 <p class="hint" th:if="${highDebtBurden}">
                     Above 40% is generally considered a high debt burden.</p>

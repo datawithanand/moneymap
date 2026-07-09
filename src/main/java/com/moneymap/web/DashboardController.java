@@ -443,6 +443,7 @@ public class DashboardController {
                 ? totalMonthlyEmi.multiply(BigDecimal.valueOf(100)).divide(monthlyIncome, 1, RoundingMode.HALF_UP)
                 : null;
         boolean highDebtBurden = emiToIncomePercent != null && emiToIncomePercent.compareTo(BigDecimal.valueOf(40)) > 0;
+        BigDecimal emiBarPercent = emiToIncomePercent != null ? emiToIncomePercent.min(BigDecimal.valueOf(100)) : null;
 
         List<Map<String, Object>> rows = new ArrayList<>();
         LocalDate today = LocalDate.now();
@@ -464,6 +465,7 @@ public class DashboardController {
         model.addAttribute("monthlyIncome", monthlyIncome);
         model.addAttribute("emiToIncomePercent", emiToIncomePercent);
         model.addAttribute("highDebtBurden", highDebtBurden);
+        model.addAttribute("emiBarPercent", emiBarPercent);
         return "dashboard/loans";
     }
 
