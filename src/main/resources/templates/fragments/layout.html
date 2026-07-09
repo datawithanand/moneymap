@@ -19,110 +19,183 @@
     </form>
 </div>
 
-<nav th:fragment="sidebar(active)" class="sidebar">
-    <div class="brand" th:text="${instanceSettings.instanceName}">MoneyMap</div>
-    <a class="nav" th:classappend="${active == 'dashboard'} ? 'active'" th:href="@{/dashboard}">Dashboard</a>
-    <a class="nav" th:classappend="${active == 'notifications'} ? 'active'" th:href="@{/notifications}">
-        Notifications <span th:if="${unreadNotifications > 0}" class="pill pill-pending"
-                            th:text="${unreadNotifications > 9 ? '9+' : unreadNotifications}"></span>
+<!-- Top navigation bar. Fragment name kept as "sidebar" so every existing page's
+     th:replace="~{fragments/layout :: sidebar('key')}" call keeps working unchanged. -->
+<nav th:fragment="sidebar(active)" class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" th:href="@{/dashboard}">
+        <span class="brand-mark">M</span>
+        <span th:text="${instanceSettings.instanceName}">MoneyMap</span>
     </a>
-    <a class="nav" th:classappend="${active == 'family'} ? 'active'" th:href="@{/family}">Family</a>
 
-    <div class="nav-group">Assets &amp; Liabilities</div>
-    <a class="nav nav-sub" th:each="m : ${assetModules}"
-       th:classappend="${active == 'assets-' + m.path} ? 'active'"
-       th:href="@{'/assets/' + ${m.path}}" th:text="${m.displayName}"></a>
+    <button type="button" class="topnav-toggle" onclick="document.getElementById('mainTopnav').classList.toggle('open')" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
 
-    <div class="nav-group">Analytics</div>
-    <a class="nav nav-sub" th:classappend="${active == 'trend'} ? 'active'" th:href="@{/dashboard/trend}">Net Worth Trend</a>
-    <a class="nav nav-sub" th:classappend="${active == 'allocation'} ? 'active'" th:href="@{/dashboard/allocation}">Portfolio Allocation</a>
-    <a class="nav nav-sub" th:classappend="${active == 'tax'} ? 'active'" th:href="@{/dashboard/tax}">Tax Planning</a>
-    <a class="nav nav-sub" th:classappend="${active == 'reminders'} ? 'active'" th:href="@{/dashboard/reminders}">Upcoming Reminders</a>
-    <a class="nav nav-sub" th:classappend="${active == 'loans-dashboard'} ? 'active'" th:href="@{/dashboard/loans}">Loan / Debt Overview</a>
-    <a class="nav nav-sub" th:classappend="${active == 'insurance-dashboard'} ? 'active'" th:href="@{/dashboard/insurance}">Insurance Coverage</a>
-    <a class="nav nav-sub" th:classappend="${active == 'goals-dashboard'} ? 'active'" th:href="@{/dashboard/goals}">Goals</a>
-    <a class="nav nav-sub" th:classappend="${active == 'retirement-dashboard'} ? 'active'" th:href="@{/dashboard/retirement}">Retirement Readiness</a>
-    <a class="nav nav-sub" th:classappend="${active == 'export'} ? 'active'" th:href="@{/export}">Export / Import</a>
+    <div class="topnav" id="mainTopnav">
+        <div class="topnav-item" th:classappend="${active == 'dashboard'} ? 'active'">
+            <a class="topnav-link" th:href="@{/dashboard}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                Dashboard
+            </a>
+        </div>
 
-    <div class="nav-group">Calculators</div>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-index'} ? 'active'" th:href="@{/calculators}">All Calculators</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-fire'} ? 'active'" th:href="@{/calculators/fire}">FIRE</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-sip'} ? 'active'" th:href="@{/calculators/sip}">SIP</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-swp'} ? 'active'" th:href="@{/calculators/swp}">SWP</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-nps'} ? 'active'" th:href="@{/calculators/nps}">NPS Projector</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-fd'} ? 'active'" th:href="@{/calculators/fd}">FD</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-loan'} ? 'active'" th:href="@{/calculators/loan}">Loan / EMI</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-ppf'} ? 'active'" th:href="@{/calculators/ppf}">PPF Projector</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-tax'} ? 'active'" th:href="@{/calculators/tax-regime}">Tax Regime Compare</a>
-    <a class="nav nav-sub" th:classappend="${active == 'calc-cagr'} ? 'active'" th:href="@{/calculators/cagr}">CAGR</a>
+        <div class="topnav-item" th:classappend="${#strings.startsWith(active, 'assets-')} ? 'active'"
+             onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
+            <button type="button" class="topnav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>
+                Assets &amp; Liabilities
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="topnav-dropdown">
+                <a th:each="m : ${assetModules}"
+                   th:classappend="${active == 'assets-' + m.path} ? 'active'"
+                   th:href="@{'/assets/' + ${m.path}}" th:text="${m.displayName}"></a>
+            </div>
+        </div>
 
-    <a class="nav" th:classappend="${active == 'settings'} ? 'active'" th:href="@{/settings}">Settings</a>
-    <th:block th:if="${currentUser != null and currentUser.role.name() == 'ADMIN'}">
-        <div class="nav-group">Administration</div>
-        <a class="nav nav-sub" th:classappend="${active == 'admin-users'} ? 'active'" th:href="@{/admin/users}">Users</a>
-        <a class="nav nav-sub" th:classappend="${active == 'admin-settings'} ? 'active'" th:href="@{/admin/settings}">Global Settings</a>
-        <a class="nav nav-sub" th:classappend="${active == 'admin-health'} ? 'active'" th:href="@{/admin/health}">System Health</a>
-        <a class="nav nav-sub" th:classappend="${active == 'admin-audit'} ? 'active'" th:href="@{/admin/audit}">Audit Log</a>
-        <a class="nav nav-sub" th:classappend="${active == 'admin-tax'} ? 'active'" th:href="@{/admin/tax-slabs}">Tax Slabs</a>
-        <a class="nav nav-sub" th:classappend="${active == 'admin-fund-master'} ? 'active'" th:href="@{/admin/fund-master}">Fund Master List</a>
-    </th:block>
-    <div class="spacer"></div>
+        <div class="topnav-item"
+             th:classappend="${active == 'trend' or active == 'allocation' or active == 'tax' or active == 'reminders' or active == 'loans-dashboard' or active == 'insurance-dashboard' or active == 'goals-dashboard' or active == 'retirement-dashboard' or active == 'export'} ? 'active'"
+             onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
+            <button type="button" class="topnav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                Analytics
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="topnav-dropdown">
+                <a th:classappend="${active == 'trend'} ? 'active'" th:href="@{/dashboard/trend}">Net Worth Trend</a>
+                <a th:classappend="${active == 'allocation'} ? 'active'" th:href="@{/dashboard/allocation}">Portfolio Allocation</a>
+                <a th:classappend="${active == 'tax'} ? 'active'" th:href="@{/dashboard/tax}">Tax Planning</a>
+                <a th:classappend="${active == 'reminders'} ? 'active'" th:href="@{/dashboard/reminders}">Upcoming Reminders</a>
+                <a th:classappend="${active == 'loans-dashboard'} ? 'active'" th:href="@{/dashboard/loans}">Loan / Debt Overview</a>
+                <a th:classappend="${active == 'insurance-dashboard'} ? 'active'" th:href="@{/dashboard/insurance}">Insurance Coverage</a>
+                <a th:classappend="${active == 'goals-dashboard'} ? 'active'" th:href="@{/dashboard/goals}">Goals</a>
+                <a th:classappend="${active == 'retirement-dashboard'} ? 'active'" th:href="@{/dashboard/retirement}">Retirement Readiness</a>
+                <div class="topnav-dropdown-divider"></div>
+                <a th:classappend="${active == 'export'} ? 'active'" th:href="@{/export}">Export / Import</a>
+            </div>
+        </div>
 
-    <!-- One-click theme switcher (like the original app) — persists to the user's profile -->
-    <div class="theme-picker" id="themePicker" th:if="${currentUser != null}">
-        <button type="button" class="theme-trigger"
-                onclick="document.getElementById('themePicker').classList.toggle('open')">
-            <span class="dot-preview"></span> Theme <span style="font-size:10px">▾</span>
-        </button>
-        <div class="theme-menu">
-            <form th:action="@{/settings/theme}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <input type="hidden" name="theme" value="GREEN">
-                <input type="hidden" name="returnTo" th:value="${currentPath}">
-                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'GREEN'} ? 'active'">
-                    <span class="sw" style="background:#4a6741"></span> Green <span class="check">✓</span></button>
-            </form>
-            <form th:action="@{/settings/theme}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <input type="hidden" name="theme" value="SLATE_BLUE">
-                <input type="hidden" name="returnTo" th:value="${currentPath}">
-                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'SLATE_BLUE'} ? 'active'">
-                    <span class="sw" style="background:#3b5372"></span> Slate Blue <span class="check">✓</span></button>
-            </form>
-            <form th:action="@{/settings/theme}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <input type="hidden" name="theme" value="MAROON">
-                <input type="hidden" name="returnTo" th:value="${currentPath}">
-                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'MAROON'} ? 'active'">
-                    <span class="sw" style="background:#6e2f34"></span> Maroon <span class="check">✓</span></button>
-            </form>
-            <form th:action="@{/settings/theme}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <input type="hidden" name="theme" value="FOREST_COPPER">
-                <input type="hidden" name="returnTo" th:value="${currentPath}">
-                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'FOREST_COPPER'} ? 'active'">
-                    <span class="sw" style="background:linear-gradient(135deg,#2f4a3c 60%,#b46a3c)"></span> Forest &amp; Copper <span class="check">✓</span></button>
-            </form>
-            <form th:action="@{/settings/theme}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <input type="hidden" name="theme" value="MIDNIGHT">
-                <input type="hidden" name="returnTo" th:value="${currentPath}">
-                <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'MIDNIGHT'} ? 'active'">
-                    <span class="sw" style="background:#171a21;border:1px solid #888"></span> Midnight <span class="check">✓</span></button>
-            </form>
+        <div class="topnav-item" th:classappend="${#strings.startsWith(active, 'calc-')} ? 'active'"
+             onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
+            <button type="button" class="topnav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/><line x1="8" y1="19" x2="8" y2="19"/><line x1="12" y1="19" x2="12" y2="19"/><line x1="16" y1="19" x2="16" y2="19"/></svg>
+                Calculators
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="topnav-dropdown">
+                <a th:classappend="${active == 'calc-index'} ? 'active'" th:href="@{/calculators}">All Calculators</a>
+                <div class="topnav-dropdown-divider"></div>
+                <a th:classappend="${active == 'calc-fire'} ? 'active'" th:href="@{/calculators/fire}">FIRE</a>
+                <a th:classappend="${active == 'calc-sip'} ? 'active'" th:href="@{/calculators/sip}">SIP</a>
+                <a th:classappend="${active == 'calc-swp'} ? 'active'" th:href="@{/calculators/swp}">SWP</a>
+                <a th:classappend="${active == 'calc-nps'} ? 'active'" th:href="@{/calculators/nps}">NPS Projector</a>
+                <a th:classappend="${active == 'calc-fd'} ? 'active'" th:href="@{/calculators/fd}">FD</a>
+                <a th:classappend="${active == 'calc-loan'} ? 'active'" th:href="@{/calculators/loan}">Loan / EMI</a>
+                <a th:classappend="${active == 'calc-ppf'} ? 'active'" th:href="@{/calculators/ppf}">PPF Projector</a>
+                <a th:classappend="${active == 'calc-tax'} ? 'active'" th:href="@{/calculators/tax-regime}">Tax Regime Compare</a>
+                <a th:classappend="${active == 'calc-cagr'} ? 'active'" th:href="@{/calculators/cagr}">CAGR</a>
+            </div>
+        </div>
+
+        <div class="topnav-item" th:classappend="${active == 'family'} ? 'active'">
+            <a class="topnav-link" th:href="@{/family}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Family
+            </a>
+        </div>
+
+        <div class="topnav-item" th:if="${currentUser != null and currentUser.role.name() == 'ADMIN'}"
+             th:classappend="${#strings.startsWith(active, 'admin-')} ? 'active'"
+             onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
+            <button type="button" class="topnav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4Z"/></svg>
+                Admin
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="topnav-dropdown">
+                <a th:classappend="${active == 'admin-users'} ? 'active'" th:href="@{/admin/users}">Users</a>
+                <a th:classappend="${active == 'admin-settings'} ? 'active'" th:href="@{/admin/settings}">Global Settings</a>
+                <a th:classappend="${active == 'admin-health'} ? 'active'" th:href="@{/admin/health}">System Health</a>
+                <a th:classappend="${active == 'admin-audit'} ? 'active'" th:href="@{/admin/audit}">Audit Log</a>
+                <a th:classappend="${active == 'admin-tax'} ? 'active'" th:href="@{/admin/tax-slabs}">Tax Slabs</a>
+                <a th:classappend="${active == 'admin-fund-master'} ? 'active'" th:href="@{/admin/fund-master}">Fund Master List</a>
+            </div>
         </div>
     </div>
 
-    <form th:action="@{/logout}" method="post">
-        <input type="hidden" name="_csrf" th:value="${csrf}">
-        <button type="submit" class="btn-secondary" style="width:100%">Log out</button>
-    </form>
-    <script>
-        document.addEventListener('click', function (e) {
-            var picker = document.getElementById('themePicker');
-            if (picker && !picker.contains(e.target)) picker.classList.remove('open');
-        });
-    </script>
+    <div class="topbar-utility">
+        <a class="topbar-icon-btn" th:href="@{/notifications}" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span th:if="${unreadNotifications > 0}" class="badge" th:text="${unreadNotifications > 9 ? '9+' : unreadNotifications}"></span>
+        </a>
+
+        <!-- One-click theme switcher (like the original app) — persists to the user's profile -->
+        <div class="theme-picker" id="themePicker" th:if="${currentUser != null}">
+            <button type="button" class="topbar-icon-btn" title="Theme"
+                    onclick="document.getElementById('themePicker').classList.toggle('open')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a9.96 9.96 0 0 0-7 2.86"/><circle cx="7" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="7" r="1.3" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="14" cy="16" r="1.3" fill="currentColor" stroke="none"/></svg>
+            </button>
+            <div class="theme-menu">
+                <form th:action="@{/settings/theme}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <input type="hidden" name="theme" value="GREEN">
+                    <input type="hidden" name="returnTo" th:value="${currentPath}">
+                    <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'GREEN'} ? 'active'">
+                        <span class="sw" style="background:#4a6741"></span> Green <span class="check">✓</span></button>
+                </form>
+                <form th:action="@{/settings/theme}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <input type="hidden" name="theme" value="SLATE_BLUE">
+                    <input type="hidden" name="returnTo" th:value="${currentPath}">
+                    <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'SLATE_BLUE'} ? 'active'">
+                        <span class="sw" style="background:#3b5372"></span> Slate Blue <span class="check">✓</span></button>
+                </form>
+                <form th:action="@{/settings/theme}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <input type="hidden" name="theme" value="MAROON">
+                    <input type="hidden" name="returnTo" th:value="${currentPath}">
+                    <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'MAROON'} ? 'active'">
+                        <span class="sw" style="background:#6e2f34"></span> Maroon <span class="check">✓</span></button>
+                </form>
+                <form th:action="@{/settings/theme}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <input type="hidden" name="theme" value="FOREST_COPPER">
+                    <input type="hidden" name="returnTo" th:value="${currentPath}">
+                    <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'FOREST_COPPER'} ? 'active'">
+                        <span class="sw" style="background:linear-gradient(135deg,#2f4a3c 60%,#b46a3c)"></span> Forest &amp; Copper <span class="check">✓</span></button>
+                </form>
+                <form th:action="@{/settings/theme}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <input type="hidden" name="theme" value="MIDNIGHT">
+                    <input type="hidden" name="returnTo" th:value="${currentPath}">
+                    <button type="submit" class="theme-option" th:classappend="${currentUser.theme.name() == 'MIDNIGHT'} ? 'active'">
+                        <span class="sw" style="background:#171a21;border:1px solid #888"></span> Midnight <span class="check">✓</span></button>
+                </form>
+            </div>
+        </div>
+
+        <a class="topbar-icon-btn" th:href="@{/settings}" title="Settings" th:classappend="${active == 'settings'} ? 'active'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        </a>
+
+        <form th:action="@{/logout}" method="post" class="inline">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <button type="submit" class="topbar-icon-btn" title="Log out">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+        </form>
+
+        <div class="topbar-avatar" th:if="${currentUser != null}" th:text="${#strings.substring(currentUser.fullName, 0, 1)}" title="Account"></div>
+    </div>
+  </div>
+
+  <script>
+      document.addEventListener('click', function (e) {
+          var picker = document.getElementById('themePicker');
+          if (picker && !picker.contains(e.target)) picker.classList.remove('open');
+      });
+  </script>
 </nav>
 
 <!-- Flash messages -->
