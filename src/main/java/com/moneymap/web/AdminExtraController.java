@@ -211,4 +211,31 @@ public class AdminExtraController {
         }
         return "redirect:/admin/fund-master";
     }
+
+    // ── Nifty valuation input (Section 12: Nifty Valuation Tool) ────────────
+    // No reliable free unauthenticated NSE/Nifty PE API exists, so — mirroring the existing
+    // admin-entered gold-rate pattern — the admin enters the current Nifty 50 trailing PE by
+    // hand (e.g. from NSE's own published factsheet) and the app just does the banding math.
+
+    @PostMapping("/settings/nifty-pe")
+    public String saveNiftyPe(@RequestParam BigDecimal niftyPe,
+                              @RequestParam(required = false) BigDecimal niftyHistoricalAvgPe,
+                              HttpServletRequest request, RedirectAttributes ra) {
+        if (niftyPe.signum() <= 0 || niftyPe.compareTo(BigDecimal.valueOf(200)) > 0) {
+            ra.addFlashAttribute("error", "Enter a realistic Nifty PE (0-200).");
+            return "redirect:/admin/settings";
+        }
+        globalSettings.update(s -> {
+            s.setNiftyPe(niftyPe);
+            if (niftyHistoricalAvgPe != null && niftyHistoricalAvgPe.signum() > 0) {
+                s.setNiftyHistoricalAvgPe(niftyHistoricalAvgPe);
+            }
+            s.setNiftyPeUpdatedAt(Instant.now());
+            return s;
+        });
+        audit.log(admin(request), AuditLogEntry.ActionType.SETTINGS_CHANGED, null,
+                "Nifty PE updated to " + niftyPe);
+        ra.addFlashAttribute("success", "Nifty PE saved.");
+        return "redirect:/admin/settings";
+    }
 }

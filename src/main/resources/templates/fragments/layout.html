@@ -55,7 +55,7 @@
         </div>
 
         <div class="topnav-item"
-             th:classappend="${active == 'trend' or active == 'allocation' or active == 'tax' or active == 'reminders' or active == 'loans-dashboard' or active == 'insurance-dashboard' or active == 'goals-dashboard' or active == 'retirement-dashboard' or active == 'export'} ? 'active'"
+             th:classappend="${active == 'trend' or active == 'allocation' or active == 'tax' or active == 'reminders' or active == 'loans-dashboard' or active == 'insurance-dashboard' or active == 'goals-dashboard' or active == 'retirement-dashboard' or active == 'retirement-buckets' or active == 'health-score' or active == 'nifty-valuation' or active == 'export'} ? 'active'"
              onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
             <button type="button" class="topnav-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -71,6 +71,9 @@
                 <a th:classappend="${active == 'insurance-dashboard'} ? 'active'" th:href="@{/dashboard/insurance}">Insurance Coverage</a>
                 <a th:classappend="${active == 'goals-dashboard'} ? 'active'" th:href="@{/dashboard/goals}">Goals</a>
                 <a th:classappend="${active == 'retirement-dashboard'} ? 'active'" th:href="@{/dashboard/retirement}">Retirement Readiness</a>
+                <a th:classappend="${active == 'retirement-buckets'} ? 'active'" th:href="@{/dashboard/retirement-buckets}">Retirement Bucket Planner</a>
+                <a th:classappend="${active == 'health-score'} ? 'active'" th:href="@{/dashboard/health-score}">Financial Health Score</a>
+                <a th:classappend="${active == 'nifty-valuation'} ? 'active'" th:href="@{/dashboard/nifty-valuation}">Nifty Valuation</a>
                 <div class="topnav-dropdown-divider"></div>
                 <a th:classappend="${active == 'export'} ? 'active'" th:href="@{/export}">Export / Import</a>
             </div>

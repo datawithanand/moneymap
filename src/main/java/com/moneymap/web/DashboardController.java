@@ -53,16 +53,19 @@ public class DashboardController {
     private final HouseholdMemberRepository householdMembers;
     private final TaxService taxService;
     private final ReminderService reminderService;
+    private final com.moneymap.repository.GlobalSettingsRepository globalSettings;
 
     public DashboardController(PortfolioAggregationService aggregation, Db db, UserRepository users,
                                HouseholdMemberRepository householdMembers, TaxService taxService,
-                               ReminderService reminderService) {
+                               ReminderService reminderService,
+                               com.moneymap.repository.GlobalSettingsRepository globalSettings) {
         this.aggregation = aggregation;
         this.db = db;
         this.users = users;
         this.householdMembers = householdMembers;
         this.taxService = taxService;
         this.reminderService = reminderService;
+        this.globalSettings = globalSettings;
     }
 
     private User user(HttpServletRequest request) { return (User) request.getAttribute("currentUser"); }
@@ -622,5 +625,171 @@ public class DashboardController {
             model.addAttribute("error", e.getMessage());
         }
         return "dashboard/retirement";
+    }
+
+    // ── Nifty Valuation Tool ─────────────────────────────────────────────────
+
+    @GetMapping("/dashboard/nifty-valuation")
+    public String niftyValuation(Model model) {
+        var settings = globalSettings.get();
+        BigDecimal pe = settings.getNiftyPe();
+        BigDecimal avgPe = settings.getNiftyHistoricalAvgPe();
+        model.addAttribute("niftyPe", pe);
+        model.addAttribute("niftyHistoricalAvgPe", avgPe);
+        model.addAttribute("niftyPeUpdatedAt", settings.getNiftyPeUpdatedAt());
+        if (pe != null && avgPe != null && avgPe.signum() > 0) {
+            BigDecimal ratioPercent = pe.multiply(BigDecimal.valueOf(100))
+                    .divide(avgPe, 1, RoundingMode.HALF_UP);   // pe/avgPe as a %, e.g. 113.4 = 13.4% above average
+            model.addAttribute("niftyRatioPercent", ratioPercent);
+            model.addAttribute("niftyZone", valuationZone(ratioPercent));
+        }
+        return "dashboard/nifty-valuation";
+    }
+
+    /**
+     * Standard PE-band valuation heuristic (freefincal-style): compares current PE to the
+     * long-run average PE. Purely informational — not investment advice.
+     */
+    private String valuationZone(BigDecimal ratioPercent) {
+        double r = ratioPercent.doubleValue();
+        if (r < 85) return "UNDERVALUED";
+        if (r <= 110) return "FAIRLY_VALUED";
+        if (r <= 130) return "OVERVALUED";
+        return "HIGHLY_OVERVALUED";
+    }
+
+    // ── Retirement Bucket Strategy Planner ───────────────────────────────────
+
+    @GetMapping("/dashboard/retirement-buckets")
+    public String retirementBuckets(HttpServletRequest request, Model model) {
+        User owner = effectiveUser(request, model);
+        BigDecimal corpus = aggregation.aggregate(owner).bucket(Bucket.RETIREMENT);
+        model.addAttribute("corpus", corpus);
+        return "dashboard/retirement-buckets";
+    }
+
+    @PostMapping("/dashboard/retirement-buckets")
+    public String retirementBucketsCompute(@RequestParam BigDecimal corpus,
+                                           @RequestParam BigDecimal annualExpense,
+                                           Model model) {
+        model.addAttribute("corpus", corpus);
+        model.addAttribute("annualExpenseInput", annualExpense);
+        try {
+            check(nonNegative(corpus, "Retirement corpus"), positive(annualExpense, "Annual expense"));
+            // Freefincal-style 3-bucket drawdown: bucket 1 (years 1-3) in cash/liquid funds,
+            // bucket 2 (years 4-7) in short-duration debt, bucket 3 (year 8+) stays invested in
+            // equity/growth assets and is periodically used to refill buckets 1 and 2.
+            BigDecimal bucket1 = annualExpense.multiply(BigDecimal.valueOf(3)).min(corpus);
+            BigDecimal bucket2 = annualExpense.multiply(BigDecimal.valueOf(4)).min(corpus.subtract(bucket1));
+            BigDecimal bucket3 = corpus.subtract(bucket1).subtract(bucket2).max(BigDecimal.ZERO);
+            boolean shortfall = bucket1.add(bucket2).compareTo(annualExpense.multiply(BigDecimal.valueOf(7))) < 0;
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("bucket1", bucket1);
+            result.put("bucket2", bucket2);
+            result.put("bucket3", bucket3);
+            result.put("shortfall", shortfall);
+            model.addAttribute("result", result);
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
+        return "dashboard/retirement-buckets";
+    }
+
+    // ── Financial Health Score ───────────────────────────────────────────────
+
+    @GetMapping("/dashboard/health-score")
+    public String healthScore(HttpServletRequest request, Model model) {
+        User owner = effectiveUser(request, model);
+        String uid = owner.getId();
+        var summary = aggregation.aggregate(owner);
+
+        com.moneymap.model.FinancialHealthInputs inputs = db.financialHealthInputs
+                .findWhere(x -> uid.equals(x.getOwnerId())).stream().findFirst().orElse(null);
+        model.addAttribute("inputs", inputs);
+        if (inputs == null || inputs.getMonthlyExpense() == null || inputs.getMonthlyExpense().signum() <= 0) {
+            return "dashboard/health-score";
+        }
+
+        BigDecimal monthlyExpense = inputs.getMonthlyExpense();
+        BigDecimal cashBucket = summary.bucket(Bucket.CASH);
+        BigDecimal emergencyMonths = cashBucket.divide(monthlyExpense, 1, RoundingMode.HALF_UP);
+        int emergencyScore = scoreBand(emergencyMonths.doubleValue(), 3, 6);   // 3mo=partial, 6mo=full credit
+
+        BigDecimal totalTermCover = db.termInsurance.findWhere(r -> uid.equals(r.getOwnerId()))
+                .stream().map(TermInsurance::getSumAssured).map(Valuation::nz).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal annualIncome = db.salaryProfiles.findWhere(r -> uid.equals(r.getOwnerId())).stream()
+                .map(SalaryProfile::grossMonthly).filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).multiply(BigDecimal.valueOf(12));
+        Integer insuranceScore = null;
+        if (annualIncome.signum() > 0) {
+            BigDecimal recommended = annualIncome.multiply(BigDecimal.valueOf(12));
+            double coverRatio = totalTermCover.multiply(BigDecimal.valueOf(100))
+                    .divide(recommended, 1, RoundingMode.HALF_UP).doubleValue();
+            insuranceScore = scoreBand(coverRatio, 50, 100);
+        }
+
+        BigDecimal totalMonthlyEmi = activeLoansMonthlyEmi(uid);
+        BigDecimal monthlyIncome = annualIncome.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+        Integer debtScore = null;
+        if (monthlyIncome.signum() > 0) {
+            double emiPercent = totalMonthlyEmi.multiply(BigDecimal.valueOf(100))
+                    .divide(monthlyIncome, 1, RoundingMode.HALF_UP).doubleValue();
+            // Inverted band: EMI/income at or below 20% scores 100, at or above 40% scores 0.
+            debtScore = Math.max(0, Math.min(100, 100 - (int) Math.round(Math.max(0, emiPercent - 20) * (100.0 / 20))));
+        }
+
+        BigDecimal savingsRateInput = inputs.getMonthlySavings();
+        Integer savingsScore = null;
+        if (savingsRateInput != null && monthlyIncome.signum() > 0) {
+            double savingsPercent = savingsRateInput.multiply(BigDecimal.valueOf(100))
+                    .divide(monthlyIncome, 1, RoundingMode.HALF_UP).doubleValue();
+            savingsScore = scoreBand(savingsPercent, 10, 20);
+        }
+
+        List<Integer> componentScores = new ArrayList<>();
+        componentScores.add(emergencyScore);
+        if (insuranceScore != null) componentScores.add(insuranceScore);
+        if (debtScore != null) componentScores.add(debtScore);
+        if (savingsScore != null) componentScores.add(savingsScore);
+        int overallScore = (int) Math.round(componentScores.stream().mapToInt(Integer::intValue).average().orElse(0));
+
+        model.addAttribute("emergencyMonths", emergencyMonths);
+        model.addAttribute("emergencyScore", emergencyScore);
+        model.addAttribute("insuranceScore", insuranceScore);
+        model.addAttribute("debtScore", debtScore);
+        model.addAttribute("savingsScore", savingsScore);
+        model.addAttribute("overallScore", overallScore);
+        return "dashboard/health-score";
+    }
+
+    @PostMapping("/dashboard/health-score")
+    public String saveHealthInputs(@RequestParam BigDecimal monthlyExpense,
+                                   @RequestParam(required = false) BigDecimal monthlySavings,
+                                   HttpServletRequest request, RedirectAttributes ra) {
+        User owner = user(request);
+        if (monthlyExpense.signum() <= 0) {
+            ra.addFlashAttribute("error", "Monthly expense must be positive.");
+            return "redirect:/dashboard/health-score";
+        }
+        com.moneymap.model.FinancialHealthInputs inputs = db.financialHealthInputs
+                .findWhere(x -> owner.getId().equals(x.getOwnerId())).stream().findFirst()
+                .orElseGet(com.moneymap.model.FinancialHealthInputs::new);
+        inputs.setOwnerId(owner.getId());
+        inputs.setMonthlyExpense(monthlyExpense);
+        inputs.setMonthlySavings(monthlySavings);
+        db.financialHealthInputs.save(inputs);
+        return "redirect:/dashboard/health-score";
+    }
+
+    /** Linear 0-100 score: at or below `poor` is 0, at or above `good` is 100, straight-line between. */
+    private int scoreBand(double value, double poor, double good) {
+        if (value <= poor) return (int) Math.round(100.0 * value / poor / 2);   // partial credit below the floor
+        if (value >= good) return 100;
+        return (int) Math.round(50 + 50.0 * (value - poor) / (good - poor));
+    }
+
+    private BigDecimal activeLoansMonthlyEmi(String uid) {
+        return db.loans.findWhere(l -> uid.equals(l.getOwnerId()) && !"CREDIT_CARD".equals(l.getLoanType()))
+                .stream().map(Loan::getEmiAmount).map(Valuation::nz).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

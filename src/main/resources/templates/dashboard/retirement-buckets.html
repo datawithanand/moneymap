@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Retirement Bucket Planner')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('retirement-buckets')}"></nav>
+    <main class="content">
+        <h1>Retirement Bucket Planner</h1>
+        <p class="hint">Freefincal-style 3-bucket drawdown: split your retirement corpus by how soon
+            you'll need it, rather than holding it all in one blended allocation. Bucket 1 (years 1-3)
+            stays in cash/liquid funds so a market downturn never forces you to sell equity at a loss to
+            pay bills. Bucket 2 (years 4-7) sits in short-duration debt. Bucket 3 (year 8+) stays invested
+            for growth and periodically refills buckets 1 and 2.</p>
+
+        <div class="card">
+            <form th:action="@{/dashboard/retirement-buckets}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="corpus">Retirement Corpus</label>
+                <input type="number" step="any" min="0" id="corpus" name="corpus" th:value="${corpus}" required>
+                <div class="hint">Pre-filled from your PF/PPF/NPS/Gratuity/Government Schemes total.</div>
+
+                <label for="annualExpense">Annual Post-Retirement Expense</label>
+                <input type="number" step="any" min="0" id="annualExpense" name="annualExpense"
+                       th:value="${annualExpenseInput}" required>
+
+                <button type="submit" style="margin-top:14px">Split Into Buckets</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${error != null}">
+            <p class="field-error" th:text="${error}"></p>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Suggested Buckets</h2>
+            <div class="bucket-grid">
+                <div class="card">
+                    <h3>Bucket 1 — Cash / Liquid (Yrs 1-3)</h3>
+                    <p class="figure" th:text="${fmt.money(result['bucket1'], currentUser)}"></p>
+                </div>
+                <div class="card">
+                    <h3>Bucket 2 — Short Debt (Yrs 4-7)</h3>
+                    <p class="figure" th:text="${fmt.money(result['bucket2'], currentUser)}"></p>
+                </div>
+                <div class="card">
+                    <h3>Bucket 3 — Growth (Yr 8+)</h3>
+                    <p class="figure" th:text="${fmt.money(result['bucket3'], currentUser)}"></p>
+                </div>
+            </div>
+            <p class="hint" th:if="${result['shortfall']}">
+                Buckets 1 and 2 together cover less than 7 years of expenses — your corpus may be too
+                small to fully fund this drawdown plan without Bucket 3 running down faster than
+                intended. Consider revisiting your retirement readiness or expense assumptions.</p>
+        </div>
+    </main>
+</div>
+</body>
+</html>
