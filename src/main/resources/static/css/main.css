@@ -315,3 +315,7 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .chart-dot { r: 3; }
 .chart-grid line { stroke: var(--border); stroke-width: 1; }
 .chart-axis-label { font-size: 10px; fill: var(--text-muted); font-family: "IBM Plex Sans", sans-serif; }
+.chart-dot { transition: r .12s ease; cursor: pointer; }
+.chart-dot:hover { r: 6; }
+.donut-arc { transition: stroke-width .12s ease, opacity .12s ease; cursor: pointer; }
+.donut-arc:hover { stroke-width: 32; opacity: .92; }

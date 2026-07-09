@@ -147,17 +147,27 @@ public class DashboardController {
         return allocationRows(s, null);
     }
 
+    private static final double DONUT_RADIUS = 80.0;
+    private static final double DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+
     /** rebalanceAmount = (targetPercent - actualPercent)/100 * total allocation value; positive = buy, negative = sell. */
     private List<Map<String, Object>> allocationRows(PortfolioAggregationService.PortfolioSummary s, AllocationTarget target) {
         List<Map<String, Object>> rows = new ArrayList<>();
         BigDecimal totalValue = s.allocationTotal();
+        double cumulativePercent = 0;
         for (AllocationClass cls : AllocationClass.values()) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("name", cls.name().replace('_', ' '));
             row.put("cls", cls);
             row.put("color", COLORS.get(cls));
             row.put("value", s.allocation.getOrDefault(cls, BigDecimal.ZERO));
-            row.put("percent", s.allocationPercent(cls));
+            BigDecimal percent = s.allocationPercent(cls);
+            row.put("percent", percent);
+            // Precomputed SVG donut arc geometry — server-side only, template just draws it (Section 12).
+            double segmentLength = percent.doubleValue() / 100.0 * DONUT_CIRCUMFERENCE;
+            row.put("dashArray", String.format("%.2f %.2f", segmentLength, DONUT_CIRCUMFERENCE - segmentLength));
+            row.put("rotateDeg", String.format("%.2f", cumulativePercent * 3.6 - 90));
+            cumulativePercent += percent.doubleValue();
             BigDecimal targetPercent = targetPercentFor(target, cls);
             if (targetPercent != null) {
                 BigDecimal rebalance = targetPercent.subtract(s.allocationPercent(cls))
@@ -195,6 +205,8 @@ public class DashboardController {
         model.addAttribute("netWorthPoints", polyline(snapshots, NetWorthSnapshot::getTotalNetWorth));
         model.addAttribute("assetsPoints", polyline(snapshots, NetWorthSnapshot::getTotalAssets));
         model.addAttribute("liabilitiesPoints", polyline(snapshots, NetWorthSnapshot::getTotalLiabilities));
+        model.addAttribute("netWorthDots", points(snapshots, NetWorthSnapshot::getTotalNetWorth));
+        model.addAttribute("axisLabels", axisLabels(snapshots));
 
         if (!snapshots.isEmpty()) {
             NetWorthSnapshot latest = snapshots.get(snapshots.size() - 1);
@@ -239,6 +251,46 @@ public class DashboardController {
         return sb.toString();
     }
 
+    /** Precomputed dot positions + raw values for hover tooltips (Section 12: no client-side math). */
+    private List<Map<String, Object>> points(List<NetWorthSnapshot> snapshots, java.util.function.Function<NetWorthSnapshot, BigDecimal> extractor) {
+        if (snapshots.size() < 2) return List.of();
+        List<BigDecimal> values = snapshots.stream().map(extractor).map(Valuation::nz).toList();
+        BigDecimal min = values.stream().min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        BigDecimal max = values.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ONE);
+        BigDecimal range = max.subtract(min);
+        if (range.signum() == 0) range = BigDecimal.ONE;
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (int i = 0; i < values.size(); i++) {
+            double x = 20 + (660.0 * i / (values.size() - 1));
+            double y = 180 - values.get(i).subtract(min)
+                    .multiply(BigDecimal.valueOf(160)).divide(range, 2, RoundingMode.HALF_UP).doubleValue();
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("x", String.format("%.1f", x));
+            point.put("y", String.format("%.1f", y));
+            point.put("date", snapshots.get(i).getSnapshotDate());
+            point.put("value", values.get(i));
+            out.add(point);
+        }
+        return out;
+    }
+
+    /** First / middle / last snapshot dates, positioned along the same x-axis as points(). */
+    private List<Map<String, Object>> axisLabels(List<NetWorthSnapshot> snapshots) {
+        if (snapshots.size() < 2) return List.of();
+        List<Map<String, Object>> out = new ArrayList<>();
+        int[] indices = snapshots.size() >= 3
+                ? new int[]{0, snapshots.size() / 2, snapshots.size() - 1}
+                : new int[]{0, snapshots.size() - 1};
+        for (int i : indices) {
+            double x = 20 + (660.0 * i / (snapshots.size() - 1));
+            Map<String, Object> label = new LinkedHashMap<>();
+            label.put("x", String.format("%.1f", x));
+            label.put("date", snapshots.get(i).getSnapshotDate());
+            out.add(label);
+        }
+        return out;
+    }
+
     @PostMapping("/dashboard/snapshot")
     public String takeSnapshot(HttpServletRequest request, RedirectAttributes ra) {
         User owner = user(request);
@@ -272,6 +324,7 @@ public class DashboardController {
         model.addAttribute("target", target);
         model.addAttribute("donutGradient", donutGradient(summary));
         model.addAttribute("allocationClasses", allocationRows(summary, target));
+        model.addAttribute("allocationTotal", summary.allocationTotal());
         return "dashboard/allocation";
     }
 

@@ -35,13 +35,25 @@
                 <span style="color:#4a6741">● Assets</span>
                 <span style="color:var(--danger)">● Liabilities</span>
             </div>
-            <svg viewBox="0 0 700 200" style="width:100%;max-width:700px">
-                <polyline th:attr="points=${assetsPoints}" fill="none" stroke="#4a6741" stroke-width="2"/>
-                <polyline th:attr="points=${liabilitiesPoints}" fill="none" stroke="var(--danger)" stroke-width="2"/>
-                <polyline th:attr="points=${netWorthPoints}" fill="none" stroke="var(--primary)" stroke-width="2.5"/>
+            <svg viewBox="0 0 700 210" class="chart-svg" style="max-width:700px">
+                <g class="chart-grid">
+                    <line x1="20" y1="20" x2="680" y2="20"/>
+                    <line x1="20" y1="73" x2="680" y2="73"/>
+                    <line x1="20" y1="127" x2="680" y2="127"/>
+                    <line x1="20" y1="180" x2="680" y2="180"/>
+                </g>
+                <polyline th:attr="points=${assetsPoints}" class="chart-line" stroke="#4a6741"/>
+                <polyline th:attr="points=${liabilitiesPoints}" class="chart-line" stroke="var(--danger)"/>
+                <polyline th:attr="points=${netWorthPoints}" class="chart-line" stroke="var(--primary)" stroke-width="3"/>
+                <circle th:each="p : ${netWorthDots}" th:attr="cx=${p.x},cy=${p.y}" r="3.5" fill="var(--primary)"
+                        stroke="var(--surface)" stroke-width="1.5" class="chart-dot">
+                    <title th:text="${#temporals.format(p.date, 'dd MMM yyyy')} + ' — ' + ${fmt.money(p.value, currentUser)}"></title>
+                </circle>
+                <text th:each="l : ${axisLabels}" th:attr="x=${l.x}" y="198" class="chart-axis-label" text-anchor="middle"
+                      th:text="${#temporals.format(l.date, 'dd MMM')}"></text>
             </svg>
             <p class="hint">Each line is scaled independently so its own shape is visible — the
-                three aren't on a shared axis.</p>
+                three aren't on a shared axis. Hover a point on the Net Worth line for its exact date and value.</p>
         </div>
 
         <div class="card">

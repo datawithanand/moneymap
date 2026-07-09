@@ -11,7 +11,22 @@
 
         <div class="card">
             <div style="display:flex;gap:30px;flex-wrap:wrap;align-items:center">
-                <div class="donut" th:style="'width:200px;height:200px;border-radius:50%;background:' + ${donutGradient}"></div>
+                <div class="donut-wrap" style="position:relative;width:200px;height:200px;flex:0 0 auto">
+                    <svg viewBox="0 0 200 200" class="chart-svg" style="width:200px;height:200px">
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="var(--surface-alt)" stroke-width="28"/>
+                        <circle th:each="a : ${allocationClasses}" th:if="${a['percent'].signum() > 0}"
+                                cx="100" cy="100" r="80" fill="none" stroke-width="28"
+                                class="donut-arc"
+                                th:style="'stroke:' + ${a['color']}"
+                                th:attr="stroke-dasharray=${a['dashArray']},transform='rotate(' + ${a['rotateDeg']} + ' 100 100)'">
+                            <title th:text="${a['name']} + ': ' + ${a['percent']} + '%'"></title>
+                        </circle>
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none">
+                        <span class="hint" style="margin:0">Total</span>
+                        <strong class="mono" style="font-size:1rem" th:text="${fmt.money(allocationTotal, currentUser)}"></strong>
+                    </div>
+                </div>
                 <table class="data" style="max-width:640px">
                     <thead><tr><th>Class</th><th>Value</th><th>Actual %</th><th>Target %</th><th>Drift</th><th>Rebalance</th></tr></thead>
                     <tbody>
