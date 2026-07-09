@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Insurance Coverage')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('insurance-dashboard')}"></nav>
+    <main class="content">
+        <h1>Insurance Coverage</h1>
+
+        <div class="bucket-grid">
+            <div class="card">
+                <h3>Total Term Cover</h3>
+                <p class="figure" th:text="${fmt.money(totalTermCover, currentUser)}"></p>
+            </div>
+            <div class="card">
+                <h3>Total Health Cover</h3>
+                <p class="figure" th:text="${fmt.money(totalHealthCover, currentUser)}"></p>
+            </div>
+            <div class="card">
+                <h3>Recommended Term Cover</h3>
+                <p class="figure" th:text="${fmt.money(recommendedTermCover, currentUser)}"></p>
+                <p class="hint">Rule of thumb: ~12x annual income, estimated from your salary profiles.</p>
+            </div>
+        </div>
+
+        <div class="card" th:if="${termCoverageGap.signum() > 0 and annualIncome.signum() > 0}">
+            <h2>Coverage Gap</h2>
+            <p class="figure" th:text="${fmt.money(termCoverageGap, currentUser)}"></p>
+            <p class="hint">Shortfall between your recommended and actual term cover. Add a
+                salary profile if this doesn't reflect your real income.</p>
+        </div>
+
+        <div class="card">
+            <h2>Term Insurance Policies</h2>
+            <table class="data">
+                <thead><tr><th>Insurer</th><th>Sum Assured</th><th>Premium</th><th>Next Premium Due</th></tr></thead>
+                <tbody>
+                <tr th:each="p : ${termPolicies}">
+                    <td><a th:href="@{'/assets/term-insurance/' + ${p.id} + '/edit'}" th:text="${p.insurerName}"></a></td>
+                    <td class="mono" th:text="${fmt.money(p.sumAssured, currentUser)}"></td>
+                    <td class="mono" th:text="${fmt.money(p.premiumAmount, currentUser)}"></td>
+                    <td th:text="${p.nextPremiumDueDate}"></td>
+                </tr>
+                <tr th:if="${termPolicies.isEmpty()}"><td colspan="4" class="muted">No term insurance policies yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Health Insurance Policies</h2>
+            <table class="data">
+                <thead><tr><th>Insurer</th><th>Sum Insured</th><th>Type</th><th>Next Renewal</th></tr></thead>
+                <tbody>
+                <tr th:each="p : ${healthPolicies}">
+                    <td><a th:href="@{'/assets/health-insurance/' + ${p.id} + '/edit'}" th:text="${p.insurerName}"></a></td>
+                    <td class="mono" th:text="${fmt.money(p.sumInsured, currentUser)}"></td>
+                    <td th:text="${#strings.replace(p.policyType, '_', ' ')}"></td>
+                    <td th:text="${p.nextRenewalDate}"></td>
+                </tr>
+                <tr th:if="${healthPolicies.isEmpty()}"><td colspan="4" class="muted">No health insurance policies yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

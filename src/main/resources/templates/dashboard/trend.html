@@ -11,19 +11,37 @@
 
         <div class="card">
             <p>Live net worth today: <strong class="figure" th:text="${fmt.money(live.netWorth, currentUser)}"></strong></p>
+            <p style="display:flex;gap:24px;flex-wrap:wrap">
+                <span th:if="${momGrowthPercent != null}">
+                    Month-over-month: <strong th:text="${(momGrowthPercent.signum() >= 0 ? '+' : '') + momGrowthPercent + '%'}"></strong>
+                </span>
+                <span th:if="${yoyGrowthPercent != null}">
+                    Year-over-year: <strong th:text="${(yoyGrowthPercent.signum() >= 0 ? '+' : '') + yoyGrowthPercent + '%'}"></strong>
+                </span>
+            </p>
             <form class="inline" th:action="@{/dashboard/snapshot}" method="post">
                 <input type="hidden" name="_csrf" th:value="${csrf}">
                 <button type="submit" class="btn-sm">Take Snapshot Now</button>
             </form>
             <p class="hint">Snapshots are manual — MoneyMap keeps no automatic historical ledger,
-                consistent with its manual-entry principle.</p>
+                consistent with its manual-entry principle. Growth % needs at least two snapshots
+                roughly a month (or a year) apart.</p>
         </div>
 
-        <div class="card" th:if="${chartPoints != null}">
+        <div class="card" th:if="${netWorthPoints != null}">
             <h2>Trend</h2>
+            <div class="legend" style="margin-bottom:8px">
+                <span style="color:var(--primary)">● Net Worth</span>
+                <span style="color:#4a6741">● Assets</span>
+                <span style="color:var(--danger)">● Liabilities</span>
+            </div>
             <svg viewBox="0 0 700 200" style="width:100%;max-width:700px">
-                <polyline th:attr="points=${chartPoints}" fill="none" stroke="var(--primary)" stroke-width="2.5"/>
+                <polyline th:attr="points=${assetsPoints}" fill="none" stroke="#4a6741" stroke-width="2"/>
+                <polyline th:attr="points=${liabilitiesPoints}" fill="none" stroke="var(--danger)" stroke-width="2"/>
+                <polyline th:attr="points=${netWorthPoints}" fill="none" stroke="var(--primary)" stroke-width="2.5"/>
             </svg>
+            <p class="hint">Each line is scaled independently so its own shape is visible — the
+                three aren't on a shared axis.</p>
         </div>
 
         <div class="card">

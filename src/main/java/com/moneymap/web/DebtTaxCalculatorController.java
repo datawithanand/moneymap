@@ -74,7 +74,13 @@ public class DebtTaxCalculatorController {
     public record TaxRegimeResult(BigDecimal taxOld, BigDecimal taxNew, String betterRegime, BigDecimal savings) {}
 
     @GetMapping("/calculators/tax-regime")
-    public String taxRegimeForm() {
+    public String taxRegimeForm(@RequestParam(required = false) String financialYear,
+                               @RequestParam(required = false) BigDecimal grossIncome,
+                               @RequestParam(required = false) BigDecimal oldRegimeDeductions,
+                               Model model) {
+        if (financialYear != null && !financialYear.isBlank()) model.addAttribute("financialYear", financialYear);
+        if (grossIncome != null) model.addAttribute("grossIncome", grossIncome);
+        if (oldRegimeDeductions != null) model.addAttribute("oldRegimeDeductions", oldRegimeDeductions);
         return "calculators/tax-regime";
     }
 

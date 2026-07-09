@@ -12,8 +12,8 @@
         <div class="card">
             <div style="display:flex;gap:30px;flex-wrap:wrap;align-items:center">
                 <div class="donut" th:style="'width:200px;height:200px;border-radius:50%;background:' + ${donutGradient}"></div>
-                <table class="data" style="max-width:520px">
-                    <thead><tr><th>Class</th><th>Value</th><th>Actual %</th><th>Target %</th><th>Drift</th></tr></thead>
+                <table class="data" style="max-width:640px">
+                    <thead><tr><th>Class</th><th>Value</th><th>Actual %</th><th>Target %</th><th>Drift</th><th>Rebalance</th></tr></thead>
                     <tbody>
                     <tr th:each="a : ${allocationClasses}">
                         <td><span th:style="'color:' + ${a['color']}">●</span> <span th:text="${a['name']}"></span></td>
@@ -34,6 +34,14 @@
                             <span th:case="'REAL_ESTATE'" th:text="${target != null ? a['percent'].subtract(target.realEstateTargetPercent) + '%' : '—'}"></span>
                             <span th:case="'CASH'" th:text="${target != null ? a['percent'].subtract(target.cashTargetPercent) + '%' : '—'}"></span>
                             <span th:case="'ALTERNATIVE'" th:text="${target != null ? a['percent'].subtract(target.alternativeTargetPercent) + '%' : '—'}"></span>
+                        </td>
+                        <td class="mono">
+                            <span th:if="${a['rebalance'] == null}">—</span>
+                            <span th:if="${a['rebalance'] != null and a['rebalance'].signum() > 0}"
+                                  th:text="'Buy ' + ${fmt.money(a['rebalance'], currentUser)}"></span>
+                            <span th:if="${a['rebalance'] != null and a['rebalance'].signum() < 0}"
+                                  th:text="'Sell ' + ${fmt.money(a['rebalance'].abs(), currentUser)}"></span>
+                            <span th:if="${a['rebalance'] != null and a['rebalance'].signum() == 0}">On target</span>
                         </td>
                     </tr>
                     </tbody>

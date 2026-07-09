@@ -39,6 +39,22 @@
             </div>
         </div>
 
+        <!-- Upcoming reminders (FD/RD/govt scheme maturity, insurance premium/renewal, card payment, SIP due) -->
+        <div class="card" th:if="${!reminders.isEmpty()}">
+            <h2>Upcoming Reminders</h2>
+            <table class="data">
+                <thead><tr><th>Due</th><th>Item</th><th>In</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${reminders}">
+                    <td th:text="${r.dueDate()}"></td>
+                    <td><a th:href="@{'/assets/' + ${r.modulePath()} + '/' + ${r.recordId()} + '/edit'}" th:text="${r.description()}"></a></td>
+                    <td th:text="${r.daysUntil() < 0 ? 'Overdue ' + (-r.daysUntil()) + 'd' : (r.daysUntil() == 0 ? 'Today' : r.daysUntil() + 'd')}"></td>
+                </tr>
+                </tbody>
+            </table>
+            <p><a th:href="@{/dashboard/reminders}">View all reminders →</a></p>
+        </div>
+
         <!-- 3-bucket breakdown + allocation donut -->
         <div class="bucket-grid">
             <div class="card">

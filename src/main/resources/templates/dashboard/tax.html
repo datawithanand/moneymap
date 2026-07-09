@@ -39,6 +39,17 @@
         </div>
 
         <div class="card">
+            <h2>Old vs. New Regime</h2>
+            <p>Estimated annual gross income from your salary profiles:
+                <strong th:text="${fmt.money(estimatedAnnualGrossIncome, currentUser)}"></strong></p>
+            <p><a class="btn btn-secondary"
+                  th:href="@{/calculators/tax-regime(financialYear=${currentFinancialYear},grossIncome=${estimatedAnnualGrossIncome},oldRegimeDeductions=${total80C})}">
+                Compare Old vs. New Regime →</a></p>
+            <p class="hint">Pre-fills the comparison with your estimated gross income and tracked
+                80C deductions above — adjust either before comparing.</p>
+        </div>
+
+        <div class="card">
             <h2>Salary profiles</h2>
             <table class="data">
                 <thead><tr><th>Employer</th><th>FY</th><th>Regime</th><th>Gross monthly</th><th></th></tr></thead>
