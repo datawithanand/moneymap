@@ -34,6 +34,8 @@
                     <td th:each="entry : ${labels}" class="mono"
                         th:text="${fmt.cell(row[entry.key], currentUser)}"></td>
                     <td style="white-space:nowrap;text-align:right">
+                        <a th:if="${module.path == 'mutual-funds'}" class="btn btn-sm btn-secondary"
+                           th:href="@{'/assets/mutual-funds/' + ${row['id']} + '/transactions'}">Transactions</a>
                         <a class="btn btn-sm btn-secondary"
                            th:href="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/edit'}">Edit</a>
                         <form class="inline" th:action="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/delete'}"

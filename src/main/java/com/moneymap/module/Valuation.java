@@ -1,5 +1,7 @@
 package com.moneymap.module;
 
+import com.moneymap.calculator.CalculatorMath;
+import com.moneymap.model.MutualFundTransaction;
 import com.moneymap.model.User;
 import com.moneymap.model.asset.*;
 
@@ -8,6 +10,7 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 /**
  * Record valuation math (computed fields per Sections 05–10). All values are returned in the
@@ -88,6 +91,28 @@ public final class Valuation {
 
     public static BigDecimal mfInvested(MutualFund mf) {
         return nz(mf.getUnitsHeld()).multiply(nz(mf.getAverageNavPerUnit()), MC).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Money-weighted return (XIRR) for a Mutual Fund from its logged BUY/SELL transactions plus
+     * its current holding value as a final "as of today" cash inflow (Section 12: XIRR). Returns
+     * null when there are fewer than 2 dated cash flows to solve against — the caller falls back
+     * to showing "—" rather than a misleading figure.
+     */
+    public static BigDecimal mfXirr(MutualFund mf, List<MutualFundTransaction> transactions) {
+        if (transactions == null || transactions.isEmpty()) return null;
+        List<CalculatorMath.CashFlow> flows = new java.util.ArrayList<>();
+        for (MutualFundTransaction t : transactions) {
+            if (t.getDate() == null || t.getAmount() == null) continue;
+            double signedAmount = t.getType() == MutualFundTransaction.Type.BUY
+                    ? -t.getAmount().doubleValue() : t.getAmount().doubleValue();
+            flows.add(new CalculatorMath.CashFlow(t.getDate(), signedAmount));
+        }
+        BigDecimal currentValue = mfCurrentValue(mf);
+        if (currentValue.signum() > 0) {
+            flows.add(new CalculatorMath.CashFlow(LocalDate.now(), currentValue.doubleValue()));
+        }
+        return CalculatorMath.xirr(flows);
     }
 
     public static BigDecimal equityValue(EquityHolding e) {

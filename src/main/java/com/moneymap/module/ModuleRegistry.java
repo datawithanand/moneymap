@@ -197,12 +197,17 @@ public class ModuleRegistry {
                         num("equityAllocationPercent", "Equity Allocation % (hybrid funds)", false)
                                 .withVisibleIf("category=HYBRID_AGGRESSIVE|HYBRID_CONSERVATIVE|HYBRID_BALANCED"),
                         select("currency", "Currency", true, "INR", "USD")),
-                List.of("fundName", "category", "folioNumber", "unitsHeld", "invested", "currentValue", "gainLoss"),
+                List.of("fundName", "category", "folioNumber", "unitsHeld", "invested", "currentValue", "gainLoss", "xirr"),
                 (r, u) -> convert(mfCurrentValue(r), r.getCurrency(), u),
                 ModuleRegistry::mfAllocation,
                 Map.of("invested", (r, u) -> mfInvested(r),
                         "currentValue", (r, u) -> mfCurrentValue(r),
-                        "gainLoss", (r, u) -> mfCurrentValue(r).subtract(mfInvested(r))),
+                        "gainLoss", (r, u) -> mfCurrentValue(r).subtract(mfInvested(r)),
+                        "xirr", (r, u) -> {
+                            BigDecimal x = mfXirr(r, db.mutualFundTransactions.findWhere(
+                                    t -> r.getId().equals(t.getMutualFundId())));
+                            return x == null ? "—" : x + "%";
+                        }),
                 true));
 
         add(new ModuleDef<>("stocks", "Stocks & ETFs", "06 §12", db.equityHoldings, EquityHolding.class,

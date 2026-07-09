@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Fund Transactions')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('assets-mutual-funds')}"></nav>
+    <main class="content">
+        <h1 th:text="${fund.fundName} + ' — Transactions'">Fund Transactions</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+        <p class="hint">Log every BUY (SIP installment or lumpsum) and SELL (redemption) against this
+            holding to compute its <strong>XIRR</strong> — the true money-weighted annualized return,
+            accounting for exactly when each rupee went in or came out. Without at least one BUY logged,
+            XIRR can't be computed and shows as "—" everywhere in the app.</p>
+
+        <div class="bucket-grid">
+            <div class="card">
+                <h3>Current Value</h3>
+                <p class="figure" th:text="${fmt.money(currentValue, currentUser)}"></p>
+            </div>
+            <div class="card">
+                <h3>XIRR</h3>
+                <p class="figure" th:text="${xirr != null ? xirr + '%' : '—'}"></p>
+                <p class="hint" th:if="${xirr == null}">Add at least one BUY transaction below.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Add Transaction</h2>
+            <form th:action="@{'/assets/mutual-funds/' + ${fund.id} + '/transactions/save'}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="row-flex">
+                    <div><label for="type">Type</label>
+                        <select id="type" name="type">
+                            <option value="BUY">Buy (SIP / lumpsum)</option>
+                            <option value="SELL">Sell (redemption)</option>
+                        </select></div>
+                    <div><label for="date">Date</label>
+                        <input type="date" id="date" name="date" th:max="${today}" required></div>
+                    <div><label for="amount">Amount</label>
+                        <input type="number" step="any" min="0.01" id="amount" name="amount" required></div>
+                    <div><label for="units">Units (optional)</label>
+                        <input type="number" step="any" min="0" id="units" name="units"></div>
+                </div>
+                <button type="submit" style="margin-top:14px">Add Transaction</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Transaction History</h2>
+            <table class="data">
+                <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Units</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="t : ${transactions}">
+                    <td th:text="${t.date}"></td>
+                    <td th:text="${t.type}"></td>
+                    <td class="mono" th:text="${fmt.money(t.amount, currentUser)}"></td>
+                    <td class="mono" th:text="${t.units != null ? t.units : '—'}"></td>
+                    <td style="text-align:right">
+                        <form class="inline" th:action="@{'/assets/mutual-funds/' + ${fund.id} + '/transactions/' + ${t.id} + '/delete'}"
+                              method="post" onsubmit="return confirm('Delete this transaction?');">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm btn-secondary">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${transactions.isEmpty()}"><td colspan="5" class="muted">No transactions logged yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p><a class="btn btn-secondary" th:href="@{/assets/mutual-funds}">Back to Mutual Funds</a></p>
+    </main>
+</div>
+</body>
+</html>

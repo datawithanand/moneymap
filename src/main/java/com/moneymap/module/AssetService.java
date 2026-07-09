@@ -84,6 +84,7 @@ public class AssetService {
             case "inflationAdjustedSip" -> "Required SIP (inflation-adjusted)";
             case "grossMonthly" -> "Gross Monthly";
             case "maturityDate" -> "Maturity Date";
+            case "xirr" -> "XIRR";
             default -> humanize(col);
         };
     }

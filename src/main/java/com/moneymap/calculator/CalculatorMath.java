@@ -2,6 +2,8 @@ package com.moneymap.calculator;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -331,5 +333,83 @@ public final class CalculatorMath {
         return new DebtFundVsFdResult(fdValue, debtValue, debtValue.subtract(fdValue),
                 BigDecimal.valueOf(fdPostTaxRate * 100).setScale(2, RoundingMode.HALF_UP),
                 BigDecimal.valueOf(debtFundEffectiveRate * 100).setScale(2, RoundingMode.HALF_UP));
+    }
+
+    // ── XIRR ─────────────────────────────────────────────────────────────────
+
+    public record CashFlow(LocalDate date, double amount) {}
+
+    /**
+     * Money-weighted annualized return (XIRR): solves for the rate at which the NPV of dated
+     * cash flows is zero, using Newton-Raphson with a bisection fallback for robustness. Sign
+     * convention: outflows (investments) are negative, inflows (redemptions / current value)
+     * are positive — the same convention as Excel's XIRR.
+     *
+     * @return the annualized rate as a percentage (e.g. 12.34 for 12.34%), or null if it can't
+     *         be solved (fewer than 2 flows, all same sign, or no convergence in the search range)
+     */
+    public static BigDecimal xirr(List<CashFlow> flows) {
+        if (flows == null || flows.size() < 2) return null;
+        boolean hasPositive = flows.stream().anyMatch(f -> f.amount() > 0);
+        boolean hasNegative = flows.stream().anyMatch(f -> f.amount() < 0);
+        if (!hasPositive || !hasNegative) return null;
+
+        LocalDate epoch = flows.stream().map(CashFlow::date).min(LocalDate::compareTo).orElseThrow();
+        double[] years = flows.stream().mapToDouble(f -> ChronoUnit.DAYS.between(epoch, f.date()) / 365.0).toArray();
+        double[] amounts = flows.stream().mapToDouble(CashFlow::amount).toArray();
+
+        java.util.function.DoubleUnaryOperator npv = rate -> {
+            double sum = 0;
+            for (int i = 0; i < amounts.length; i++) sum += amounts[i] / Math.pow(1 + rate, years[i]);
+            return sum;
+        };
+        java.util.function.DoubleUnaryOperator npvDerivative = rate -> {
+            double sum = 0;
+            for (int i = 0; i < amounts.length; i++) {
+                if (years[i] == 0) continue;
+                sum += -years[i] * amounts[i] / Math.pow(1 + rate, years[i] + 1);
+            }
+            return sum;
+        };
+
+        Double rate = newtonRaphson(npv, npvDerivative, 0.10);
+        if (rate == null || !isValidRate(rate)) {
+            rate = bisection(npv, -0.9999, 100.0);
+        }
+        if (rate == null || !isValidRate(rate)) return null;
+        return BigDecimal.valueOf(rate * 100).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static boolean isValidRate(double rate) {
+        return Double.isFinite(rate) && rate > -1.0 && rate < 1000;
+    }
+
+    private static Double newtonRaphson(java.util.function.DoubleUnaryOperator f,
+                                         java.util.function.DoubleUnaryOperator fPrime, double guess) {
+        double rate = guess;
+        for (int i = 0; i < 100; i++) {
+            double value = f.applyAsDouble(rate);
+            if (Math.abs(value) < 1e-7) return rate;
+            double derivative = fPrime.applyAsDouble(rate);
+            if (derivative == 0 || !Double.isFinite(derivative)) return null;
+            double next = rate - value / derivative;
+            if (!Double.isFinite(next) || next <= -1.0) return null;
+            rate = next;
+        }
+        return Math.abs(f.applyAsDouble(rate)) < 1e-4 ? rate : null;
+    }
+
+    /** Bisection fallback when Newton-Raphson fails to converge — slower but always stable if a root exists in range. */
+    private static Double bisection(java.util.function.DoubleUnaryOperator f, double lo, double hi) {
+        double fLo = f.applyAsDouble(lo);
+        double fHi = f.applyAsDouble(hi);
+        if (!Double.isFinite(fLo) || !Double.isFinite(fHi) || fLo * fHi > 0) return null;
+        for (int i = 0; i < 200; i++) {
+            double mid = (lo + hi) / 2;
+            double fMid = f.applyAsDouble(mid);
+            if (Math.abs(fMid) < 1e-7 || (hi - lo) < 1e-9) return mid;
+            if (fLo * fMid < 0) { hi = mid; fHi = fMid; } else { lo = mid; fLo = fMid; }
+        }
+        return (lo + hi) / 2;
     }
 }
