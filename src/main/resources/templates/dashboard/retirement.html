@@ -46,7 +46,15 @@
 
         <div class="card" th:if="${result != null}">
             <h2>Result</h2>
-            <table class="data">
+            <div th:if="${readinessPercent != null}">
+                <div class="bar-track"><div class="bar-fill" th:classappend="${readinessPercent < 50 ? 'bar-danger' : ''}"
+                                              th:style="'width:' + ${readinessPercent} + '%'"></div></div>
+                <div class="bar-labels">
+                    <span th:text="${fmt.money(result.currentCorpus(), currentUser)} + ' saved'"></span>
+                    <span th:text="${readinessPercent} + '% of target corpus'"></span>
+                </div>
+            </div>
+            <table class="data" style="margin-top:16px">
                 <tbody>
                 <tr><td>Corpus required</td><td class="mono" th:text="${fmt.money(result.corpusRequired(), currentUser)}"></td></tr>
                 <tr><td>Current retirement corpus</td><td class="mono" th:text="${fmt.money(result.currentCorpus(), currentUser)}"></td></tr>

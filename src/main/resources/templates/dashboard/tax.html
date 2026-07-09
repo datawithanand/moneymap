@@ -25,6 +25,7 @@
                     <th class="mono" th:text="${total80C.min(cap80C)} + ' / 150000'"></th></tr>
                 </tbody>
             </table>
+            <div class="bar-track"><div class="bar-fill" th:style="'width:' + ${cap80CPercent} + '%'"></div></div>
         </div>
 
         <div class="card">

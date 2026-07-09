@@ -390,8 +390,11 @@ public class DashboardController {
         model.addAttribute("epf", epf);
         model.addAttribute("elss", elss);
         model.addAttribute("lifePremiums", lifePremiums);
+        BigDecimal cap80C = BigDecimal.valueOf(150000);
         model.addAttribute("total80C", total80C);
-        model.addAttribute("cap80C", BigDecimal.valueOf(150000));
+        model.addAttribute("cap80C", cap80C);
+        model.addAttribute("cap80CPercent", total80C.min(cap80C)
+                .multiply(BigDecimal.valueOf(100)).divide(cap80C, 0, RoundingMode.HALF_UP));
         model.addAttribute("health80D", health80D);
         model.addAttribute("hasNpsTier1", nps80CCD.signum() < 0);
         List<SalaryProfile> salaryProfiles = db.salaryProfiles.findWhere(r -> uid.equals(r.getOwnerId()));
@@ -484,6 +487,10 @@ public class DashboardController {
                 .reduce(BigDecimal.ZERO, BigDecimal::add).multiply(BigDecimal.valueOf(12));
         BigDecimal recommendedTermCover = annualIncome.multiply(BigDecimal.valueOf(12));   // common 10-15x rule of thumb, using 12x
         BigDecimal termCoverageGap = recommendedTermCover.subtract(totalTermCover).max(BigDecimal.ZERO);
+        // Coverage bar width, precomputed (Section 12: template only draws, never computes).
+        BigDecimal coveragePercent = recommendedTermCover.signum() > 0
+                ? totalTermCover.multiply(BigDecimal.valueOf(100)).divide(recommendedTermCover, 0, RoundingMode.HALF_UP).min(BigDecimal.valueOf(100))
+                : null;
 
         model.addAttribute("termPolicies", termPolicies);
         model.addAttribute("healthPolicies", healthPolicies);
@@ -492,6 +499,7 @@ public class DashboardController {
         model.addAttribute("annualIncome", annualIncome);
         model.addAttribute("recommendedTermCover", recommendedTermCover);
         model.addAttribute("termCoverageGap", termCoverageGap);
+        model.addAttribute("coveragePercent", coveragePercent);
         return "dashboard/insurance";
     }
 
@@ -549,8 +557,14 @@ public class DashboardController {
                     nonNegative(currentCorpus, "Current retirement corpus"),
                     nonNegative(monthlyInvestment, "Monthly investment"),
                     nonNegative(expectedReturnPercent, "Expected annual return %"));
-            model.addAttribute("result",
-                    CalculatorMath.fire(annualExpense, swrPercent, currentCorpus, monthlyInvestment, expectedReturnPercent));
+            CalculatorMath.FireResult result =
+                    CalculatorMath.fire(annualExpense, swrPercent, currentCorpus, monthlyInvestment, expectedReturnPercent);
+            model.addAttribute("result", result);
+            if (result.corpusRequired().signum() > 0) {
+                model.addAttribute("readinessPercent", result.currentCorpus()
+                        .multiply(BigDecimal.valueOf(100)).divide(result.corpusRequired(), 0, RoundingMode.HALF_UP)
+                        .min(BigDecimal.valueOf(100)));
+            }
         } catch (ValidationException e) {
             model.addAttribute("error", e.getMessage());
         }
