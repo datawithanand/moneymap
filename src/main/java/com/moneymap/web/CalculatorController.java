@@ -131,4 +131,77 @@ public class CalculatorController {
         }
         return "calculators/cagr";
     }
+
+    // ── Direct vs Regular Mutual Fund ───────────────────────────────────────
+
+    @GetMapping("/calculators/direct-vs-regular")
+    public String directVsRegularForm() {
+        return "calculators/direct-vs-regular";
+    }
+
+    @PostMapping("/calculators/direct-vs-regular")
+    public String directVsRegularCompute(@RequestParam BigDecimal lumpSum,
+                                         @RequestParam BigDecimal years,
+                                         @RequestParam BigDecimal directCagrPercent,
+                                         @RequestParam BigDecimal regularCagrPercent,
+                                         Model model) {
+        model.addAttribute("lumpSum", lumpSum);
+        model.addAttribute("years", years);
+        model.addAttribute("directCagrPercent", directCagrPercent);
+        model.addAttribute("regularCagrPercent", regularCagrPercent);
+        try {
+            check(positive(lumpSum, "Investment amount"),
+                    positive(years, "Years"),
+                    percentRange(directCagrPercent, "Direct plan expected CAGR %"),
+                    percentRange(regularCagrPercent, "Regular plan expected CAGR %"),
+                    directCagrPercent.compareTo(regularCagrPercent) < 0
+                            ? "Direct plan CAGR is normally higher than Regular (lower expense ratio) — double-check your inputs."
+                            : null);
+            model.addAttribute("result",
+                    CalculatorMath.directVsRegular(lumpSum, years, directCagrPercent, regularCagrPercent));
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
+        return "calculators/direct-vs-regular";
+    }
+
+    // ── Debt Mutual Fund vs Fixed Deposit ───────────────────────────────────
+
+    @GetMapping("/calculators/debt-fund-vs-fd")
+    public String debtFundVsFdForm() {
+        return "calculators/debt-fund-vs-fd";
+    }
+
+    @PostMapping("/calculators/debt-fund-vs-fd")
+    public String debtFundVsFdCompute(@RequestParam BigDecimal investment,
+                                      @RequestParam BigDecimal years,
+                                      @RequestParam BigDecimal fdRatePercent,
+                                      @RequestParam BigDecimal debtFundReturnPercent,
+                                      @RequestParam BigDecimal slabPercent,
+                                      @RequestParam(required = false) Boolean indexationEligible,
+                                      @RequestParam(required = false) BigDecimal inflationPercent,
+                                      Model model) {
+        boolean indexed = Boolean.TRUE.equals(indexationEligible);
+        model.addAttribute("investment", investment);
+        model.addAttribute("years", years);
+        model.addAttribute("fdRatePercent", fdRatePercent);
+        model.addAttribute("debtFundReturnPercent", debtFundReturnPercent);
+        model.addAttribute("slabPercent", slabPercent);
+        model.addAttribute("indexationEligible", indexed);
+        model.addAttribute("inflationPercent", inflationPercent);
+        try {
+            check(positive(investment, "Investment amount"),
+                    positive(years, "Years"),
+                    percentRange(fdRatePercent, "FD interest rate %"),
+                    percentRange(debtFundReturnPercent, "Debt fund expected return %"),
+                    percentRange(slabPercent, "Tax slab %"),
+                    !indexed ? null : nonNegative(inflationPercent, "Expected inflation %"));
+            model.addAttribute("result",
+                    CalculatorMath.debtFundVsFd(investment, years, fdRatePercent, debtFundReturnPercent,
+                            slabPercent, indexed, inflationPercent));
+        } catch (ValidationException e) {
+            model.addAttribute("error", e.getMessage());
+        }
+        return "calculators/debt-fund-vs-fd";
+    }
 }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Debt Mutual Fund vs Fixed Deposit')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-debt-fund-vs-fd')}"></nav>
+    <main class="content">
+        <h1>Debt Mutual Fund vs Fixed Deposit</h1>
+        <p class="hint">Under current Indian tax law (post 1 Apr 2023), debt mutual fund gains are
+            taxed at your slab rate at redemption — the same rate as FD interest — so there's no
+            automatic tax advantage anymore for new investments. The debt fund's edge here is purely
+            tax <em>deferral</em>: FD interest is taxed every year on accrual, while a debt fund is
+            only taxed once, when you actually redeem it. If your fund units were bought before
+            1 Apr 2023, they may still be grandfathered into the old indexation-based 20% LTCG
+            treatment — tick the box below if that applies to you.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/debt-fund-vs-fd}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="investment">Investment Amount</label>
+                <input type="number" step="any" min="0.01" id="investment" name="investment"
+                       th:value="${investment}" required>
+
+                <label for="years">Years</label>
+                <input type="number" step="any" min="0.01" id="years" name="years" th:value="${years}" required>
+
+                <label for="fdRatePercent">FD Interest Rate %</label>
+                <input type="number" step="any" min="0" max="100" id="fdRatePercent" name="fdRatePercent"
+                       th:value="${fdRatePercent}" required>
+
+                <label for="debtFundReturnPercent">Debt Fund Expected Return %</label>
+                <input type="number" step="any" min="0" max="100" id="debtFundReturnPercent" name="debtFundReturnPercent"
+                       th:value="${debtFundReturnPercent}" required>
+
+                <label for="slabPercent">Your Income Tax Slab %</label>
+                <input type="number" step="any" min="0" max="100" id="slabPercent" name="slabPercent"
+                       th:value="${slabPercent}" required>
+
+                <p><label style="display:inline;font-weight:600">
+                    <input type="checkbox" id="indexationEligible" name="indexationEligible" value="true"
+                           th:checked="${indexationEligible == true}">
+                    <span>My debt fund units were bought before 1 Apr 2023 (indexation-eligible)</span>
+                </label></p>
+
+                <label for="inflationPercent">Expected Inflation % (only used if indexation-eligible above)</label>
+                <input type="number" step="any" min="0" max="100" id="inflationPercent" name="inflationPercent"
+                       th:value="${inflationPercent}">
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${error != null}">
+            <p class="field-error" th:text="${error}"></p>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result (Post-Tax)</h2>
+            <div class="bucket-grid">
+                <div class="card">
+                    <h3>FD Value</h3>
+                    <p class="figure" th:text="${fmt.money(result.fdPostTaxValue(), currentUser)}"></p>
+                    <p class="hint" th:text="'Effective post-tax rate: ' + ${result.fdEffectivePostTaxRate()} + '%'"></p>
+                </div>
+                <div class="card">
+                    <h3>Debt Fund Value</h3>
+                    <p class="figure" th:text="${fmt.money(result.debtFundPostTaxValue(), currentUser)}"></p>
+                    <p class="hint" th:text="'Effective post-tax rate: ' + ${result.debtFundEffectivePostTaxRate()} + '%'"></p>
+                </div>
+                <div class="card">
+                    <h3>Difference</h3>
+                    <p class="figure" th:text="${fmt.money(result.difference(), currentUser)}"></p>
+                    <p class="hint" th:if="${result.difference().signum() > 0}">Debt fund ahead — mostly the deferral effect above.</p>
+                    <p class="hint" th:if="${result.difference().signum() &lt; 0}">FD ahead at these assumed rates.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

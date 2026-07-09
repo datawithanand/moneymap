@@ -260,4 +260,76 @@ public final class CalculatorMath {
         double rate = (Math.pow(ratio, 1.0 / years.doubleValue()) - 1) * 100;
         return new CagrResult(BigDecimal.valueOf(rate).setScale(2, RoundingMode.HALF_UP));
     }
+
+    // ── Direct vs Regular Mutual Fund ───────────────────────────────────────
+
+    public record DirectVsRegularResult(BigDecimal directValue, BigDecimal regularValue,
+                                         BigDecimal difference, BigDecimal extraCostPercent) {}
+
+    /**
+     * Compounds the same investment at two CAGRs that differ only by the expense-ratio gap
+     * between a fund's Direct and Regular plans — the entire "which plan costs more" question
+     * reduces to compounding that one percentage-point gap over time.
+     */
+    public static DirectVsRegularResult directVsRegular(BigDecimal lumpSum, BigDecimal years,
+                                                          BigDecimal directCagrPercent, BigDecimal regularCagrPercent) {
+        double p = lumpSum.doubleValue();
+        double y = years.doubleValue();
+        double direct = p * Math.pow(1 + directCagrPercent.doubleValue() / 100.0, y);
+        double regular = p * Math.pow(1 + regularCagrPercent.doubleValue() / 100.0, y);
+        BigDecimal directValue = money(direct);
+        BigDecimal regularValue = money(regular);
+        BigDecimal difference = directValue.subtract(regularValue);
+        BigDecimal extraCostPercent = regularValue.signum() == 0 ? BigDecimal.ZERO
+                : difference.multiply(BigDecimal.valueOf(100)).divide(regularValue, 2, RoundingMode.HALF_UP);
+        return new DirectVsRegularResult(directValue, regularValue, difference, extraCostPercent);
+    }
+
+    // ── Debt Mutual Fund vs Fixed Deposit ───────────────────────────────────
+
+    public record DebtFundVsFdResult(BigDecimal fdPostTaxValue, BigDecimal debtFundPostTaxValue,
+                                      BigDecimal difference, BigDecimal fdEffectivePostTaxRate,
+                                      BigDecimal debtFundEffectivePostTaxRate) {}
+
+    /**
+     * Post-tax comparison under current (post-April-2023) Indian tax law: FD interest is taxed
+     * annually at slab rate (approximated here as compounding at a slab-reduced rate, since FD
+     * interest is taxed on accrual, not at maturity); debt mutual fund gains are taxed once at
+     * redemption, also at slab rate (indexation/LTCG benefit no longer applies to debt funds
+     * bought on or after 1 Apr 2023) — so the debt fund's advantage is purely the one-time
+     * tax-deferral effect of paying tax at the end instead of annually, not a lower rate.
+     * For funds bought before that date and eligible for grandfathered indexation, pass
+     * indexationEligible=true to apply 20% LTCG tax on the inflation-indexed gain instead.
+     */
+    public static DebtFundVsFdResult debtFundVsFd(BigDecimal investment, BigDecimal years,
+                                                    BigDecimal fdRatePercent, BigDecimal debtFundReturnPercent,
+                                                    BigDecimal slabPercent, boolean indexationEligible,
+                                                    BigDecimal inflationPercent) {
+        double p = investment.doubleValue();
+        double y = years.doubleValue();
+        double slab = slabPercent.doubleValue() / 100.0;
+
+        double fdPostTaxRate = fdRatePercent.doubleValue() / 100.0 * (1 - slab);
+        double fdPostTax = p * Math.pow(1 + fdPostTaxRate, y);
+
+        double debtFundPreTax = p * Math.pow(1 + debtFundReturnPercent.doubleValue() / 100.0, y);
+        double debtFundGain = debtFundPreTax - p;
+        double debtFundTax;
+        if (indexationEligible) {
+            double infl = inflationPercent == null ? 0 : inflationPercent.doubleValue() / 100.0;
+            double indexedCost = p * Math.pow(1 + infl, y);
+            double indexedGain = Math.max(0, debtFundPreTax - indexedCost);
+            debtFundTax = indexedGain * 0.20;   // 20% LTCG on indexed gain (grandfathered pre-Apr-2023 rule)
+        } else {
+            debtFundTax = Math.max(0, debtFundGain) * slab;
+        }
+        double debtFundPostTax = debtFundPreTax - debtFundTax;
+        double debtFundEffectiveRate = y > 0 ? Math.pow(debtFundPostTax / p, 1.0 / y) - 1 : 0;
+
+        BigDecimal fdValue = money(fdPostTax);
+        BigDecimal debtValue = money(debtFundPostTax);
+        return new DebtFundVsFdResult(fdValue, debtValue, debtValue.subtract(fdValue),
+                BigDecimal.valueOf(fdPostTaxRate * 100).setScale(2, RoundingMode.HALF_UP),
+                BigDecimal.valueOf(debtFundEffectiveRate * 100).setScale(2, RoundingMode.HALF_UP));
+    }
 }

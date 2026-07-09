@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Direct vs Regular Mutual Fund')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-direct-vs-regular')}"></nav>
+    <main class="content">
+        <h1>Direct vs Regular Mutual Fund</h1>
+        <p class="hint">Direct plans skip distributor commission, so their expense ratio — and
+            therefore CAGR — is typically 0.5-1.5% higher than the same fund's Regular plan. This
+            compounds the two CAGRs over time to show what that gap actually costs.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/direct-vs-regular}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="lumpSum">Investment Amount</label>
+                <input type="number" step="any" min="0.01" id="lumpSum" name="lumpSum"
+                       th:value="${lumpSum}" required>
+
+                <label for="years">Years</label>
+                <input type="number" step="any" min="0.01" id="years" name="years" th:value="${years}" required>
+
+                <label for="directCagrPercent">Direct Plan Expected CAGR %</label>
+                <input type="number" step="any" min="0" max="100" id="directCagrPercent" name="directCagrPercent"
+                       th:value="${directCagrPercent}" required>
+
+                <label for="regularCagrPercent">Regular Plan Expected CAGR %</label>
+                <input type="number" step="any" min="0" max="100" id="regularCagrPercent" name="regularCagrPercent"
+                       th:value="${regularCagrPercent}" required>
+                <div class="hint">Same fund, same underlying portfolio — only the expense ratio (and
+                    therefore net return) differs between plans.</div>
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${error != null}">
+            <p class="field-error" th:text="${error}"></p>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result</h2>
+            <div class="bucket-grid">
+                <div class="card">
+                    <h3>Direct Plan Value</h3>
+                    <p class="figure" th:text="${fmt.money(result.directValue(), currentUser)}"></p>
+                </div>
+                <div class="card">
+                    <h3>Regular Plan Value</h3>
+                    <p class="figure" th:text="${fmt.money(result.regularValue(), currentUser)}"></p>
+                </div>
+                <div class="card">
+                    <h3>What Regular Plan Costs You</h3>
+                    <p class="figure" th:text="${fmt.money(result.difference(), currentUser)}"></p>
+                    <p class="hint" th:text="${result.extraCostPercent()} + '% less than the Direct plan value'"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>
