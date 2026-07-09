@@ -83,6 +83,12 @@
                         emergency — balances are never shown at that level.</div>
                 </details>
 
+                <label for="labels">Labels (optional)</label>
+                <input type="text" id="labels" name="labels" th:value="${values['labels']}"
+                       placeholder="e.g. tax-saving, high-risk, retirement-2040">
+                <div class="hint">Comma-separated free-form tags — independent of the Family Member field above,
+                    useful for grouping records across modules (e.g. all your tax-saving investments).</div>
+
                 <p style="margin-top:18px">
                     <button type="submit">Save</button>
                     <a class="btn btn-secondary" th:href="@{'/assets/' + ${module.path}}">Cancel</a>

@@ -67,21 +67,47 @@
         </div>
 
         <div class="card">
+            <h2>Age-Based Glide Path Suggestion</h2>
+            <p class="hint">Freefincal-style rule of thumb: equity % = 110 − age (clamped 20–90), with the
+                remainder split 70% debt / 20% gold / 10% cash. A starting point, not investment advice —
+                review and adjust before saving.</p>
+            <form th:action="@{/dashboard/allocation/age}" method="post" class="inline">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="age" style="display:inline;margin-right:8px">Your Age</label>
+                <input type="number" id="age" name="age" min="0" max="120" style="width:90px;display:inline"
+                       th:value="${target != null ? target.age : ''}" required>
+                <button type="submit" class="btn-sm">Get Suggestion</button>
+            </form>
+            <div th:if="${glidePath != null}" class="bucket-grid" style="margin-top:14px">
+                <div class="card"><h3>Suggested Equity</h3><p class="figure" th:text="${glidePath.equity} + '%'"></p></div>
+                <div class="card"><h3>Suggested Debt</h3><p class="figure" th:text="${glidePath.debt} + '%'"></p></div>
+                <div class="card"><h3>Suggested Gold</h3><p class="figure" th:text="${glidePath.gold} + '%'"></p></div>
+                <div class="card"><h3>Suggested Cash</h3><p class="figure" th:text="${glidePath.cash} + '%'"></p></div>
+            </div>
+            <p th:if="${glidePath != null}" style="margin-top:10px">
+                <button type="button" class="btn-secondary" id="applyGlidePath"
+                        th:attr="data-equity=${glidePath.equity},data-debt=${glidePath.debt},data-gold=${glidePath.gold},data-cash=${glidePath.cash}">
+                    Apply to Target Form Below
+                </button>
+            </p>
+        </div>
+
+        <div class="card">
             <h2>Target Allocation</h2>
             <form th:action="@{/dashboard/allocation/target}" method="post">
                 <input type="hidden" name="_csrf" th:value="${csrf}">
                 <div class="row-flex">
-                    <div><label>Equity %</label><input type="number" step="any" min="0" max="100" name="equity"
+                    <div><label>Equity %</label><input type="number" step="any" min="0" max="100" name="equity" id="targetEquity"
                         th:value="${target != null ? target.equityTargetPercent : 50}" required></div>
-                    <div><label>Debt %</label><input type="number" step="any" min="0" max="100" name="debt"
+                    <div><label>Debt %</label><input type="number" step="any" min="0" max="100" name="debt" id="targetDebt"
                         th:value="${target != null ? target.debtTargetPercent : 25}" required></div>
-                    <div><label>Gold %</label><input type="number" step="any" min="0" max="100" name="gold"
+                    <div><label>Gold %</label><input type="number" step="any" min="0" max="100" name="gold" id="targetGold"
                         th:value="${target != null ? target.goldTargetPercent : 10}" required></div>
-                    <div><label>Real Estate %</label><input type="number" step="any" min="0" max="100" name="realEstate"
+                    <div><label>Real Estate %</label><input type="number" step="any" min="0" max="100" name="realEstate" id="targetRealEstate"
                         th:value="${target != null ? target.realEstateTargetPercent : 5}" required></div>
-                    <div><label>Cash %</label><input type="number" step="any" min="0" max="100" name="cash"
+                    <div><label>Cash %</label><input type="number" step="any" min="0" max="100" name="cash" id="targetCash"
                         th:value="${target != null ? target.cashTargetPercent : 10}" required></div>
-                    <div><label>Alternative %</label><input type="number" step="any" min="0" max="100" name="alternative"
+                    <div><label>Alternative %</label><input type="number" step="any" min="0" max="100" name="alternative" id="targetAlternative"
                         th:value="${target != null ? target.alternativeTargetPercent : 0}" required></div>
                 </div>
                 <p><button type="submit">Save Targets</button></p>
@@ -89,6 +115,19 @@
             </form>
         </div>
     </main>
+    <script>
+        var applyBtn = document.getElementById('applyGlidePath');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', function () {
+                document.getElementById('targetEquity').value = this.getAttribute('data-equity');
+                document.getElementById('targetDebt').value = this.getAttribute('data-debt');
+                document.getElementById('targetGold').value = this.getAttribute('data-gold');
+                document.getElementById('targetCash').value = this.getAttribute('data-cash');
+                document.getElementById('targetRealEstate').value = '0';
+                document.getElementById('targetAlternative').value = '0';
+            });
+        }
+    </script>
 </div>
 </body>
 </html>

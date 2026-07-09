@@ -64,7 +64,18 @@ public final class RecordBinder {
                 bw.setPropertyValue(c, v);
             }
         }
+        if (params.containsKey("labels")) {
+            entity.setLabels(parseLabels(params.get("labels")));
+        }
         return errors;
+    }
+
+    /** Comma-separated free-form tags -> trimmed, de-duplicated, non-empty list. */
+    private static List<String> parseLabels(String raw) {
+        if (raw == null || raw.isBlank()) return List.of();
+        return java.util.Arrays.stream(raw.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty())
+                .distinct().limit(20).toList();
     }
 
     private static void setNullSafe(BeanWrapper bw, String name) {

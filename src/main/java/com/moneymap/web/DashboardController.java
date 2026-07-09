@@ -325,7 +325,58 @@ public class DashboardController {
         model.addAttribute("donutGradient", donutGradient(summary));
         model.addAttribute("allocationClasses", allocationRows(summary, target));
         model.addAttribute("allocationTotal", summary.allocationTotal());
+        if (target != null && target.getAge() != null) {
+            model.addAttribute("glidePath", glidePathSuggestion(target.getAge()));
+        }
         return "dashboard/allocation";
+    }
+
+    /**
+     * Age-based equity glide path (Section 12 §27): equity% = 110 - age, clamped to a sane
+     * 20-90 band (the common "110 minus age" variant of the rule of thumb, slightly more
+     * equity-friendly than "100 minus age" to account for longer life expectancy). The
+     * remainder is split 70% debt / 20% gold / 10% cash as a reasonable stable default —
+     * the user can freely override any of these in the target form below.
+     */
+    private Map<String, BigDecimal> glidePathSuggestion(int age) {
+        int equityPercent = Math.max(20, Math.min(90, 110 - age));
+        BigDecimal equity = BigDecimal.valueOf(equityPercent);
+        BigDecimal remainder = BigDecimal.valueOf(100 - equityPercent);
+        BigDecimal debt = remainder.multiply(BigDecimal.valueOf(70)).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+        BigDecimal gold = remainder.multiply(BigDecimal.valueOf(20)).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+        BigDecimal cash = remainder.subtract(debt).subtract(gold);   // absorbs rounding so the total is exactly 100
+        Map<String, BigDecimal> out = new LinkedHashMap<>();
+        out.put("equity", equity);
+        out.put("debt", debt);
+        out.put("gold", gold);
+        out.put("cash", cash);
+        return out;
+    }
+
+    @PostMapping("/dashboard/allocation/age")
+    public String saveAllocationAge(@RequestParam Integer age, HttpServletRequest request, RedirectAttributes ra) {
+        User owner = user(request);
+        if (age < 0 || age > 120) {
+            ra.addFlashAttribute("error", "Enter a realistic age (0-120).");
+            return "redirect:/dashboard/allocation";
+        }
+        AllocationTarget target = db.allocationTargets
+                .findWhere(t -> owner.getId().equals(t.getOwnerId())).stream().findFirst()
+                .orElseGet(AllocationTarget::new);
+        target.setOwnerId(owner.getId());
+        target.setAge(age);
+        if (target.getEquityTargetPercent() == null) {
+            // First-time setup: seed all six targets from the suggestion so the record is complete and sums to 100.
+            Map<String, BigDecimal> g = glidePathSuggestion(age);
+            target.setEquityTargetPercent(g.get("equity"));
+            target.setDebtTargetPercent(g.get("debt"));
+            target.setGoldTargetPercent(g.get("gold"));
+            target.setCashTargetPercent(g.get("cash"));
+            target.setRealEstateTargetPercent(BigDecimal.ZERO);
+            target.setAlternativeTargetPercent(BigDecimal.ZERO);
+        }
+        db.allocationTargets.save(target);
+        return "redirect:/dashboard/allocation";
     }
 
     @PostMapping("/dashboard/allocation/target")

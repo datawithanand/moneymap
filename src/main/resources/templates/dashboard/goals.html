@@ -17,18 +17,29 @@
                     <th>Days Remaining</th><th>SIP (nominal)</th><th>SIP (inflation-adjusted)</th></tr></thead>
                 <tbody>
                 <tr th:each="r : ${rows}">
-                    <td><a th:href="@{'/assets/goals/' + ${r['goal'].id} + '/edit'}" th:text="${r['goal'].goalName}"></a></td>
+                    <td>
+                        <a th:href="@{'/assets/goals/' + ${r['goal'].id} + '/edit'}" th:text="${r['goal'].goalName}"></a>
+                        <span th:if="${r['goal'].recurring}" class="hint" style="display:block"
+                              th:text="'Repeats every ' + ${r['goal'].recurrenceIntervalYears} + ' yr(s)'"></span>
+                    </td>
                     <td th:text="${#strings.replace(r['goal'].goalType, '_', ' ')}"></td>
                     <td class="mono" th:text="${fmt.money(r['goal'].targetAmountToday, currentUser)}"></td>
                     <td th:text="${r['goal'].targetDate}"></td>
                     <td class="mono" th:text="${r['daysRemaining'] != null ? r['daysRemaining'] : '—'}"
                         th:class="${r['daysRemaining'] != null and r['daysRemaining'] < 0 ? 'field-error' : ''}"></td>
-                    <td class="mono" th:text="${fmt.money(r['nominalSip'], currentUser)}"></td>
+                    <td class="mono">
+                        <span th:text="${fmt.money(r['nominalSip'], currentUser)}"></span>
+                        <span th:if="${r['goal'].sipStepUpPercent != null and r['goal'].sipStepUpPercent.signum() > 0}"
+                              class="hint" style="display:block"
+                              th:text="'starting, +' + ${r['goal'].sipStepUpPercent} + '%/yr'"></span>
+                    </td>
                     <td class="mono" th:text="${fmt.money(r['inflationAdjustedSip'], currentUser)}"></td>
                 </tr>
                 <tr th:if="${rows.isEmpty()}"><td colspan="7" class="muted">No goals yet.</td></tr>
                 </tbody>
             </table>
+            <p class="hint">Step-up SIPs show the starting monthly amount — increase it by the stated % each
+                year. Recurring goals fund the next occurrence only; continue investing for future ones.</p>
         </div>
     </main>
 </div>
