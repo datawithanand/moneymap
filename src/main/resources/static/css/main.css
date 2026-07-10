@@ -120,6 +120,36 @@ svg { display: block; }
 }
 .topnav-dropdown-divider { height: 1px; background: var(--border); margin: 6px 4px; }
 
+/* Nested flyout submenu (e.g. Assets & Liabilities -> Assets -> Bank Accounts) */
+.topnav-subitem { position: relative; }
+.topnav-subitem > .topnav-sublink {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; padding: 8px 12px; border-radius: var(--radius-sm);
+  color: var(--text); text-decoration: none; font-size: .89rem; font-weight: 600;
+  background: none; border: none; cursor: pointer; font-family: inherit; text-align: left;
+}
+.topnav-subitem > .topnav-sublink:hover { background: var(--surface-alt); }
+.topnav-subitem > .topnav-sublink .chev-right { width: 12px; height: 12px; opacity: .55; transform: rotate(-90deg); flex-shrink: 0; }
+.topnav-submenu {
+  position: absolute; top: -8px; left: calc(100% + 6px); min-width: 220px; max-width: 300px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-lg); padding: 8px; z-index: 210;
+  opacity: 0; visibility: hidden; transform: translateX(-6px);
+  transition: opacity .14s ease, transform .14s ease, visibility .14s;
+  max-height: 60vh; overflow-y: auto;
+}
+.topnav-subitem:hover > .topnav-submenu,
+.topnav-subitem:focus-within > .topnav-submenu { opacity: 1; visibility: visible; transform: translateX(0); }
+.topnav-submenu a {
+  display: block; padding: 8px 12px; border-radius: var(--radius-sm);
+  color: var(--text); text-decoration: none; font-size: .89rem; font-weight: 500;
+}
+.topnav-submenu a:hover { background: var(--surface-alt); }
+.topnav-submenu a.active { background: var(--primary-soft); color: var(--primary-strong); font-weight: 600; }
+/* A dropdown containing a flyout submenu must not clip it — overflow-y:auto alone forces
+   overflow-x to auto (clipping) per the CSS spec, so opt out explicitly where needed. */
+.topnav-dropdown.has-submenu { overflow: visible; max-height: none; }
+
 .topbar-utility { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .topbar-icon-btn {
   position: relative; display: flex; align-items: center; justify-content: center;
@@ -166,6 +196,14 @@ svg { display: block; }
     border-left: 2px solid var(--border);
   }
   .topnav-item.open .topnav-dropdown { display: block; }
+  .topnav-submenu {
+    position: static; box-shadow: none; border: none; opacity: 1; visibility: visible;
+    transform: none; display: none; max-width: none; margin-left: 12px;
+    border-left: 2px solid var(--border);
+  }
+  .topnav-subitem.open .topnav-submenu { display: block; }
+  .topnav-subitem > .topnav-sublink .chev-right { transform: rotate(0deg); transition: transform .15s; }
+  .topnav-subitem.open > .topnav-sublink .chev-right { transform: rotate(90deg); }
   .topbar-utility { gap: 0; }
 }
 

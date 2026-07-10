@@ -7,9 +7,15 @@
     <nav th:replace="~{fragments/layout :: sidebar('export')}"></nav>
     <main class="content">
         <h1>Review Detected Holdings</h1>
-        <p class="hint" th:if="${rows.isEmpty()}">No holdings could be detected in this statement.
-            The CAS layout may differ from what this parser expects — you can still add your
-            mutual funds manually.</p>
+        <div class="card" th:if="${rows.isEmpty()}">
+            <p class="hint">No holdings could be detected in this statement. The CAS layout may
+                differ from what this parser expects — this is a best-effort parser, not an
+                official CAMS/KFintech integration, and statement layouts vary. A diagnostic note
+                was logged on the server (with no personal or financial data in it) if you'd like
+                to report this for the parser to be improved further.</p>
+            <p><a class="btn btn-secondary" th:href="@{/assets/mutual-funds/new}">Add Mutual Funds Manually</a>
+                <a class="btn btn-secondary" th:href="@{/import/cas}">Try a Different File</a></p>
+        </div>
         <p class="hint" th:unless="${rows.isEmpty()}">Found <span th:text="${rows.size()}"></span>
             possible holding(s). Review and correct each row — uncheck any that look wrong.
             Average NAV / cost basis isn't available from a CAS statement, so gain/loss won't be

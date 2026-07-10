@@ -6,6 +6,8 @@ import com.moneymap.repository.Db;
 import com.moneymap.service.CasParserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +32,8 @@ import java.util.Map;
 @Controller
 @RequestMapping("/import/cas")
 public class CasImportController {
+
+    private static final Logger log = LoggerFactory.getLogger(CasImportController.class);
 
     private final CasParserService casParserService;
     private final Db db;
@@ -60,7 +64,13 @@ public class CasImportController {
             ra.addFlashAttribute("error", "That password did not open the PDF — please check it and try again.");
             return "redirect:/import/cas";
         } catch (IOException e) {
+            log.warn("[CasImport] Failed to read uploaded PDF: {}", e.getMessage());
             ra.addFlashAttribute("error", "Could not read this PDF. It may be corrupted or in an unsupported format.");
+            return "redirect:/import/cas";
+        } catch (Exception e) {
+            log.error("[CasImport] Unexpected error parsing CAS PDF", e);
+            ra.addFlashAttribute("error", "Something went wrong reading this statement. "
+                    + "You can still add your mutual funds manually.");
             return "redirect:/import/cas";
         }
     }

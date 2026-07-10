@@ -117,6 +117,23 @@
             <p><a th:href="@{/assets/goals}">View all goals →</a></p>
         </div>
 
+        <!-- Recent activity: closest honest equivalent to "recent transactions" — MoneyMap tracks
+             net worth, not a separate income/expense ledger, so this shows recently added/edited records. -->
+        <div class="card" th:if="${recentActivity != null and !recentActivity.isEmpty()}">
+            <h2>Recent Activity</h2>
+            <table class="data">
+                <thead><tr><th>Module</th><th>Record</th><th>Action</th><th>When</th></tr></thead>
+                <tbody>
+                <tr th:each="a : ${recentActivity}">
+                    <td><a th:href="@{'/assets/' + ${a['modulePath']}}" th:text="${a['moduleName']}"></a></td>
+                    <td th:text="${a['label']}"></td>
+                    <td th:text="${a['isNew'] ? 'Added' : 'Updated'}"></td>
+                    <td th:text="${fmt.dateTime(a['when'])}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- Quick actions -->
         <p>
             <form class="inline" th:action="@{/dashboard/snapshot}" method="post">

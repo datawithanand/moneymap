@@ -57,7 +57,7 @@ public class FamilyService {
 
     // ── §1.2 / §1.3 Invitations ──────────────────────────────────────────────
 
-    public String invite(User inviter, String identifier) {
+    public String invite(User inviter, String identifier, String relationship) {
         if (inviter.getFamilyGroupId() == null) return "You are not in a family group.";
         String id = identifier == null ? "" : identifier.trim();
         if (id.isEmpty()) return "Enter a username or email address.";
@@ -72,6 +72,7 @@ public class FamilyService {
         inv.setFamilyGroupId(inviter.getFamilyGroupId());
         inv.setInvitedByUserId(inviter.getId());
         inv.setExpiresAt(Instant.now().plus(Duration.ofDays(14)));
+        inv.setRelationship(relationship == null || relationship.isBlank() ? null : relationship.trim());
 
         if (invitee != null) {
             if (invitee.getFamilyGroupId() != null) return "This user is already part of a family group.";
@@ -141,6 +142,7 @@ public class FamilyService {
         inv.setRespondedAt(Instant.now());
         db.familyInvitations.save(inv);
         List<User> existing = activeMembers(inv.getFamilyGroupId());
+        if (inv.getRelationship() != null) invitee.setFamilyRelationship(inv.getRelationship());
         joinGroup(invitee, inv.getFamilyGroupId(), false);
         // Every permission defaults to NO_ACCESS — joining never grants any sharing (§1.3).
         for (User member : existing) {
@@ -220,6 +222,20 @@ public class FamilyService {
             notifications.notify(remaining.getId(), Notification.Type.FAMILY_MEMBER_REMOVED, groupId,
                     target.getFullName() + " was removed from the family group.");
         }
+        return null;
+    }
+
+    /** Family Admin can edit any member's relationship label; a member can edit their own. */
+    public String editRelationship(User actor, String targetUserId, String relationship) {
+        String groupId = actor.getFamilyGroupId();
+        if (groupId == null) return "You are not in a family group.";
+        boolean self = actor.getId().equals(targetUserId);
+        if (!self && !isFamilyAdminOf(actor, groupId)) return "Only the Family Admin can edit another member's relationship.";
+        User target = users.findById(targetUserId)
+                .filter(u -> groupId.equals(u.getFamilyGroupId())).orElse(null);
+        if (target == null) return "Member not found in your group.";
+        target.setFamilyRelationship(relationship == null || relationship.isBlank() ? null : relationship.trim());
+        users.save(target);
         return null;
     }
 

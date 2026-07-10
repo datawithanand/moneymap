@@ -56,6 +56,36 @@
                 three aren't on a shared axis. Hover a point on the Net Worth line for its exact date and value.</p>
         </div>
 
+        <div class="card" th:if="${bestPerformers != null and !bestPerformers.isEmpty()}">
+            <h2>Best &amp; Worst Performing Investments</h2>
+            <p class="hint">Gain % since purchase, across Mutual Funds and Stocks &amp; ETFs — the only
+                modules with both an invested amount and a live current value to compare.</p>
+            <div style="display:flex;gap:24px;flex-wrap:wrap">
+                <table class="data" style="flex:1;min-width:260px">
+                    <thead><tr><th colspan="2" style="color:var(--primary)">Best Performers</th></tr></thead>
+                    <tbody>
+                    <tr th:each="p : ${bestPerformers}">
+                        <td><a th:href="@{'/assets/' + ${p['modulePath']}}" th:text="${p['name']}"></a>
+                            <span class="hint" style="display:block" th:text="${p['moduleName']}"></span></td>
+                        <td class="mono" th:text="${(p['gainPercent'].signum() >= 0 ? '+' : '') + p['gainPercent']} + '%'"
+                            th:classappend="${p['gainPercent'].signum() < 0 ? 'field-error' : ''}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <table class="data" style="flex:1;min-width:260px">
+                    <thead><tr><th colspan="2" style="color:var(--danger)">Worst Performers</th></tr></thead>
+                    <tbody>
+                    <tr th:each="p : ${worstPerformers}">
+                        <td><a th:href="@{'/assets/' + ${p['modulePath']}}" th:text="${p['name']}"></a>
+                            <span class="hint" style="display:block" th:text="${p['moduleName']}"></span></td>
+                        <td class="mono" th:text="${(p['gainPercent'].signum() >= 0 ? '+' : '') + p['gainPercent']} + '%'"
+                            th:classappend="${p['gainPercent'].signum() < 0 ? 'field-error' : ''}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="card">
             <h2>Snapshots</h2>
             <table class="data">

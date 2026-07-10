@@ -47,12 +47,16 @@ public class FamilyController {
 
     private User user(HttpServletRequest r) { return (User) r.getAttribute("currentUser"); }
 
+    private static final List<String> RELATIONSHIP_OPTIONS = List.of(
+            "Self", "Spouse", "Father", "Mother", "Son", "Daughter", "Brother", "Sister", "Guardian", "Other");
+
     // ── Family home ──────────────────────────────────────────────────────────
 
     @GetMapping
     public String home(HttpServletRequest request, Model model) {
         User user = user(request);
         model.addAttribute("myInvitations", familyService.pendingInvitationsFor(user));
+        model.addAttribute("relationshipOptions", RELATIONSHIP_OPTIONS);
         if (user.getFamilyGroupId() == null) {
             return "family/create";
         }
@@ -100,10 +104,19 @@ public class FamilyController {
     }
 
     @PostMapping("/invite")
-    public String invite(@RequestParam String identifier, HttpServletRequest request, RedirectAttributes ra) {
-        String error = familyService.invite(user(request), identifier);
+    public String invite(@RequestParam String identifier, @RequestParam(required = false) String relationship,
+                         HttpServletRequest request, RedirectAttributes ra) {
+        String error = familyService.invite(user(request), identifier, relationship);
         ra.addFlashAttribute(error == null ? "success" : "error",
                 error == null ? "Invitation sent. It expires in 14 days." : error);
+        return "redirect:/family";
+    }
+
+    @PostMapping("/members/{id}/relationship")
+    public String editRelationship(@PathVariable String id, @RequestParam String relationship,
+                                   HttpServletRequest request, RedirectAttributes ra) {
+        String error = familyService.editRelationship(user(request), id, relationship);
+        if (error != null) ra.addFlashAttribute("error", error);
         return "redirect:/family";
     }
 

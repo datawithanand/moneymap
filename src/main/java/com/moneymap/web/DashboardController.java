@@ -54,11 +54,13 @@ public class DashboardController {
     private final TaxService taxService;
     private final ReminderService reminderService;
     private final com.moneymap.repository.GlobalSettingsRepository globalSettings;
+    private final com.moneymap.module.ModuleRegistry registry;
 
     public DashboardController(PortfolioAggregationService aggregation, Db db, UserRepository users,
                                HouseholdMemberRepository householdMembers, TaxService taxService,
                                ReminderService reminderService,
-                               com.moneymap.repository.GlobalSettingsRepository globalSettings) {
+                               com.moneymap.repository.GlobalSettingsRepository globalSettings,
+                               com.moneymap.module.ModuleRegistry registry) {
         this.aggregation = aggregation;
         this.db = db;
         this.users = users;
@@ -66,6 +68,7 @@ public class DashboardController {
         this.taxService = taxService;
         this.reminderService = reminderService;
         this.globalSettings = globalSettings;
+        this.registry = registry;
     }
 
     private User user(HttpServletRequest request) { return (User) request.getAttribute("currentUser"); }
@@ -119,6 +122,7 @@ public class DashboardController {
                 });
         model.addAttribute("goalRows", goalRows);
         model.addAttribute("reminders", reminderService.upcoming(owner, 30).stream().limit(5).toList());
+        model.addAttribute("recentActivity", recentActivity(owner, 8));
         return "dashboard";
     }
 
@@ -127,6 +131,51 @@ public class DashboardController {
         User owner = effectiveUser(request, model);
         model.addAttribute("reminders", reminderService.upcoming(owner, 365));
         return "dashboard/reminders";
+    }
+
+    /**
+     * The most recently added/edited records across every module, newest first — MoneyMap has
+     * no separate expense/income transaction ledger (it's a net-worth tracker, not a budgeting
+     * app), so this surfaces record activity as the closest honest equivalent to "recent
+     * transactions" rather than fabricating data that doesn't exist.
+     */
+    private List<Map<String, Object>> recentActivity(User owner, int limit) {
+        record Activity(String moduleName, String modulePath, String label, java.time.Instant when, boolean isNew) {}
+        List<Activity> all = new ArrayList<>();
+        for (var def : registry.all()) {
+            for (Object record : def.repo.findWhere(r -> owner.getId().equals(((com.moneymap.model.asset.OwnedRecord) r).getOwnerId()))) {
+                var owned = (com.moneymap.model.asset.OwnedRecord) record;
+                java.time.Instant when = owned.getUpdatedAt() != null ? owned.getUpdatedAt() : owned.getCreatedAt();
+                if (when == null) continue;
+                boolean isNew = owned.getCreatedAt() != null && owned.getCreatedAt().equals(when);
+                String label = recordLabel(def, owned);
+                all.add(new Activity(def.displayName, def.path, label, when, isNew));
+            }
+        }
+        return all.stream()
+                .sorted(Comparator.comparing(Activity::when).reversed())
+                .limit(limit)
+                .map(a -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("moduleName", a.moduleName());
+                    m.put("modulePath", a.modulePath());
+                    m.put("label", a.label());
+                    m.put("when", a.when());
+                    m.put("isNew", a.isNew());
+                    return m;
+                }).toList();
+    }
+
+    /** Best-effort human label for a record: the first configured text-ish field, else the module name. */
+    private String recordLabel(com.moneymap.module.ModuleDef<?> def, com.moneymap.model.asset.OwnedRecord record) {
+        if (def.fields.isEmpty()) return def.displayName;
+        org.springframework.beans.BeanWrapper bw = new org.springframework.beans.BeanWrapperImpl(record);
+        for (var f : def.fields) {
+            if (!"text".equals(f.type()) && !"select".equals(f.type())) continue;
+            Object v = bw.isReadableProperty(f.name()) ? bw.getPropertyValue(f.name()) : null;
+            if (v != null && !v.toString().isBlank()) return v.toString();
+        }
+        return def.displayName;
     }
 
     private String donutGradient(PortfolioAggregationService.PortfolioSummary s) {
@@ -222,7 +271,45 @@ public class DashboardController {
                 model.addAttribute("yoyGrowthPercent", percentChange(yoyBase.getTotalNetWorth(), latest.getTotalNetWorth()));
             }
         }
+        List<Map<String, Object>> performers = performers(owner);
+        model.addAttribute("bestPerformers", performers.stream().limit(3).toList());
+        model.addAttribute("worstPerformers", performers.reversed().stream().limit(3).toList());
         return "dashboard/trend";
+    }
+
+    /** Mutual funds + stocks ranked by gain %, best first. Only instruments with a positive invested amount are ranked. */
+    private List<Map<String, Object>> performers(User owner) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (MutualFund mf : db.mutualFunds.findWhere(f -> owner.getId().equals(f.getOwnerId()))) {
+            BigDecimal invested = Valuation.mfInvested(mf);
+            if (invested.signum() <= 0) continue;
+            BigDecimal current = Valuation.mfCurrentValue(mf);
+            BigDecimal gainPercent = current.subtract(invested).multiply(BigDecimal.valueOf(100))
+                    .divide(invested, 2, RoundingMode.HALF_UP);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("name", mf.getFundName());
+            row.put("moduleName", "Mutual Fund");
+            row.put("modulePath", "mutual-funds");
+            row.put("recordId", mf.getId());
+            row.put("gainPercent", gainPercent);
+            rows.add(row);
+        }
+        for (EquityHolding e : db.equityHoldings.findWhere(h -> owner.getId().equals(h.getOwnerId()))) {
+            BigDecimal invested = Valuation.nz(e.getQuantity()).multiply(Valuation.nz(e.getAverageBuyPrice()));
+            if (invested.signum() <= 0) continue;
+            BigDecimal current = Valuation.equityValue(e);
+            BigDecimal gainPercent = current.subtract(invested).multiply(BigDecimal.valueOf(100))
+                    .divide(invested, 2, RoundingMode.HALF_UP);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("name", e.getStockName());
+            row.put("moduleName", "Stock / ETF");
+            row.put("modulePath", "stocks");
+            row.put("recordId", e.getId());
+            row.put("gainPercent", gainPercent);
+            rows.add(row);
+        }
+        rows.sort((a, b) -> ((BigDecimal) b.get("gainPercent")).compareTo((BigDecimal) a.get("gainPercent")));
+        return rows;
     }
 
     private NetWorthSnapshot closestOnOrBefore(List<NetWorthSnapshot> snapshots, LocalDate cutoff) {

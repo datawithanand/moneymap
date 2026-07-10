@@ -42,6 +42,7 @@ public class User {
     private int emergencyDenyWindowDays = 7;   // 1–30 (Section 03/04 §3.3)
     private String familyGroupId;
     private boolean familyAdmin;
+    private String familyRelationship;   // e.g. Spouse, Father, Mother — free label, set/edited by the Family Admin
     private Instant lastActiveAt;
     private Instant createdAt;
     private Instant updatedAt;
@@ -100,6 +101,8 @@ public class User {
     public void setFamilyGroupId(String familyGroupId) { this.familyGroupId = familyGroupId; }
     public boolean isFamilyAdmin() { return familyAdmin; }
     public void setFamilyAdmin(boolean familyAdmin) { this.familyAdmin = familyAdmin; }
+    public String getFamilyRelationship() { return familyRelationship; }
+    public void setFamilyRelationship(String familyRelationship) { this.familyRelationship = familyRelationship; }
     public Instant getLastActiveAt() { return lastActiveAt; }
     public void setLastActiveAt(Instant lastActiveAt) { this.lastActiveAt = lastActiveAt; }
     public Instant getCreatedAt() { return createdAt; }

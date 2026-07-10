@@ -6,14 +6,19 @@ import com.moneymap.model.FundMaster;
 import com.moneymap.repository.Db;
 import com.moneymap.repository.GlobalSettingsRepository;
 import com.moneymap.repository.JsonCollectionStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -38,23 +43,32 @@ import java.util.UUID;
 @Service
 public class FundMasterService {
 
+    private static final Logger log = LoggerFactory.getLogger(FundMasterService.class);
+
     private static final String BASE_URL = "https://api.mfapi.in";
     private static final DateTimeFormatter MFAPI_DATE = DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH);
+    private static final int MAX_ATTEMPTS = 3;
+    private static final Duration INITIAL_BACKOFF = Duration.ofSeconds(2);
 
     private final Db db;
     private final JsonCollectionStore store;
     private final GlobalSettingsRepository globalSettings;
     private final ObjectMapper mapper;
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+    private final Duration connectTimeout;
+    private final Duration requestTimeout;
+    private final HttpClient httpClient;
 
     public FundMasterService(Db db, JsonCollectionStore store, GlobalSettingsRepository globalSettings,
-                             ObjectMapper mapper) {
+                             ObjectMapper mapper,
+                             @Value("${moneymap.fund-master.connect-timeout-seconds:10}") int connectTimeoutSeconds,
+                             @Value("${moneymap.fund-master.request-timeout-seconds:60}") int requestTimeoutSeconds) {
         this.db = db;
         this.store = store;
         this.globalSettings = globalSettings;
         this.mapper = mapper;
+        this.connectTimeout = Duration.ofSeconds(connectTimeoutSeconds);
+        this.requestTimeout = Duration.ofSeconds(requestTimeoutSeconds);
+        this.httpClient = HttpClient.newBuilder().connectTimeout(this.connectTimeout).build();
     }
 
     /**
@@ -65,7 +79,7 @@ public class FundMasterService {
      */
     public int syncSchemeList() {
         HttpRequest request = HttpRequest.newBuilder(URI.create(BASE_URL + "/mf"))
-                .timeout(Duration.ofSeconds(60))
+                .timeout(requestTimeout)
                 .GET()
                 .build();
         JsonNode arr = sendAndParse(request);
@@ -164,23 +178,69 @@ public class FundMasterService {
         }).stream().limit(limit).toList();
     }
 
+    /**
+     * Sends the request with up to MAX_ATTEMPTS tries, retrying only transient network failures
+     * (connect timeout, connection refused, general I/O errors) with exponential backoff. A
+     * non-200 HTTP response or a malformed body is NOT retried — those are deterministic and a
+     * retry won't help. Every raw exception is translated into a clear, user-facing message; the
+     * technical detail is always logged separately for diagnosis.
+     */
     private JsonNode sendAndParse(HttpRequest request) {
-        HttpResponse<String> response;
+        Exception lastFailure = null;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 200) {
+                    log.warn("[FundMaster] {} returned HTTP {}", request.uri(), response.statusCode());
+                    throw new IllegalStateException(userMessageForStatus(response.statusCode()));
+                }
+                try {
+                    return mapper.readTree(response.body());
+                } catch (IOException e) {
+                    log.error("[FundMaster] Malformed JSON from {}: {}", request.uri(), e.getMessage());
+                    throw new IllegalStateException("The fund data service returned an unexpected response format. "
+                            + "This usually resolves itself — try again shortly.");
+                }
+            } catch (HttpTimeoutException e) {
+                lastFailure = e;
+                log.warn("[FundMaster] Attempt {}/{} timed out reaching {}: {}", attempt, MAX_ATTEMPTS, request.uri(), e.getMessage());
+            } catch (ConnectException e) {
+                lastFailure = e;
+                log.warn("[FundMaster] Attempt {}/{} could not connect to {}: {}", attempt, MAX_ATTEMPTS, request.uri(), e.getMessage());
+            } catch (IOException e) {
+                lastFailure = e;
+                log.warn("[FundMaster] Attempt {}/{} network error reaching {}: {}", attempt, MAX_ATTEMPTS, request.uri(), e.getMessage());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("The request was interrupted. Please try again.", e);
+            }
+            if (attempt < MAX_ATTEMPTS) {
+                sleepBackoff(attempt);
+            }
+        }
+        log.error("[FundMaster] Giving up after {} attempts reaching {}", MAX_ATTEMPTS, request.uri(), lastFailure);
+        throw new IllegalStateException("Could not reach the mutual fund data service (api.mfapi.in) after "
+                + MAX_ATTEMPTS + " attempts. This is usually a temporary network issue on this server — "
+                + "check its internet connectivity and try again in a few minutes. "
+                + "Any previously synced fund list remains available and usable in the meantime.", lastFailure);
+    }
+
+    private static String userMessageForStatus(int statusCode) {
+        if (statusCode == 429) {
+            return "The mutual fund data service is rate-limiting requests right now — please wait a few minutes and try again.";
+        }
+        if (statusCode >= 500) {
+            return "The mutual fund data service (api.mfapi.in) is temporarily unavailable (HTTP " + statusCode
+                    + "). This is on their end — please try again shortly.";
+        }
+        return "The mutual fund data service returned an unexpected error (HTTP " + statusCode + ").";
+    }
+
+    private void sleepBackoff(int attempt) {
         try {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not reach api.mfapi.in: " + e.getMessage(), e);
+            Thread.sleep(INITIAL_BACKOFF.toMillis() * (1L << (attempt - 1)));   // 2s, 4s, 8s...
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Request to api.mfapi.in was interrupted.", e);
-        }
-        if (response.statusCode() != 200) {
-            throw new IllegalStateException("api.mfapi.in returned HTTP " + response.statusCode());
-        }
-        try {
-            return mapper.readTree(response.body());
-        } catch (IOException e) {
-            throw new IllegalStateException("Invalid JSON response from api.mfapi.in.", e);
         }
     }
 
