@@ -106,9 +106,20 @@ public class FamilyController {
     @PostMapping("/invite")
     public String invite(@RequestParam String identifier, @RequestParam(required = false) String relationship,
                          HttpServletRequest request, RedirectAttributes ra) {
-        String error = familyService.invite(user(request), identifier, relationship);
-        ra.addFlashAttribute(error == null ? "success" : "error",
-                error == null ? "Invitation sent. It expires in 14 days." : error);
+        var result = familyService.invite(user(request), identifier, relationship);
+        if (result.error() != null) {
+            ra.addFlashAttribute("error", result.error());
+        } else if (!result.emailAttempted()) {
+            ra.addFlashAttribute("success", "Invitation created (expires in 14 days). "
+                    + "No email was sent — SMTP is not configured on this instance (Admin > Settings). "
+                    + "If they already have a MoneyMap account, they'll see it waiting under Family when they log in.");
+        } else if (result.emailSent()) {
+            ra.addFlashAttribute("success", "Invitation sent by email. It expires in 14 days.");
+        } else {
+            ra.addFlashAttribute("success", "Invitation created (expires in 14 days), but the email could not be "
+                    + "delivered — check the SMTP settings under Admin > Settings. "
+                    + "If they already have a MoneyMap account, they'll see it waiting under Family when they log in.");
+        }
         return "redirect:/family";
     }
 

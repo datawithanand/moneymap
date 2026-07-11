@@ -60,24 +60,32 @@ public class AssetController {
     @GetMapping
     public String list(@PathVariable String modulePath,
                        @RequestParam(required = false) String tag,
+                       @RequestParam(required = false) String loanType,
                        HttpServletRequest request, Model model) {
         ModuleDef<?> def = moduleAny(modulePath);
         User user = user(request);
+        List<Map<String, Object>> rows = assetService.rows(def, user.getId(), tag, user);
+        if (loanType != null && !loanType.isBlank()) {
+            rows = rows.stream().filter(r -> loanType.equals(r.get("loanType"))).toList();
+        }
         model.addAttribute("module", def);
-        model.addAttribute("rows", assetService.rows(def, user.getId(), tag, user));
+        model.addAttribute("rows", rows);
         model.addAttribute("labels", def.listColumns.stream()
                 .collect(java.util.stream.Collectors.toMap(c -> c, c -> assetService.labelFor(def, c),
                         (a, b) -> a, java.util.LinkedHashMap::new)));
         model.addAttribute("household", householdMembers.findByOwnerId(user.getId()));
         model.addAttribute("tag", tag);
+        model.addAttribute("loanType", loanType);
         return "assets/list";
     }
 
     @GetMapping("/new")
-    public String createForm(@PathVariable String modulePath, HttpServletRequest request, Model model) {
+    public String createForm(@PathVariable String modulePath, @RequestParam(required = false) String loanType,
+                             HttpServletRequest request, Model model) {
         ModuleDef<?> def = module(modulePath);
         model.addAttribute("module", def);
-        model.addAttribute("values", Map.of());
+        model.addAttribute("values", loanType != null && !loanType.isBlank()
+                ? Map.of("loanType", loanType) : Map.of());
         model.addAttribute("household", householdMembers.findByOwnerId(user(request).getId()));
         return "assets/form";
     }

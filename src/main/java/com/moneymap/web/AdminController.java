@@ -58,6 +58,24 @@ public class AdminController {
         return value != null && value.toLowerCase().contains(q.toLowerCase());
     }
 
+    @PostMapping("/users/create")
+    public String createUser(@RequestParam String fullName, @RequestParam String username,
+                             @RequestParam String email, @RequestParam(defaultValue = "REGULAR") User.Role role,
+                             HttpServletRequest request, Model model, RedirectAttributes ra) {
+        StringBuilder createdUserId = new StringBuilder();
+        StringBuilder tempPassword = new StringBuilder();
+        var errors = adminService.createUser(currentAdmin(request), fullName, username, email, role,
+                createdUserId, tempPassword);
+        if (!errors.isEmpty()) {
+            ra.addFlashAttribute("error", String.join(" ", errors.values()));
+            return "redirect:/admin/users";
+        }
+        User target = users.findById(createdUserId.toString()).orElseThrow();
+        model.addAttribute("target", target);
+        model.addAttribute("temporaryPassword", tempPassword.toString());
+        return "admin/reset-result";
+    }
+
     @PostMapping("/users/{id}/reset-password")
     public String resetPassword(@PathVariable String id, HttpServletRequest request, Model model,
                                 RedirectAttributes ra) {

@@ -17,12 +17,21 @@ public class FamilyService {
     private final UserRepository users;
     private final NotificationService notifications;
     private final VaultService vault;
+    private final EmailService email;
 
-    public FamilyService(Db db, UserRepository users, NotificationService notifications, VaultService vault) {
+    public FamilyService(Db db, UserRepository users, NotificationService notifications, VaultService vault,
+                         EmailService email) {
         this.db = db;
         this.users = users;
         this.notifications = notifications;
         this.vault = vault;
+        this.email = email;
+    }
+
+    /** Outcome of an invite attempt — the controller uses this to show an accurate message,
+     * never a blanket "email sent" when no email was actually dispatched. */
+    public record InviteResult(String error, boolean emailAttempted, boolean emailSent) {
+        public static InviteResult error(String message) { return new InviteResult(message, false, false); }
     }
 
     public List<User> activeMembers(String groupId) {
@@ -57,10 +66,10 @@ public class FamilyService {
 
     // ── §1.2 / §1.3 Invitations ──────────────────────────────────────────────
 
-    public String invite(User inviter, String identifier, String relationship) {
-        if (inviter.getFamilyGroupId() == null) return "You are not in a family group.";
+    public InviteResult invite(User inviter, String identifier, String relationship) {
+        if (inviter.getFamilyGroupId() == null) return InviteResult.error("You are not in a family group.");
         String id = identifier == null ? "" : identifier.trim();
-        if (id.isEmpty()) return "Enter a username or email address.";
+        if (id.isEmpty()) return InviteResult.error("Enter a username or email address.");
 
         User invitee = null;
         if (id.contains("@")) {
@@ -74,26 +83,34 @@ public class FamilyService {
         inv.setExpiresAt(Instant.now().plus(Duration.ofDays(14)));
         inv.setRelationship(relationship == null || relationship.isBlank() ? null : relationship.trim());
 
+        String groupName = groupName(inviter.getFamilyGroupId());
         if (invitee != null) {
-            if (invitee.getFamilyGroupId() != null) return "This user is already part of a family group.";
+            if (invitee.getFamilyGroupId() != null) return InviteResult.error("This user is already part of a family group.");
             boolean pendingExists = !db.familyInvitations.findWhere(i ->
                     inviter.getFamilyGroupId().equals(i.getFamilyGroupId())
                             && invitee(i, id) && i.getStatus() == FamilyInvitation.Status.PENDING).isEmpty();
-            if (pendingExists) return "An invitation to this person is already pending.";
+            if (pendingExists) return InviteResult.error("An invitation to this person is already pending.");
             inv.setInviteeUserId(invitee.getId());
             inv.setInviteeUsername(invitee.getUsername());
             db.familyInvitations.save(inv);
-            String groupName = groupName(inviter.getFamilyGroupId());
             notifications.notify(invitee.getId(), Notification.Type.FAMILY_INVITATION_RECEIVED, inv.getId(),
                     inviter.getFullName() + " invited you to join the family group \"" + groupName + "\".");
+            boolean sent = email.isEnabled() && invitee.getEmail() != null
+                    && email.send(invitee.getEmail(), "You've been invited to a MoneyMap family group",
+                            inviter.getFullName() + " invited you to join the family group \"" + groupName + "\". "
+                                    + "Log in to MoneyMap and check Family to accept.");
+            return new InviteResult(null, email.isEnabled(), sent);
         } else if (id.contains("@")) {
             // Unregistered email — attaches automatically if that email registers later (§1.2)
             inv.setInviteeEmail(id.toLowerCase());
             db.familyInvitations.save(inv);
+            boolean sent = email.isEnabled() && email.send(id, "You've been invited to a MoneyMap family group",
+                    inviter.getFullName() + " invited you to join the family group \"" + groupName + "\" on MoneyMap. "
+                            + "Create an account with this email address and the invitation will be waiting for you.");
+            return new InviteResult(null, email.isEnabled(), sent);
         } else {
-            return "No MoneyMap user found with that username. To invite by email, enter an email address.";
+            return InviteResult.error("No MoneyMap user found with that username. To invite by email, enter an email address.");
         }
-        return null;
     }
 
     private boolean invitee(FamilyInvitation i, String identifier) {

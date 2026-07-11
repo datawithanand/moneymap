@@ -10,6 +10,27 @@
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
         <div class="card">
+            <h2>Add User</h2>
+            <p class="hint">Creates the account immediately with a one-time temporary password
+                (shown once, exactly like a password reset) — the user must set their own
+                password on first login. Bypasses this instance's registration mode entirely.</p>
+            <form th:action="@{/admin/users/create}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <div class="row-flex">
+                    <div><label>Full Name</label><input type="text" name="fullName" required></div>
+                    <div><label>Username</label><input type="text" name="username" required></div>
+                    <div><label>Email</label><input type="email" name="email" required></div>
+                    <div><label>Role</label>
+                        <select name="role">
+                            <option value="REGULAR">Regular</option>
+                            <option value="ADMIN">Admin</option>
+                        </select></div>
+                </div>
+                <p><button type="submit" class="btn-sm">Create User</button></p>
+            </form>
+        </div>
+
+        <div class="card">
             <form method="get" th:action="@{/admin/users}">
                 <input type="text" name="q" th:value="${q}" placeholder="Search name, username or email">
                 <button type="submit" class="btn-sm">Search</button>

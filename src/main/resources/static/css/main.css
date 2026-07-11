@@ -136,8 +136,11 @@ svg { display: block; }
   box-shadow: var(--shadow-lg); padding: 8px; z-index: 210;
   opacity: 0; visibility: hidden; transform: translateX(-6px);
   transition: opacity .14s ease, transform .14s ease, visibility .14s;
-  max-height: 60vh; overflow-y: auto;
 }
+/* A submenu that itself nests another flyout (3rd level) must not clip it either — same
+   overflow-x-forced-to-auto issue as .topnav-dropdown. Leaf submenus (module lists) can be
+   long, so they alone opt into scrolling. */
+.topnav-submenu.leaf { max-height: 60vh; overflow-y: auto; }
 .topnav-subitem:hover > .topnav-submenu,
 .topnav-subitem:focus-within > .topnav-submenu { opacity: 1; visibility: visible; transform: translateX(0); }
 .topnav-submenu a {
@@ -163,6 +166,15 @@ svg { display: block; }
   position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 3px;
   border-radius: 999px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+/* Theme switcher gets a text label so it doesn't get lost among plain icon buttons. */
+.topbar-icon-btn.theme-picker-btn {
+  width: auto; border-radius: 999px; padding: 0 12px 0 10px; gap: 6px; font-size: .82rem; font-weight: 600;
+}
+.topbar-icon-btn.theme-picker-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+@media (max-width: 480px) {
+  .topbar-icon-btn.theme-picker-btn span { display: none; }
+  .topbar-icon-btn.theme-picker-btn { padding: 0; width: 36px; justify-content: center; }
 }
 .topbar-avatar {
   width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #fff;
@@ -330,6 +342,15 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .notif-unread { background: var(--surface-alt); }
 .countdown { font-family: "IBM Plex Mono", monospace; }
 .row-flex { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+
+/* Two-column layout for long forms (25+ modules, loans, salary, etc.) — each field keeps its
+   own label/input/hint/error stacked vertically, just placed in a 2-column grid instead of one
+   long single column. Checkboxes and anything explicitly full-width span both columns. */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; align-items: start; }
+.form-grid > .form-field-full { grid-column: 1 / -1; }
+@media (max-width: 720px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
 
 /* Theme switcher dropdown */
 .theme-picker { position: relative; }

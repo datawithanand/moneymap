@@ -166,16 +166,44 @@ public class FundMasterService {
     }
 
     /** Local-cache-only search (no external call) — fast typeahead for the fund picker. */
+    /**
+     * Category filter falls back to a name-based guess when a scheme hasn't been individually
+     * enriched yet (categoryBucket is only set lazily, per-scheme, on first detail fetch — see
+     * class javadoc). Without this fallback, filtering by category on a freshly bulk-synced
+     * cache (tens of thousands of schemes, none enriched yet) would always return zero results —
+     * a real chicken-and-egg bug: you can't find a fund under "Equity" until you've already
+     * opened its detail once, which requires already knowing about it.
+     */
     public List<FundMaster> search(String query, String categoryBucket, int limit) {
         String q = query == null ? "" : query.toLowerCase(Locale.ROOT).trim();
         return db.fundMaster.findWhere(fm -> {
-            if (categoryBucket != null && !categoryBucket.isBlank()
-                    && !categoryBucket.equalsIgnoreCase(fm.getCategoryBucket())) {
-                return false;
+            if (categoryBucket != null && !categoryBucket.isBlank()) {
+                String effective = fm.getCategoryBucket() != null
+                        ? fm.getCategoryBucket() : guessCategoryFromName(fm.getSchemeName());
+                if (!categoryBucket.equalsIgnoreCase(effective)) return false;
             }
             if (q.isEmpty()) return true;
             return fm.getSchemeName() != null && fm.getSchemeName().toLowerCase(Locale.ROOT).contains(q);
         }).stream().limit(limit).toList();
+    }
+
+    /** Best-effort category guess from common AMFI scheme-name keywords, used only as a fallback. */
+    private static String guessCategoryFromName(String schemeName) {
+        if (schemeName == null) return null;
+        String n = schemeName.toLowerCase(Locale.ROOT);
+        if (n.contains("hybrid") || n.contains("balanced advantage") || n.contains("arbitrage")
+                || n.contains("multi asset")) return "HYBRID";
+        if (n.contains("liquid") || n.contains("debt") || n.contains("gilt") || n.contains("bond")
+                || n.contains("money market") || n.contains("overnight") || n.contains("credit risk")
+                || n.contains("banking and psu") || n.contains("corporate bond") || n.contains("short duration")
+                || n.contains("medium duration") || n.contains("long duration") || n.contains("dynamic bond")
+                || n.contains("fixed maturity") || n.contains(" fmp ")) return "DEBT";
+        if (n.contains("equity") || n.contains("large cap") || n.contains("mid cap") || n.contains("small cap")
+                || n.contains("multi cap") || n.contains("flexi cap") || n.contains("elss") || n.contains("index")
+                || n.contains("value fund") || n.contains("contra") || n.contains("focused")
+                || n.contains("dividend yield") || n.contains("sectoral") || n.contains("thematic")
+                || n.contains("nifty") || n.contains("sensex")) return "EQUITY";
+        return "OTHER";
     }
 
     /**

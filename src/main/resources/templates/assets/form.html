@@ -29,6 +29,7 @@
                     <input type="hidden" id="schemeCode" name="schemeCode" th:value="${values['schemeCode']}">
                 </div>
 
+                <div th:classappend="${module.fields.size() > 5} ? 'form-grid'">
                 <th:block th:each="f : ${module.fields}">
                     <div th:attr="data-visible-if=${f.visibleIf}">
                         <th:block th:if="${f.type == 'checkbox'}">
@@ -59,6 +60,7 @@
                              th:text="${errors.get(f.name)}"></div>
                     </div>
                 </th:block>
+                </div>
 
                 <label for="familyMemberTag">Family Member</label>
                 <select id="familyMemberTag" name="familyMemberTag">

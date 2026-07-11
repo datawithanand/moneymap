@@ -54,11 +54,17 @@
                         <svg class="chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
                     <div class="topnav-submenu">
-                        <div th:each="group : ${moduleGroups}" th:if="${group.key != 'Loans & Cards'}">
-                            <div class="topnav-dropdown-label" th:text="${group.key}"></div>
-                            <a th:each="m : ${group.value}"
-                               th:classappend="${active == 'assets-' + m.path} ? 'active'"
-                               th:href="@{'/assets/' + ${m.path}}" th:text="${m.displayName}"></a>
+                        <div class="topnav-subitem" th:each="group : ${moduleGroups}" th:if="${group.key != 'Loans & Cards'}"
+                             onclick="if (window.innerWidth <= 980) { event.stopPropagation(); this.classList.toggle('open'); }">
+                            <button type="button" class="topnav-sublink">
+                                <span th:text="${group.key}"></span>
+                                <svg class="chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="topnav-submenu leaf">
+                                <a th:each="m : ${group.value}"
+                                   th:classappend="${active == 'assets-' + m.path} ? 'active'"
+                                   th:href="@{'/assets/' + ${m.path}}" th:text="${m.displayName}"></a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -67,12 +73,15 @@
                         Liabilities
                         <svg class="chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <div class="topnav-submenu">
-                        <a th:each="m : ${moduleGroups.get('Loans & Cards')}"
-                           th:classappend="${active == 'assets-' + m.path} ? 'active'"
-                           th:href="@{'/assets/' + ${m.path}}" th:text="${m.displayName}"></a>
-                        <div class="topnav-dropdown-label">All loan types, credit cards, and other debts
-                            are tracked as one Loans record each, differentiated by type.</div>
+                    <div class="topnav-submenu leaf">
+                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='HOME_LOAN')}">Home Loan</a>
+                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='PERSONAL_LOAN')}">Personal Loan</a>
+                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='CAR_LOAN')}">Vehicle Loan</a>
+                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='EDUCATION_LOAN')}">Education Loan</a>
+                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='CREDIT_CARD')}">Credit Cards</a>
+                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='OTHER')}">Other Loans</a>
+                        <div class="topnav-dropdown-divider"></div>
+                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans}">All Loans &amp; Credit Cards</a>
                     </div>
                 </div>
             </div>
@@ -162,9 +171,10 @@
         <!-- Instant theme switcher: applies the theme class immediately (no page reload), then
              persists it to the user's profile in the background via fetch(). -->
         <div class="theme-picker" id="themePicker" th:if="${currentUser != null}">
-            <button type="button" class="topbar-icon-btn" title="Theme"
+            <button type="button" class="topbar-icon-btn theme-picker-btn" title="Change theme"
                     onclick="document.getElementById('themePicker').classList.toggle('open')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a9.96 9.96 0 0 0-7 2.86"/><circle cx="7" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="7" r="1.3" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="14" cy="16" r="1.3" fill="currentColor" stroke="none"/></svg>
+                <span>Theme</span>
             </button>
             <div class="theme-menu" id="themeMenu" th:attr="data-csrf=${csrf}">
                 <button type="button" class="theme-option" data-theme="GREEN" th:classappend="${currentUser.theme.name() == 'GREEN'} ? 'active'">
