@@ -12,6 +12,14 @@
             <div class="card">
                 <h3>Total Outstanding</h3>
                 <p class="figure" th:text="${fmt.money(totalOutstanding, currentUser)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!outstandingBreakdown.isEmpty()}">
+                    <canvas id="outstandingChart" width="110" height="110"></canvas>
+                </div>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${outstandingBreakdown}"
+                          th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${b['formattedTotal']}"></span>
+                </div>
             </div>
             <div class="card">
                 <h3>Total Monthly EMI</h3>
@@ -49,5 +57,12 @@
         </div>
     </main>
 </div>
+<script th:if="${!outstandingBreakdown.isEmpty()}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${!outstandingBreakdown.isEmpty()}" th:src="@{/js/donut-chart.js}"></script>
+<script th:if="${!outstandingBreakdown.isEmpty()}" th:inline="javascript">
+/*<![CDATA[*/
+renderNamedDonut('outstandingChart', /*[[${outstandingBreakdown}]]*/ []);
+/*]]>*/
+</script>
 </body>
 </html>

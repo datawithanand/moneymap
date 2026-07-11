@@ -12,10 +12,26 @@
             <div class="card">
                 <h3>Total Term Cover</h3>
                 <p class="figure" th:text="${fmt.money(totalTermCover, currentUser)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!termCoverBreakdown.isEmpty()}">
+                    <canvas id="termCoverChart" width="110" height="110"></canvas>
+                </div>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${termCoverBreakdown}"
+                          th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${b['formattedTotal']}"></span>
+                </div>
             </div>
             <div class="card">
                 <h3>Total Health Cover</h3>
                 <p class="figure" th:text="${fmt.money(totalHealthCover, currentUser)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!healthCoverBreakdown.isEmpty()}">
+                    <canvas id="healthCoverChart" width="110" height="110"></canvas>
+                </div>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${healthCoverBreakdown}"
+                          th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${b['formattedTotal']}"></span>
+                </div>
             </div>
             <div class="card">
                 <h3>Recommended Term Cover</h3>
@@ -70,5 +86,13 @@
         </div>
     </main>
 </div>
+<script th:if="${!termCoverBreakdown.isEmpty() or !healthCoverBreakdown.isEmpty()}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${!termCoverBreakdown.isEmpty() or !healthCoverBreakdown.isEmpty()}" th:src="@{/js/donut-chart.js}"></script>
+<script th:if="${!termCoverBreakdown.isEmpty() or !healthCoverBreakdown.isEmpty()}" th:inline="javascript">
+/*<![CDATA[*/
+renderNamedDonut('termCoverChart', /*[[${termCoverBreakdown}]]*/ []);
+renderNamedDonut('healthCoverChart', /*[[${healthCoverBreakdown}]]*/ []);
+/*]]>*/
+</script>
 </body>
 </html>

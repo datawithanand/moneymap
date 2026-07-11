@@ -219,21 +219,35 @@ public class DashboardController {
      * Retirement total that's 100% PPF and 0% EPF/NPS is a real, useful signal, not decoration.
      */
     private List<Map<String, Object>> bucketBreakdown(PortfolioAggregationService.PortfolioSummary s, Bucket bucket, User owner) {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        int colorIndex = 0;
+        List<Map<String, Object>> entries = new ArrayList<>();
         for (var ms : s.moduleSummaries) {
             if (ms.bucket() != bucket || ms.total().signum() <= 0) continue;
+            entries.add(Map.of("name", (Object) ms.displayName(), "total", ms.total()));
+        }
+        return namedBreakdown(entries, owner);
+    }
+
+    /**
+     * Builds a composition-donut-ready list from (name, total) pairs: sorted by total descending,
+     * with a fixed-order categorical color assigned per row and money pre-formatted for tooltips.
+     * Shared by every "what's this total made of" chart (bucket cards, 80C, loans, insurance).
+     */
+    private List<Map<String, Object>> namedBreakdown(List<Map<String, Object>> entries, User owner) {
+        List<Map<String, Object>> rows = new ArrayList<>(entries);
+        rows.sort((a, b) -> ((BigDecimal) b.get("total")).compareTo((BigDecimal) a.get("total")));
+        List<Map<String, Object>> out = new ArrayList<>();
+        int colorIndex = 0;
+        for (var entry : rows) {
             Map<String, Object> row = new LinkedHashMap<>();
-            row.put("name", ms.displayName());
-            row.put("total", ms.total());
-            row.put("formattedTotal", fmt.money(ms.total(), owner));
+            row.put("name", entry.get("name"));
+            row.put("total", entry.get("total"));
+            row.put("formattedTotal", fmt.money((BigDecimal) entry.get("total"), owner));
             row.put("color", CHART_PALETTE_LIGHT[colorIndex % CHART_PALETTE_LIGHT.length]);
             row.put("colorDark", CHART_PALETTE_DARK[colorIndex % CHART_PALETTE_DARK.length]);
-            rows.add(row);
+            out.add(row);
             colorIndex++;
         }
-        rows.sort((a, b) -> ((BigDecimal) b.get("total")).compareTo((BigDecimal) a.get("total")));
-        return rows;
+        return out;
     }
 
     private String donutGradient(PortfolioAggregationService.PortfolioSummary s) {
@@ -546,6 +560,12 @@ public class DashboardController {
                 .multiply(BigDecimal.valueOf(100)).divide(cap80C, 0, RoundingMode.HALF_UP));
         model.addAttribute("health80D", health80D);
         model.addAttribute("hasNpsTier1", nps80CCD.signum() < 0);
+        List<Map<String, Object>> entries80C = new ArrayList<>();
+        if (ppf.signum() > 0) entries80C.add(Map.of("name", (Object) "PPF", "total", ppf));
+        if (epf.signum() > 0) entries80C.add(Map.of("name", (Object) "EPF/VPF", "total", epf));
+        if (elss.signum() > 0) entries80C.add(Map.of("name", (Object) "ELSS SIPs", "total", elss));
+        if (lifePremiums.signum() > 0) entries80C.add(Map.of("name", (Object) "Life insurance premiums", "total", lifePremiums));
+        model.addAttribute("breakdown80C", namedBreakdown(entries80C, owner));
         List<SalaryProfile> salaryProfiles = db.salaryProfiles.findWhere(r -> uid.equals(r.getOwnerId()));
         model.addAttribute("salaryProfiles", salaryProfiles);
         model.addAttribute("taxSets", db.taxSlabSets.findAll());
@@ -613,6 +633,9 @@ public class DashboardController {
         model.addAttribute("totalMonthlyEmi", totalMonthlyEmi);
         model.addAttribute("monthlyIncome", monthlyIncome);
         model.addAttribute("emiToIncomePercent", emiToIncomePercent);
+        model.addAttribute("outstandingBreakdown", namedBreakdown(activeLoans.stream()
+                .map(l -> Map.of("name", (Object) l.getLenderName(), "total", Valuation.nz(l.getOutstandingBalance())))
+                .toList(), owner));
         model.addAttribute("highDebtBurden", highDebtBurden);
         model.addAttribute("emiBarPercent", emiBarPercent);
         return "dashboard/loans";
@@ -651,6 +674,12 @@ public class DashboardController {
         model.addAttribute("recommendedTermCover", recommendedTermCover);
         model.addAttribute("termCoverageGap", termCoverageGap);
         model.addAttribute("coveragePercent", coveragePercent);
+        model.addAttribute("termCoverBreakdown", namedBreakdown(termPolicies.stream()
+                .map(p -> Map.of("name", (Object) p.getInsurerName(), "total", Valuation.nz(p.getSumAssured())))
+                .toList(), owner));
+        model.addAttribute("healthCoverBreakdown", namedBreakdown(healthPolicies.stream()
+                .map(p -> Map.of("name", (Object) p.getInsurerName(), "total", Valuation.nz(p.getSumInsured())))
+                .toList(), owner));
         return "dashboard/insurance";
     }
 

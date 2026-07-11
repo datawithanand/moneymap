@@ -12,20 +12,27 @@
 
         <div class="card">
             <h2>Section 80C (limit ₹1,50,000)</h2>
-            <table class="data">
-                <tbody>
-                <tr><td>PPF yearly contributions</td><td class="mono" th:text="${fmt.money(ppf, currentUser)}"></td></tr>
-                <tr><td>EPF/VPF employee contributions (annualized, active employments)</td>
-                    <td class="mono" th:text="${fmt.money(epf, currentUser)}"></td></tr>
-                <tr><td>ELSS SIPs (annualized, active)</td><td class="mono" th:text="${fmt.money(elss, currentUser)}"></td></tr>
-                <tr><td>Life insurance premiums (80C-flagged, annualized)</td>
-                    <td class="mono" th:text="${fmt.money(lifePremiums, currentUser)}"></td></tr>
-                <tr><th>Total tracked</th><th class="mono" th:text="${fmt.money(total80C, currentUser)}"></th></tr>
-                <tr><th>Against limit</th>
-                    <th class="mono" th:text="${total80C.min(cap80C)} + ' / 150000'"></th></tr>
-                </tbody>
-            </table>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+                <div class="allocation-chart-wrap" th:if="${!breakdown80C.isEmpty()}" style="flex:0 0 auto">
+                    <canvas id="breakdown80CChart" width="130" height="130"></canvas>
+                </div>
+                <table class="data" style="flex:1;min-width:280px">
+                    <tbody>
+                    <tr><td>PPF yearly contributions</td><td class="mono" th:text="${fmt.money(ppf, currentUser)}"></td></tr>
+                    <tr><td>EPF/VPF employee contributions (annualized, active employments)</td>
+                        <td class="mono" th:text="${fmt.money(epf, currentUser)}"></td></tr>
+                    <tr><td>ELSS SIPs (annualized, active)</td><td class="mono" th:text="${fmt.money(elss, currentUser)}"></td></tr>
+                    <tr><td>Life insurance premiums (80C-flagged, annualized)</td>
+                        <td class="mono" th:text="${fmt.money(lifePremiums, currentUser)}"></td></tr>
+                    <tr><th>Total tracked</th><th class="mono" th:text="${fmt.money(total80C, currentUser)}"></th></tr>
+                    <tr><th>Against limit</th>
+                        <th class="mono" th:text="${total80C.min(cap80C)} + ' / 150000'"></th></tr>
+                    </tbody>
+                </table>
+            </div>
             <div class="bar-track"><div class="bar-fill" th:style="'width:' + ${cap80CPercent} + '%'"></div></div>
+            <p class="hint">Bar shows tracked contributions against the ₹1,50,000 cap — the donut shows
+                which deduction is driving that total.</p>
         </div>
 
         <div class="card">
@@ -68,5 +75,12 @@
         </div>
     </main>
 </div>
+<script th:if="${!breakdown80C.isEmpty()}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${!breakdown80C.isEmpty()}" th:src="@{/js/donut-chart.js}"></script>
+<script th:if="${!breakdown80C.isEmpty()}" th:inline="javascript">
+/*<![CDATA[*/
+renderNamedDonut('breakdown80CChart', /*[[${breakdown80C}]]*/ []);
+/*]]>*/
+</script>
 </body>
 </html>
