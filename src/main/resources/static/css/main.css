@@ -219,9 +219,12 @@ svg { display: block; }
   .topbar-utility { gap: 0; }
 }
 
-/* App shell */
-.shell { min-height: 100vh; display: flex; flex-direction: column; }
-.content { flex: 1; padding: 30px clamp(16px, 4vw, 40px); max-width: 1240px; width: 100%; margin: 0 auto; }
+/* App shell — plain block flow, not flex. Safari has a long-standing bug where
+   position: sticky breaks on a flex item inside a column flex container, which
+   made the topbar (position: sticky) vanish on scroll when it was a direct
+   flex child of .shell. Nothing here relied on flex distributing space. */
+.shell { min-height: 100vh; }
+.content { padding: 30px clamp(16px, 4vw, 40px); max-width: 1240px; width: 100%; margin: 0 auto; }
 
 /* Cards & forms */
 .card {
