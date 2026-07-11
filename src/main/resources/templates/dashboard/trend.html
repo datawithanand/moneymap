@@ -28,32 +28,11 @@
                 roughly a month (or a year) apart.</p>
         </div>
 
-        <div class="card" th:if="${netWorthPoints != null}">
+        <div class="card" th:if="${snapshots.size() >= 2}">
             <h2>Trend</h2>
-            <div class="legend" style="margin-bottom:8px">
-                <span style="color:var(--primary)">● Net Worth</span>
-                <span style="color:#4a6741">● Assets</span>
-                <span style="color:var(--danger)">● Liabilities</span>
-            </div>
-            <svg viewBox="0 0 700 210" class="chart-svg" style="max-width:700px">
-                <g class="chart-grid">
-                    <line x1="20" y1="20" x2="680" y2="20"/>
-                    <line x1="20" y1="73" x2="680" y2="73"/>
-                    <line x1="20" y1="127" x2="680" y2="127"/>
-                    <line x1="20" y1="180" x2="680" y2="180"/>
-                </g>
-                <polyline th:attr="points=${assetsPoints}" class="chart-line" stroke="#4a6741"/>
-                <polyline th:attr="points=${liabilitiesPoints}" class="chart-line" stroke="var(--danger)"/>
-                <polyline th:attr="points=${netWorthPoints}" class="chart-line" stroke="var(--primary)" stroke-width="3"/>
-                <circle th:each="p : ${netWorthDots}" th:attr="cx=${p.x},cy=${p.y}" r="3.5" fill="var(--primary)"
-                        stroke="var(--surface)" stroke-width="1.5" class="chart-dot">
-                    <title th:text="${#temporals.format(p.date, 'dd MMM yyyy')} + ' — ' + ${fmt.money(p.value, currentUser)}"></title>
-                </circle>
-                <text th:each="l : ${axisLabels}" th:attr="x=${l.x}" y="198" class="chart-axis-label" text-anchor="middle"
-                      th:text="${#temporals.format(l.date, 'dd MMM')}"></text>
-            </svg>
-            <p class="hint">Each line is scaled independently so its own shape is visible — the
-                three aren't on a shared axis. Hover a point on the Net Worth line for its exact date and value.</p>
+            <canvas id="trendChart" height="90"></canvas>
+            <p class="hint">Net Worth, Assets, and Liabilities share one axis — the same currency
+                unit, so their relative size is directly comparable. Hover any point for its exact value.</p>
         </div>
 
         <div class="card" th:if="${bestPerformers != null and !bestPerformers.isEmpty()}">
@@ -107,5 +86,58 @@
         </div>
     </main>
 </div>
+<script th:if="${snapshots.size() >= 2}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${snapshots.size() >= 2}" th:inline="javascript">
+/*<![CDATA[*/
+(function () {
+    var isDark = document.body.classList.contains('theme-midnight');
+    // Fixed categorical palette, same slots as the main dashboard: blue = Net Worth, aqua/green =
+    // Assets, red = Liabilities — independent of the site's accent theme (see dataviz skill).
+    var netWorthColor = isDark ? '#3987e5' : '#2a78d6';
+    var assetsColor = isDark ? '#199e70' : '#1baf7a';
+    var liabilitiesColor = isDark ? '#e66767' : '#e34948';
+
+    var labels = /*[[${trendChartLabels}]]*/ [];
+    var netWorth = /*[[${trendChartNetWorth}]]*/ [];
+    var assets = /*[[${trendChartAssets}]]*/ [];
+    var liabilities = /*[[${trendChartLiabilities}]]*/ [];
+    var netWorthFmt = /*[[${trendChartNetWorthFmt}]]*/ [];
+    var assetsFmt = /*[[${trendChartAssetsFmt}]]*/ [];
+    var liabilitiesFmt = /*[[${trendChartLiabilitiesFmt}]]*/ [];
+    var formatted = [netWorthFmt, assetsFmt, liabilitiesFmt];
+
+    var canvas = document.getElementById('trendChart');
+    if (!canvas) return;
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Net Worth', data: netWorth, borderColor: netWorthColor, backgroundColor: netWorthColor + '22',
+                  fill: true, tension: 0.3, pointRadius: 2, borderWidth: 3 },
+                { label: 'Assets', data: assets, borderColor: assetsColor, backgroundColor: assetsColor + '00',
+                  fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+                { label: 'Liabilities', data: liabilities, borderColor: liabilitiesColor, backgroundColor: liabilitiesColor + '00',
+                  fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) { return ctx.dataset.label + ': ' + formatted[ctx.datasetIndex][ctx.dataIndex]; }
+                    }
+                }
+            },
+            scales: {
+                y: { ticks: { callback: function (value) { return value.toLocaleString(); } } }
+            }
+        }
+    });
+})();
+/*]]>*/
+</script>
 </body>
 </html>

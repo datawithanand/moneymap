@@ -313,11 +313,18 @@ public class DashboardController {
                 .toList();
         model.addAttribute("snapshots", snapshots);
         model.addAttribute("live", aggregation.aggregate(owner));
-        model.addAttribute("netWorthPoints", polyline(snapshots, NetWorthSnapshot::getTotalNetWorth));
-        model.addAttribute("assetsPoints", polyline(snapshots, NetWorthSnapshot::getTotalAssets));
-        model.addAttribute("liabilitiesPoints", polyline(snapshots, NetWorthSnapshot::getTotalLiabilities));
-        model.addAttribute("netWorthDots", points(snapshots, NetWorthSnapshot::getTotalNetWorth));
-        model.addAttribute("axisLabels", axisLabels(snapshots));
+        // Chart.js line chart data — all three series share one axis (same currency unit), unlike
+        // the old hand-rolled SVG chart which scaled each line independently and so couldn't show
+        // how Net Worth actually relates to Assets and Liabilities.
+        model.addAttribute("trendChartLabels", snapshots.stream()
+                .map(s -> s.getSnapshotDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy")))
+                .toList());
+        model.addAttribute("trendChartNetWorth", snapshots.stream().map(NetWorthSnapshot::getTotalNetWorth).toList());
+        model.addAttribute("trendChartAssets", snapshots.stream().map(NetWorthSnapshot::getTotalAssets).toList());
+        model.addAttribute("trendChartLiabilities", snapshots.stream().map(NetWorthSnapshot::getTotalLiabilities).toList());
+        model.addAttribute("trendChartNetWorthFmt", snapshots.stream().map(s -> fmt.money(s.getTotalNetWorth(), owner)).toList());
+        model.addAttribute("trendChartAssetsFmt", snapshots.stream().map(s -> fmt.money(s.getTotalAssets(), owner)).toList());
+        model.addAttribute("trendChartLiabilitiesFmt", snapshots.stream().map(s -> fmt.money(s.getTotalLiabilities(), owner)).toList());
 
         if (!snapshots.isEmpty()) {
             NetWorthSnapshot latest = snapshots.get(snapshots.size() - 1);
@@ -381,64 +388,6 @@ public class DashboardController {
         return to.subtract(from).multiply(BigDecimal.valueOf(100)).divide(from.abs(), 2, RoundingMode.HALF_UP);
     }
 
-    /** Server-rendered SVG polyline (charts draw pre-computed data only — Section 12). */
-    private String polyline(List<NetWorthSnapshot> snapshots, java.util.function.Function<NetWorthSnapshot, BigDecimal> extractor) {
-        if (snapshots.size() < 2) return null;
-        List<BigDecimal> values = snapshots.stream().map(extractor).map(Valuation::nz).toList();
-        BigDecimal min = values.stream().min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        BigDecimal max = values.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ONE);
-        BigDecimal range = max.subtract(min);
-        if (range.signum() == 0) range = BigDecimal.ONE;
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < values.size(); i++) {
-            double x = 20 + (660.0 * i / (values.size() - 1));
-            double y = 180 - values.get(i).subtract(min)
-                    .multiply(BigDecimal.valueOf(160)).divide(range, 2, RoundingMode.HALF_UP).doubleValue();
-            if (i > 0) sb.append(" ");
-            sb.append(String.format("%.1f,%.1f", x, y));
-        }
-        return sb.toString();
-    }
-
-    /** Precomputed dot positions + raw values for hover tooltips (Section 12: no client-side math). */
-    private List<Map<String, Object>> points(List<NetWorthSnapshot> snapshots, java.util.function.Function<NetWorthSnapshot, BigDecimal> extractor) {
-        if (snapshots.size() < 2) return List.of();
-        List<BigDecimal> values = snapshots.stream().map(extractor).map(Valuation::nz).toList();
-        BigDecimal min = values.stream().min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        BigDecimal max = values.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ONE);
-        BigDecimal range = max.subtract(min);
-        if (range.signum() == 0) range = BigDecimal.ONE;
-        List<Map<String, Object>> out = new ArrayList<>();
-        for (int i = 0; i < values.size(); i++) {
-            double x = 20 + (660.0 * i / (values.size() - 1));
-            double y = 180 - values.get(i).subtract(min)
-                    .multiply(BigDecimal.valueOf(160)).divide(range, 2, RoundingMode.HALF_UP).doubleValue();
-            Map<String, Object> point = new LinkedHashMap<>();
-            point.put("x", String.format("%.1f", x));
-            point.put("y", String.format("%.1f", y));
-            point.put("date", snapshots.get(i).getSnapshotDate());
-            point.put("value", values.get(i));
-            out.add(point);
-        }
-        return out;
-    }
-
-    /** First / middle / last snapshot dates, positioned along the same x-axis as points(). */
-    private List<Map<String, Object>> axisLabels(List<NetWorthSnapshot> snapshots) {
-        if (snapshots.size() < 2) return List.of();
-        List<Map<String, Object>> out = new ArrayList<>();
-        int[] indices = snapshots.size() >= 3
-                ? new int[]{0, snapshots.size() / 2, snapshots.size() - 1}
-                : new int[]{0, snapshots.size() - 1};
-        for (int i : indices) {
-            double x = 20 + (660.0 * i / (snapshots.size() - 1));
-            Map<String, Object> label = new LinkedHashMap<>();
-            label.put("x", String.format("%.1f", x));
-            label.put("date", snapshots.get(i).getSnapshotDate());
-            out.add(label);
-        }
-        return out;
-    }
 
     @PostMapping("/dashboard/snapshot")
     public String takeSnapshot(HttpServletRequest request, RedirectAttributes ra) {
