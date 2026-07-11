@@ -348,6 +348,10 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .donut { max-width: 220px; }
 .allocation-chart-wrap { display: flex; justify-content: center; }
 .allocation-chart-wrap canvas { max-width: 130px; max-height: 130px; }
+.bucket-card { display: flex; flex-direction: column; }
+.bucket-chart-wrap { display: flex; justify-content: center; margin: 10px 0 4px; }
+.bucket-chart-wrap canvas { max-width: 110px; max-height: 110px; }
+.legend-compact { margin-top: 8px; gap: 8px 14px; font-size: .8rem; }
 .family-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .banner-context { position: sticky; top: 0; z-index: 150; background: var(--accent); color: #fff;
   padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }

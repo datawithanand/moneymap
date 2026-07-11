@@ -55,12 +55,13 @@ public class DashboardController {
     private final ReminderService reminderService;
     private final com.moneymap.repository.GlobalSettingsRepository globalSettings;
     private final com.moneymap.module.ModuleRegistry registry;
+    private final DateFmt fmt;
 
     public DashboardController(PortfolioAggregationService aggregation, Db db, UserRepository users,
                                HouseholdMemberRepository householdMembers, TaxService taxService,
                                ReminderService reminderService,
                                com.moneymap.repository.GlobalSettingsRepository globalSettings,
-                               com.moneymap.module.ModuleRegistry registry) {
+                               com.moneymap.module.ModuleRegistry registry, DateFmt fmt) {
         this.aggregation = aggregation;
         this.db = db;
         this.users = users;
@@ -69,6 +70,7 @@ public class DashboardController {
         this.reminderService = reminderService;
         this.globalSettings = globalSettings;
         this.registry = registry;
+        this.fmt = fmt;
     }
 
     private User user(HttpServletRequest request) { return (User) request.getAttribute("currentUser"); }
@@ -101,6 +103,9 @@ public class DashboardController {
         model.addAttribute("household", householdMembers.findByOwnerId(owner.getId()));
         model.addAttribute("donutGradient", donutGradient(summary));
         model.addAttribute("allocationClasses", allocationRows(summary));
+        model.addAttribute("cashBreakdown", bucketBreakdown(summary, Bucket.CASH, owner));
+        model.addAttribute("retirementBreakdown", bucketBreakdown(summary, Bucket.RETIREMENT, owner));
+        model.addAttribute("investmentsBreakdown", bucketBreakdown(summary, Bucket.INVESTMENTS, owner));
 
         // Delta from last snapshot (§25)
         List<NetWorthSnapshot> ownerSnapshots = db.netWorthSnapshots
@@ -188,6 +193,32 @@ public class DashboardController {
             if (v != null && !v.toString().isBlank()) return v.toString();
         }
         return def.displayName;
+    }
+
+    private static final String[] MODULE_PALETTE = {
+            "#4a6741", "#7d9bbf", "#b98b3e", "#6e2f34", "#8aa0a0", "#b46a3c", "#5b7fa6", "#9c6b8f"
+    };
+
+    /**
+     * Which modules make up one bucket's total, so "Cash", "Retirement", and "Investments" show
+     * what's actually driving that number instead of a bare figure with no composition — e.g. a
+     * Retirement total that's 100% PPF and 0% EPF/NPS is a real, useful signal, not decoration.
+     */
+    private List<Map<String, Object>> bucketBreakdown(PortfolioAggregationService.PortfolioSummary s, Bucket bucket, User owner) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        int colorIndex = 0;
+        for (var ms : s.moduleSummaries) {
+            if (ms.bucket() != bucket || ms.total().signum() <= 0) continue;
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("name", ms.displayName());
+            row.put("total", ms.total());
+            row.put("formattedTotal", fmt.money(ms.total(), owner));
+            row.put("color", MODULE_PALETTE[colorIndex % MODULE_PALETTE.length]);
+            rows.add(row);
+            colorIndex++;
+        }
+        rows.sort((a, b) -> ((BigDecimal) b.get("total")).compareTo((BigDecimal) a.get("total")));
+        return rows;
     }
 
     private String donutGradient(PortfolioAggregationService.PortfolioSummary s) {

@@ -62,26 +62,52 @@
             <p><a th:href="@{/dashboard/reminders}">View all reminders →</a></p>
         </div>
 
-        <!-- 3-bucket breakdown + allocation donut -->
+        <!-- 3-bucket breakdown + allocation donut. Each bucket card shows a composition chart
+             (which modules make up this total) instead of a bare number — e.g. a Retirement
+             total that's 100% PPF and 0% EPF/NPS is a real, useful signal. -->
         <div class="bucket-grid">
-            <div class="card">
+            <div class="card bucket-card">
                 <h3>Cash</h3>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).CASH), user)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!cashBreakdown.isEmpty()}">
+                    <canvas id="cashChart" width="110" height="110"></canvas>
+                </div>
+                <p class="hint" th:if="${cashBreakdown.isEmpty()}">No cash accounts added yet.</p>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${cashBreakdown}" th:style="'color:' + ${b['color']}"
+                          th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
+                </div>
             </div>
-            <div class="card">
+            <div class="card bucket-card">
                 <h3>Retirement</h3>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).RETIREMENT), user)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!retirementBreakdown.isEmpty()}">
+                    <canvas id="retirementChart" width="110" height="110"></canvas>
+                </div>
+                <p class="hint" th:if="${retirementBreakdown.isEmpty()}">No retirement accounts added yet.</p>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${retirementBreakdown}" th:style="'color:' + ${b['color']}"
+                          th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
+                </div>
             </div>
-            <div class="card">
+            <div class="card bucket-card">
                 <h3>Investments</h3>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).INVESTMENTS), user)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!investmentsBreakdown.isEmpty()}">
+                    <canvas id="investmentsChart" width="110" height="110"></canvas>
+                </div>
+                <p class="hint" th:if="${investmentsBreakdown.isEmpty()}">No investments added yet.</p>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${investmentsBreakdown}" th:style="'color:' + ${b['color']}"
+                          th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
+                </div>
             </div>
-            <div class="card">
+            <div class="card bucket-card">
                 <h3>Allocation</h3>
                 <div class="allocation-chart-wrap">
                     <canvas id="allocationChart" width="130" height="130"></canvas>
                 </div>
-                <div class="legend" style="margin-top:8px">
+                <div class="legend legend-compact">
                     <span th:each="a : ${allocationClasses}" th:if="${a['percent'].signum() > 0}"
                           th:style="'color:' + ${a['color']}"
                           th:text="${a['name']} + ' ' + ${a['percent']} + '%'"></span>
@@ -192,6 +218,32 @@
         });
     }
 
+    /** Renders a small composition doughnut. tooltipLabels, if given, overrides the raw value in tooltips
+        (used for bucket breakdowns so the tooltip shows formatted money instead of a raw number). */
+    function renderDonut(canvasId, labels, values, colors, tooltipLabels) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }]
+            },
+            options: {
+                responsive: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: tooltipLabels ? {
+                            label: function (ctx) { return labels[ctx.dataIndex] + ': ' + tooltipLabels[ctx.dataIndex]; }
+                        } : undefined
+                    }
+                }
+            }
+        });
+    }
+
     var allocationLabels = [];
     var allocationValues = [];
     var allocationColors = [];
@@ -203,30 +255,24 @@
             allocationColors.push(a.color);
         }
     });
-    var donutCanvas = document.getElementById('allocationChart');
-    if (donutCanvas) {
-        var noData = allocationValues.length === 0;
-        if (noData) {
-            allocationLabels = ['No data yet'];
-            allocationValues = [1];
-            allocationColors = [border];
-        }
-        new Chart(donutCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: allocationLabels,
-                datasets: [{ data: allocationValues, backgroundColor: allocationColors, borderWidth: 0 }]
-            },
-            options: {
-                responsive: false,
-                cutout: '68%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { enabled: !noData }
-                }
-            }
-        });
+    if (allocationValues.length === 0) {
+        allocationLabels = ['No data yet'];
+        allocationValues = [1];
+        allocationColors = [border];
     }
+    renderDonut('allocationChart', allocationLabels, allocationValues, allocationColors);
+
+    function renderBucketDonut(canvasId, breakdown) {
+        if (!breakdown || breakdown.length === 0) return;
+        var labels = breakdown.map(function (b) { return b.name; });
+        var values = breakdown.map(function (b) { return b.total; });
+        var colors = breakdown.map(function (b) { return b.color; });
+        var tooltipLabels = breakdown.map(function (b) { return b.formattedTotal; });
+        renderDonut(canvasId, labels, values, colors, tooltipLabels);
+    }
+    renderBucketDonut('cashChart', /*[[${cashBreakdown}]]*/ []);
+    renderBucketDonut('retirementChart', /*[[${retirementBreakdown}]]*/ []);
+    renderBucketDonut('investmentsChart', /*[[${investmentsBreakdown}]]*/ []);
 })();
 /*]]>*/
 </script>
