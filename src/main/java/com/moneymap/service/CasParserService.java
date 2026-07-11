@@ -22,20 +22,19 @@ import java.util.regex.Pattern;
 /**
  * Best-effort parser for CAMS/KFintech Consolidated Account Statement (CAS) PDFs.
  *
- * IMPORTANT: the CAS text layout is not officially specified by AMFI/CAMS/KFintech — this
- * parser targets the commonly-observed layout (folio header lines, per-scheme name lines,
- * a "Closing ... Balance" line/block carrying units/NAV/value). Real statements vary by RTA
- * and by version, so extraction accuracy is NOT guaranteed. This is why the import flow always
- * shows an editable preview and never auto-saves a parsed row without the user confirming it.
- *
- * Parsing strategy (block-based, not single-line): PDFBox's PDFTextStripper extracts text in
- * reading order, but table-formatted PDFs frequently split what looks like one logical row
- * (label, units, NAV, value) across several physical lines once column alignment doesn't match
- * reading order. Rather than requiring the label and all three numbers on one exact line, this
- * parser accumulates every decimal number seen since the current scheme name was recognized and,
- * once a "closing balance" cue line appears (or the scheme/folio block ends), takes the last
- * three numbers seen as units/NAV/value. This tolerates both single-line and multi-line-per-field
- * layouts without depending on exact line-break behavior.
+ * IMPORTANT: the CAS text layout is not officially specified by AMFI/CAMS/KFintech. This parser
+ * targets the layout confirmed against a real CAMS+KFintech consolidated statement: each scheme's
+ * block runs from a "Folio No: ..." line through a final "NAV on &lt;date&gt;: INR &lt;nav&gt;
+ * Market Value on &lt;date&gt;: INR &lt;value&gt;" line, then one or more lines of scheme-level
+ * disclaimer/footnote text (exit-load rules, stamp-duty notices, "scheme name has been changed"
+ * notices — these can contain stray decimal numbers and must NOT be parsed as holding data), and
+ * finally a "Closing Unit Balance: &lt;units&gt; Total Cost Value: &lt;cost&gt;" line. Those two
+ * labelled summary lines are authoritative and are used directly instead of trying to infer
+ * units/NAV/value from transaction rows or from whatever numbers happen to appear in between —
+ * that fragile "last N numbers seen" approach was what let a disclaimer footnote get parsed as a
+ * holding in earlier versions of this parser. Real statements vary by RTA and by version, so
+ * extraction accuracy is NOT guaranteed; this is why the import flow always shows an editable
+ * preview and never auto-saves a parsed row without the user confirming it.
  */
 @Service
 public class CasParserService {
@@ -46,22 +45,22 @@ public class CasParserService {
                                  BigDecimal nav, LocalDate asOfDate, BigDecimal value) {}
 
     private static final Pattern FOLIO_PATTERN =
-            Pattern.compile("Folio\\s*(?:No\\.?|Number)?\\s*[:\\-]?\\s*([0-9A-Za-z/\\-]{4,})", Pattern.CASE_INSENSITIVE);
-    /** Recognizable scheme-name line: contains a fund/scheme keyword, or a plan/option keyword. */
-    private static final Pattern SCHEME_HINT_PATTERN = Pattern.compile(
-            "(Fund|Scheme)|((Growth|Dividend|IDCW|Direct|Regular)\\s+(Plan|Option))", Pattern.CASE_INSENSITIVE);
-    /** Lines that look like a scheme name but are actually boilerplate/table headers — reject these. */
-    private static final Pattern SCHEME_REJECT_PATTERN = Pattern.compile(
-            "^(Date|Transaction|Description|Particulars|Opening|Closing|Total|Page|Statement|Summary|"
-                    + "Registrar|ISIN|PAN|KYC|Nominee|Address|Mobile|Email|Value\\s+of\\s+Investment|"
-                    + "Portfolio|Consolidated|Disclaimer|Note|Contact)\\b", Pattern.CASE_INSENSITIVE);
-    private static final Pattern CLOSING_BALANCE_HINT_PATTERN =
-            Pattern.compile("Closing.*Balance|Total\\s+Units|Unit\\s+Balance|Value\\s*[:\\-]", Pattern.CASE_INSENSITIVE);
-    private static final Pattern DECIMAL_NUMBER_PATTERN = Pattern.compile("-?[\\d,]+\\.\\d{2,4}");
-    private static final Pattern CAS_DATE_PATTERN = Pattern.compile("(\\d{1,2}-[A-Za-z]{3}-\\d{4})");
+            Pattern.compile("Folio\\s*(?:No\\.?|Number)?\\s*[:\\-]\\s*([0-9A-Za-z\\-]{4,})", Pattern.CASE_INSENSITIVE);
+    /** Scheme header text always contains "<code>-<name...> - ISIN: <isin>" somewhere before the folio line. */
+    private static final Pattern SCHEME_HEADER_PATTERN = Pattern.compile(
+            "[A-Z0-9]{3,15}-(.+?)\\s*-\\s*ISIN\\s*:\\s*[A-Z0-9]{6,15}", Pattern.CASE_INSENSITIVE);
+    private static final Pattern DEMAT_TAG_PATTERN =
+            Pattern.compile("\\(Non[- ]?Demat\\)$|\\(Demat\\)$", Pattern.CASE_INSENSITIVE);
+    /** Authoritative end-of-block summary line: gives NAV, its as-of date, and market value directly. */
+    private static final Pattern NAV_VALUE_PATTERN = Pattern.compile(
+            "NAV\\s+on\\s+(\\d{1,2}-[A-Za-z]{3}-\\d{4})\\s*:\\s*INR\\s*([\\d,]+\\.?\\d*)\\s+Market\\s+Value\\s+on\\s+"
+                    + "\\d{1,2}-[A-Za-z]{3}-\\d{4}\\s*:\\s*INR\\s*([\\d,]+\\.?\\d*)", Pattern.CASE_INSENSITIVE);
+    /** Authoritative closing-balance line: gives units directly. Appears after the footnote text, closing the block. */
+    private static final Pattern CLOSING_BALANCE_PATTERN = Pattern.compile(
+            "Closing\\s+Unit\\s+Balance\\s*:\\s*([\\d,]+\\.?\\d*)\\s+Total\\s+Cost\\s+Value", Pattern.CASE_INSENSITIVE);
     private static final DateTimeFormatter CAS_DATE_FORMAT = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
-    /** Cap on lines scanned per scheme block before we give up on it — avoids runaway accumulation. */
-    private static final int MAX_BLOCK_LINES = 60;
+    /** Cap on lines scanned per scheme block before we give up on it — avoids runaway accumulation on malformed input. */
+    private static final int MAX_BLOCK_LINES = 400;
 
     /**
      * Decrypts (if needed) and extracts text from the given CAS PDF, then parses it into a
@@ -86,7 +85,8 @@ public class CasParserService {
             long nonBlankLines = text.lines().filter(l -> !l.isBlank()).count();
             long folioMatches = FOLIO_PATTERN.matcher(text).results().count();
             log.warn("[CasParser] No holdings detected. text_length={} non_blank_lines={} folio_header_matches={} — "
-                            + "the statement's layout likely differs from the patterns this parser recognizes.",
+                            + "either every scheme in this statement has a zero closing balance, or the statement's "
+                            + "layout differs from the patterns this parser recognizes.",
                     text.length(), nonBlankLines, folioMatches);
         }
         return holdings;
@@ -95,108 +95,115 @@ public class CasParserService {
     /** Exposed separately so the parsing logic can be exercised without a real PDF (testing). */
     public List<ParsedHolding> parseText(String text) {
         List<ParsedHolding> holdings = new ArrayList<>();
+
+        StringBuilder headerBuffer = new StringBuilder();
         String currentFolio = null;
-        String currentScheme = null;
-        List<BigDecimal> blockNumbers = new ArrayList<>();
-        LocalDate blockDate = null;
+        String schemeName = null;
+        LocalDate asOfDate = null;
+        BigDecimal nav = null;
+        BigDecimal marketValue = null;
+        boolean sawNavLine = false;
         int blockLines = 0;
 
         for (String rawLine : text.split("\\r?\\n")) {
             String line = rawLine.strip();
-            if (line.isEmpty()) continue;
+            if (line.isEmpty() || isPageNoiseLine(line)) continue;
 
             Matcher folioMatcher = FOLIO_PATTERN.matcher(line);
             if (folioMatcher.find()) {
-                finalizeScheme(holdings, currentFolio, currentScheme, blockNumbers, blockDate);
                 currentFolio = folioMatcher.group(1);
-                currentScheme = null;
-                blockNumbers = new ArrayList<>();
-                blockDate = null;
+                schemeName = extractSchemeName(headerBuffer.toString());
+                headerBuffer.setLength(0);
+                asOfDate = null;
+                nav = null;
+                marketValue = null;
+                sawNavLine = false;
                 blockLines = 0;
                 continue;
             }
 
-            if (currentFolio == null) continue;   // ignore everything before the first folio header
-
-            boolean isSchemeLine = SCHEME_HINT_PATTERN.matcher(line).find()
-                    && !SCHEME_REJECT_PATTERN.matcher(line).find()
-                    && countDecimalNumbers(line) <= 1;
-            if (isSchemeLine) {
-                // A new scheme name line ends the previous scheme's block.
-                finalizeScheme(holdings, currentFolio, currentScheme, blockNumbers, blockDate);
-                currentScheme = line;
-                blockNumbers = new ArrayList<>();
-                blockDate = null;
-                blockLines = 0;
+            if (currentFolio == null) {
+                // Preamble, AMC name, PAN/KYC line, or the multi-line scheme-code/ISIN header —
+                // all accumulated so extractSchemeName can find the header pattern once the
+                // Folio line arrives, regardless of how PDFBox happened to break it across lines.
+                headerBuffer.append(' ').append(line);
                 continue;
             }
-
-            if (currentScheme == null) continue;   // no scheme context yet — skip preamble lines
 
             if (++blockLines > MAX_BLOCK_LINES) {
                 // Block ran on too long without a closing marker — abandon it rather than mis-attribute numbers.
-                currentScheme = null;
-                blockNumbers = new ArrayList<>();
-                blockDate = null;
+                currentFolio = null;
+                schemeName = null;
                 continue;
             }
 
-            blockNumbers.addAll(extractDecimalNumbers(line));
-            LocalDate lineDate = extractCasDate(line);
-            if (lineDate != null) blockDate = lineDate;
+            if (!sawNavLine) {
+                Matcher navMatcher = NAV_VALUE_PATTERN.matcher(line);
+                if (navMatcher.find()) {
+                    asOfDate = parseCasDate(navMatcher.group(1));
+                    nav = parseCasNumber(navMatcher.group(2));
+                    marketValue = parseCasNumber(navMatcher.group(3));
+                    sawNavLine = true;
+                }
+                continue; // transaction rows before the NAV/value line aren't needed — units come from Closing Balance
+            }
 
-            boolean looksLikeClosingBalance = CLOSING_BALANCE_HINT_PATTERN.matcher(line).find();
-            if (looksLikeClosingBalance && blockNumbers.size() >= 3) {
-                finalizeScheme(holdings, currentFolio, currentScheme, blockNumbers, blockDate);
-                currentScheme = null;
-                blockNumbers = new ArrayList<>();
-                blockDate = null;
-                blockLines = 0;
+            // Between the NAV line and Closing Balance line sits scheme-level disclaimer/footnote
+            // text (exit-load rules, stamp-duty notices, "scheme name has been changed" notices).
+            // It is deliberately never scanned for numbers — that was the source of the earlier bug.
+            Matcher closingMatcher = CLOSING_BALANCE_PATTERN.matcher(line);
+            if (closingMatcher.find()) {
+                BigDecimal units = parseCasNumber(closingMatcher.group(1));
+                if (schemeName != null && units != null && units.signum() > 0 && nav != null && marketValue != null) {
+                    holdings.add(new ParsedHolding(currentFolio, schemeName, units, nav, asOfDate, marketValue));
+                }
+                currentFolio = null;
+                schemeName = null;
+                headerBuffer.setLength(0);
             }
         }
-        finalizeScheme(holdings, currentFolio, currentScheme, blockNumbers, blockDate);
         return holdings;
     }
 
-    /** Finalizes the current scheme's block into a ParsedHolding if it has enough data, using the last 3 numbers seen. */
-    private static void finalizeScheme(List<ParsedHolding> holdings, String folio, String scheme,
-                                        List<BigDecimal> numbers, LocalDate asOfDate) {
-        if (folio == null || scheme == null || numbers.size() < 3) return;
-        int n = numbers.size();
-        BigDecimal units = numbers.get(n - 3);
-        BigDecimal nav = numbers.get(n - 2);
-        BigDecimal value = numbers.get(n - 1);
-        holdings.add(new ParsedHolding(folio, scheme, units, nav, asOfDate, value));
-    }
-
-    private static int countDecimalNumbers(String line) {
-        Matcher m = DECIMAL_NUMBER_PATTERN.matcher(line);
-        int count = 0;
-        while (m.find()) count++;
-        return count;
-    }
-
-    private static List<BigDecimal> extractDecimalNumbers(String line) {
-        List<BigDecimal> numbers = new ArrayList<>();
-        Matcher m = DECIMAL_NUMBER_PATTERN.matcher(line);
+    /**
+     * Finds the last scheme-header match in the accumulated pre-folio text (the one nearest the
+     * Folio line) and strips the trailing "(Non Demat)"/"(Demat)" tag, keeping everything else —
+     * including "(formerly ...)" scheme-rename notes, which are genuinely part of the name.
+     */
+    private static String extractSchemeName(String headerText) {
+        Matcher m = SCHEME_HEADER_PATTERN.matcher(headerText);
+        String lastMatch = null;
         while (m.find()) {
-            String cleaned = m.group().replace(",", "");
-            try {
-                numbers.add(new BigDecimal(cleaned));
-            } catch (NumberFormatException ignored) {
-                // skip malformed matches rather than failing the whole line
-            }
+            lastMatch = m.group(1).strip();
         }
-        return numbers;
+        if (lastMatch == null) return null;
+        return DEMAT_TAG_PATTERN.matcher(lastMatch).replaceAll("").strip();
     }
 
-    private static LocalDate extractCasDate(String line) {
-        Matcher m = CAS_DATE_PATTERN.matcher(line);
-        if (!m.find()) return null;
+    private static BigDecimal parseCasNumber(String raw) {
+        if (raw == null || raw.isBlank()) return null;
         try {
-            return LocalDate.parse(m.group(1), CAS_DATE_FORMAT);
+            return new BigDecimal(raw.replace(",", ""));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static LocalDate parseCasDate(String raw) {
+        try {
+            return LocalDate.parse(raw, CAS_DATE_FORMAT);
         } catch (DateTimeParseException e) {
             return null;
         }
+    }
+
+    /** Per-page repeating boilerplate (vertical watermark, running headers) — never holding data. */
+    private static boolean isPageNoiseLine(String line) {
+        return line.equalsIgnoreCase("Consolidated Account Statement")
+                || line.matches("(?i)Page \\d+ of \\d+")
+                || line.matches("\\d{2}-[A-Za-z]{3}-\\d{4} To \\d{2}-[A-Za-z]{3}-\\d{4}")
+                || line.matches("(?i)Date Amount ?Price ?Units ?Transaction.*Unit")
+                || line.matches("(?i)\\(INR\\) ?\\(INR\\) ?Balance")
+                || line.length() <= 3;
     }
 }
