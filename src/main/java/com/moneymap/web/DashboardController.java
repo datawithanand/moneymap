@@ -103,12 +103,24 @@ public class DashboardController {
         model.addAttribute("allocationClasses", allocationRows(summary));
 
         // Delta from last snapshot (§25)
-        db.netWorthSnapshots.findWhere(s -> owner.getId().equals(s.getOwnerId())).stream()
-                .max(Comparator.comparing(NetWorthSnapshot::getSnapshotDate))
-                .ifPresent(last -> {
-                    model.addAttribute("lastSnapshot", last);
-                    model.addAttribute("delta", summary.netWorth.subtract(last.getTotalNetWorth()));
-                });
+        List<NetWorthSnapshot> ownerSnapshots = db.netWorthSnapshots
+                .findWhere(s -> owner.getId().equals(s.getOwnerId())).stream()
+                .sorted(Comparator.comparing(NetWorthSnapshot::getSnapshotDate))
+                .toList();
+        if (!ownerSnapshots.isEmpty()) {
+            NetWorthSnapshot last = ownerSnapshots.get(ownerSnapshots.size() - 1);
+            model.addAttribute("lastSnapshot", last);
+            model.addAttribute("delta", summary.netWorth.subtract(last.getTotalNetWorth()));
+        }
+        // Compact trend series for the dashboard's mini chart — last 12 snapshots, oldest first.
+        List<NetWorthSnapshot> recentSnapshots = ownerSnapshots.size() > 12
+                ? ownerSnapshots.subList(ownerSnapshots.size() - 12, ownerSnapshots.size())
+                : ownerSnapshots;
+        model.addAttribute("trendLabels", recentSnapshots.stream()
+                .map(s -> s.getSnapshotDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM")))
+                .toList());
+        model.addAttribute("trendValues", recentSnapshots.stream()
+                .map(NetWorthSnapshot::getTotalNetWorth).toList());
 
         // 4 soonest-targetDate goals (§25)
         List<Map<String, Object>> goalRows = new ArrayList<>();

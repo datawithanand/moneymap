@@ -21,21 +21,28 @@
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
         <!-- Hero: total net worth + delta (§25) -->
-        <div class="card">
-            <h2>Total Net Worth</h2>
-            <p class="hero-networth" th:text="${fmt.money(summary.netWorth, user)}">₹ —</p>
-            <p th:if="${delta != null}" class="hint">
-                <span th:text="${delta.signum() >= 0 ? '▲ ' : '▼ '} + ${fmt.money(delta, user)}"></span>
-                since your last snapshot (<span th:text="${fmt.date(lastSnapshot.createdAt)}"></span>)
-            </p>
-            <!-- Asset vs Liability bar -->
-            <div class="al-bar" th:if="${summary.totalAssets.signum() > 0 or summary.totalLiabilities.signum() > 0}">
-                <div th:style="'background:var(--primary);flex:' + ${summary.totalAssets}"></div>
-                <div th:style="'background:var(--danger);flex:' + ${summary.totalLiabilities}"></div>
+        <div class="card hero-card">
+            <div class="hero-main">
+                <h2>Total Net Worth</h2>
+                <p class="hero-networth" th:text="${fmt.money(summary.netWorth, user)}">₹ —</p>
+                <p th:if="${delta != null}" class="hint">
+                    <span th:class="${delta.signum() >= 0 ? 'trend-up' : 'trend-down'}"
+                          th:text="${delta.signum() >= 0 ? '▲ ' : '▼ '} + ${fmt.money(delta, user)}"></span>
+                    since your last snapshot (<span th:text="${fmt.date(lastSnapshot.createdAt)}"></span>)
+                </p>
+                <!-- Asset vs Liability bar -->
+                <div class="al-bar" th:if="${summary.totalAssets.signum() > 0 or summary.totalLiabilities.signum() > 0}">
+                    <div th:style="'background:var(--primary);flex:' + ${summary.totalAssets}"></div>
+                    <div th:style="'background:var(--danger);flex:' + ${summary.totalLiabilities}"></div>
+                </div>
+                <div class="legend">
+                    <span style="color:var(--primary)" th:text="'Assets ' + ${fmt.money(summary.totalAssets, user)}"></span>
+                    <span style="color:var(--danger)" th:text="'Liabilities ' + ${fmt.money(summary.totalLiabilities, user)}"></span>
+                </div>
             </div>
-            <div class="legend">
-                <span style="color:var(--primary)" th:text="'Assets ' + ${fmt.money(summary.totalAssets, user)}"></span>
-                <span style="color:var(--danger)" th:text="'Liabilities ' + ${fmt.money(summary.totalLiabilities, user)}"></span>
+            <div class="hero-chart" th:if="${trendValues != null and trendValues.size() >= 2}">
+                <canvas id="netWorthMiniChart" height="130"></canvas>
+                <a class="chart-link" th:href="@{/dashboard/trend}">Full trend →</a>
             </div>
         </div>
 
@@ -71,7 +78,9 @@
             </div>
             <div class="card">
                 <h3>Allocation</h3>
-                <div class="donut" th:style="'width:130px;height:130px;border-radius:50%;background:' + ${donutGradient}"></div>
+                <div class="allocation-chart-wrap">
+                    <canvas id="allocationChart" width="130" height="130"></canvas>
+                </div>
                 <div class="legend" style="margin-top:8px">
                     <span th:each="a : ${allocationClasses}" th:if="${a['percent'].signum() > 0}"
                           th:style="'color:' + ${a['color']}"
@@ -145,5 +154,81 @@
     </main>
 </div>
 
+<script th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:inline="javascript">
+/*<![CDATA[*/
+(function () {
+    var style = getComputedStyle(document.body);
+    var primary = style.getPropertyValue('--primary').trim() || '#4a6741';
+    var border = style.getPropertyValue('--border').trim() || '#ddd7c8';
+
+    var trendLabels = /*[[${trendLabels}]]*/ [];
+    var trendValues = /*[[${trendValues}]]*/ [];
+    var miniCanvas = document.getElementById('netWorthMiniChart');
+    if (miniCanvas && trendValues.length >= 2) {
+        new Chart(miniCanvas, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    data: trendValues,
+                    borderColor: primary,
+                    backgroundColor: primary + '22',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 0,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { intersect: false, mode: 'index' }
+                },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    }
+
+    var allocationLabels = [];
+    var allocationValues = [];
+    var allocationColors = [];
+    var allocationClasses = /*[[${allocationClasses}]]*/ [];
+    allocationClasses.forEach(function (a) {
+        if (a.percent > 0) {
+            allocationLabels.push(a.name);
+            allocationValues.push(a.percent);
+            allocationColors.push(a.color);
+        }
+    });
+    var donutCanvas = document.getElementById('allocationChart');
+    if (donutCanvas) {
+        var noData = allocationValues.length === 0;
+        if (noData) {
+            allocationLabels = ['No data yet'];
+            allocationValues = [1];
+            allocationColors = [border];
+        }
+        new Chart(donutCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: allocationLabels,
+                datasets: [{ data: allocationValues, backgroundColor: allocationColors, borderWidth: 0 }]
+            },
+            options: {
+                responsive: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: !noData }
+                }
+            }
+        });
+    }
+})();
+/*]]>*/
+</script>
 </body>
 </html>

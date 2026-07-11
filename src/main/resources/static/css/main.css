@@ -332,6 +332,13 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 
 /* Dashboard widgets */
 .hero-networth { font-size: 2.6rem; font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: -.01em; }
+.hero-card { display: flex; align-items: stretch; gap: 28px; flex-wrap: wrap; }
+.hero-main { flex: 1 1 320px; min-width: 0; }
+.hero-chart { flex: 1 1 260px; min-width: 220px; max-width: 420px; display: flex; flex-direction: column; justify-content: center; }
+.hero-chart canvas { width: 100%; max-height: 130px; }
+.hero-chart .chart-link { align-self: flex-end; font-size: .82rem; margin-top: 6px; }
+.trend-up { color: var(--primary); font-weight: 600; }
+.trend-down { color: var(--danger); font-weight: 600; }
 .bucket-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
 .bucket-grid .card { margin-bottom: 0; }
 .al-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; margin: 14px 0 10px; background: var(--surface-alt); }
@@ -339,6 +346,8 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; }
 .legend span::before { content: "●"; margin-right: 5px; font-size: 11px; }
 .donut { max-width: 220px; }
+.allocation-chart-wrap { display: flex; justify-content: center; }
+.allocation-chart-wrap canvas { max-width: 130px; max-height: 130px; }
 .family-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .banner-context { position: sticky; top: 0; z-index: 150; background: var(--accent); color: #fff;
   padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
