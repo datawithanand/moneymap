@@ -39,13 +39,32 @@ import static com.moneymap.calculator.CalculatorValidation.*;
 @Controller
 public class DashboardController {
 
+    /**
+     * Fixed categorical palette (validated for colorblind-safe adjacent contrast and surface
+     * contrast in both light and dark mode — see dataviz skill). Deliberately independent of the
+     * active color theme: chart series need a distinct identity palette, not the site's single
+     * accent color repeated in muted variants (which is why every chart used to look monochrome).
+     * Order is fixed and never cycled per-render — same slot always means the same category.
+     */
+    private static final String[] CHART_PALETTE_LIGHT =
+            {"#2a78d6", "#1baf7a", "#eda100", "#008300", "#4a3aa7", "#e34948", "#e87ba4", "#eb6834"};
+    private static final String[] CHART_PALETTE_DARK =
+            {"#3987e5", "#199e70", "#c98500", "#008300", "#9085e9", "#e66767", "#d55181", "#d95926"};
+
     private static final Map<AllocationClass, String> COLORS = new EnumMap<>(Map.of(
-            AllocationClass.EQUITY, "#4a6741",
-            AllocationClass.DEBT, "#7d9bbf",
-            AllocationClass.GOLD, "#b98b3e",
-            AllocationClass.REAL_ESTATE, "#6e2f34",
-            AllocationClass.CASH, "#8aa0a0",
-            AllocationClass.ALTERNATIVE, "#b46a3c"));
+            AllocationClass.EQUITY, CHART_PALETTE_LIGHT[0],
+            AllocationClass.DEBT, CHART_PALETTE_LIGHT[1],
+            AllocationClass.GOLD, CHART_PALETTE_LIGHT[2],
+            AllocationClass.REAL_ESTATE, CHART_PALETTE_LIGHT[3],
+            AllocationClass.CASH, CHART_PALETTE_LIGHT[4],
+            AllocationClass.ALTERNATIVE, CHART_PALETTE_LIGHT[5]));
+    private static final Map<AllocationClass, String> COLORS_DARK = new EnumMap<>(Map.of(
+            AllocationClass.EQUITY, CHART_PALETTE_DARK[0],
+            AllocationClass.DEBT, CHART_PALETTE_DARK[1],
+            AllocationClass.GOLD, CHART_PALETTE_DARK[2],
+            AllocationClass.REAL_ESTATE, CHART_PALETTE_DARK[3],
+            AllocationClass.CASH, CHART_PALETTE_DARK[4],
+            AllocationClass.ALTERNATIVE, CHART_PALETTE_DARK[5]));
 
     private final PortfolioAggregationService aggregation;
     private final Db db;
@@ -101,7 +120,6 @@ public class DashboardController {
         model.addAttribute("summary", summary);
         model.addAttribute("tag", tag);
         model.addAttribute("household", householdMembers.findByOwnerId(owner.getId()));
-        model.addAttribute("donutGradient", donutGradient(summary));
         model.addAttribute("allocationClasses", allocationRows(summary));
         model.addAttribute("cashBreakdown", bucketBreakdown(summary, Bucket.CASH, owner));
         model.addAttribute("retirementBreakdown", bucketBreakdown(summary, Bucket.RETIREMENT, owner));
@@ -195,10 +213,6 @@ public class DashboardController {
         return def.displayName;
     }
 
-    private static final String[] MODULE_PALETTE = {
-            "#4a6741", "#7d9bbf", "#b98b3e", "#6e2f34", "#8aa0a0", "#b46a3c", "#5b7fa6", "#9c6b8f"
-    };
-
     /**
      * Which modules make up one bucket's total, so "Cash", "Retirement", and "Investments" show
      * what's actually driving that number instead of a bare figure with no composition — e.g. a
@@ -213,7 +227,8 @@ public class DashboardController {
             row.put("name", ms.displayName());
             row.put("total", ms.total());
             row.put("formattedTotal", fmt.money(ms.total(), owner));
-            row.put("color", MODULE_PALETTE[colorIndex % MODULE_PALETTE.length]);
+            row.put("color", CHART_PALETTE_LIGHT[colorIndex % CHART_PALETTE_LIGHT.length]);
+            row.put("colorDark", CHART_PALETTE_DARK[colorIndex % CHART_PALETTE_DARK.length]);
             rows.add(row);
             colorIndex++;
         }
@@ -255,6 +270,7 @@ public class DashboardController {
             row.put("name", cls.name().replace('_', ' '));
             row.put("cls", cls);
             row.put("color", COLORS.get(cls));
+            row.put("colorDark", COLORS_DARK.get(cls));
             row.put("value", s.allocation.getOrDefault(cls, BigDecimal.ZERO));
             BigDecimal percent = s.allocationPercent(cls);
             row.put("percent", percent);

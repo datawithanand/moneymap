@@ -74,7 +74,7 @@
                 </div>
                 <p class="hint" th:if="${cashBreakdown.isEmpty()}">No cash accounts added yet.</p>
                 <div class="legend legend-compact">
-                    <span th:each="b : ${cashBreakdown}" th:style="'color:' + ${b['color']}"
+                    <span th:each="b : ${cashBreakdown}" th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${b['colorDark']} : ${b['color']})"
                           th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
                 </div>
             </div>
@@ -86,7 +86,7 @@
                 </div>
                 <p class="hint" th:if="${retirementBreakdown.isEmpty()}">No retirement accounts added yet.</p>
                 <div class="legend legend-compact">
-                    <span th:each="b : ${retirementBreakdown}" th:style="'color:' + ${b['color']}"
+                    <span th:each="b : ${retirementBreakdown}" th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${b['colorDark']} : ${b['color']})"
                           th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
                 </div>
             </div>
@@ -98,7 +98,7 @@
                 </div>
                 <p class="hint" th:if="${investmentsBreakdown.isEmpty()}">No investments added yet.</p>
                 <div class="legend legend-compact">
-                    <span th:each="b : ${investmentsBreakdown}" th:style="'color:' + ${b['color']}"
+                    <span th:each="b : ${investmentsBreakdown}" th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${b['colorDark']} : ${b['color']})"
                           th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
                 </div>
             </div>
@@ -109,7 +109,7 @@
                 </div>
                 <div class="legend legend-compact">
                     <span th:each="a : ${allocationClasses}" th:if="${a['percent'].signum() > 0}"
-                          th:style="'color:' + ${a['color']}"
+                          th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${a['colorDark']} : ${a['color']})"
                           th:text="${a['name']} + ' ' + ${a['percent']} + '%'"></span>
                 </div>
             </div>
@@ -187,6 +187,10 @@
     var style = getComputedStyle(document.body);
     var primary = style.getPropertyValue('--primary').trim() || '#4a6741';
     var border = style.getPropertyValue('--border').trim() || '#ddd7c8';
+    // The categorical chart palette is fixed and theme-independent (identity colors, not the
+    // site's single accent), but still needs a dark-surface variant for the Midnight theme.
+    var isDark = document.body.classList.contains('theme-midnight');
+    function seriesColor(row) { return isDark ? row.colorDark : row.color; }
 
     var trendLabels = /*[[${trendLabels}]]*/ [];
     var trendValues = /*[[${trendValues}]]*/ [];
@@ -252,7 +256,7 @@
         if (a.percent > 0) {
             allocationLabels.push(a.name);
             allocationValues.push(a.percent);
-            allocationColors.push(a.color);
+            allocationColors.push(seriesColor(a));
         }
     });
     if (allocationValues.length === 0) {
@@ -266,7 +270,7 @@
         if (!breakdown || breakdown.length === 0) return;
         var labels = breakdown.map(function (b) { return b.name; });
         var values = breakdown.map(function (b) { return b.total; });
-        var colors = breakdown.map(function (b) { return b.color; });
+        var colors = breakdown.map(seriesColor);
         var tooltipLabels = breakdown.map(function (b) { return b.formattedTotal; });
         renderDonut(canvasId, labels, values, colors, tooltipLabels);
     }
