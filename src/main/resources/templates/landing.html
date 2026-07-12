@@ -5,87 +5,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${instanceSettings.instanceName} + ' — Every rupee, accounted for.'">MoneyMap</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/main.css}">
     <style>
         .lp-wrap { max-width: 1180px; margin: 0 auto; padding: 0 40px; }
-        .lp-nav { display: flex; justify-content: space-between; align-items: center; padding: 26px 0; }
-        .lp-brand { display: flex; align-items: center; gap: 10px; }
-        .lp-brand-mark { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--primary));
-            display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 700; color: #fff; font-size: 17px; }
-        .lp-brand-name { font-family: 'Fraunces', serif; font-size: 21px; font-weight: 600; }
-        .lp-hero { padding: 48px 0 30px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 50px; align-items: center; }
-        .lp-eyebrow { display: inline-flex; align-items: center; gap: 7px; background: var(--surface-alt); color: var(--primary-strong);
-            font-size: 12.5px; font-weight: 600; padding: 6px 13px; border-radius: 20px; margin-bottom: 20px; }
-        .lp-hero h1 { font-size: 46px; line-height: 1.14; font-weight: 600; margin: 0 0 18px; letter-spacing: -0.5px; }
+        .lp-nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+        .lp-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+        .lp-brand-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--primary-dark);
+            display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--surface); font-size: 14px; }
+        .lp-hero { padding: 40px 0 60px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 50px; align-items: center; }
+        .lp-eyebrow { display: inline-flex; align-items: center; gap: 7px; background: var(--badge-blue-bg); color: var(--badge-blue-fg);
+            font-size: 12.5px; font-weight: 700; padding: 6px 13px; border-radius: 999px; margin-bottom: 20px; }
+        .lp-hero h1 { font-size: 46px; line-height: 1.14; font-weight: 800; margin: 0 0 18px; letter-spacing: -.01em; }
         .lp-hero h1 em { font-style: normal; color: var(--primary); }
-        .lp-hero p.lead { font-size: 16px; color: var(--text-muted); line-height: 1.6; max-width: 480px; margin-bottom: 28px; }
-        .lp-trust { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 28px; font-size: 12.5px; color: var(--text-muted); }
-        .lp-dark { background: var(--primary-strong); color: #f0ede2; border-radius: 24px; padding: 54px 50px; margin: 44px 0; position: relative; overflow: hidden; }
-        .lp-dark::before { content: ""; position: absolute; left: -100px; top: -100px; width: 380px; height: 380px;
-            background: radial-gradient(circle, rgba(185,139,62,.22), transparent 70%); }
+        .lp-hero p.lead { font-size: 16.5px; color: var(--text-muted); line-height: 1.6; max-width: 480px; margin-bottom: 28px; }
+        .lp-trust { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 26px; font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+        .lp-dark { background: var(--primary-dark); color: #f4f4f8; border-radius: 28px; padding: 54px 50px; margin: 20px 0; position: relative; overflow: hidden; }
         .lp-dark h3, .lp-dark h2 { color: #fff; }
-        .lp-stat-label { font-size: 13px; color: var(--accent); text-transform: uppercase; letter-spacing: 1.4px; font-weight: 600; margin-bottom: 10px; }
-        .lp-stat { font-family: 'Fraunces', serif; font-size: 54px; font-weight: 600; line-height: 1.05; margin-bottom: 18px; color: #fff; }
-        .lp-stat span { color: var(--accent); }
+        .lp-stat-label { font-size: 12.5px; color: #a5b4fc; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; margin-bottom: 10px; }
+        .lp-stat { font-size: 52px; font-weight: 800; line-height: 1.05; margin-bottom: 18px; color: #fff; }
+        .lp-stat span { color: #a5b4fc; }
         .lp-cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 50px; position: relative; z-index: 1; align-items: center; }
-        .lp-sub { font-size: 15.5px; color: rgba(240,237,226,.85); line-height: 1.65; max-width: 460px; }
-        .lp-quote { font-family: 'Fraunces', serif; font-style: italic; font-size: 18px; line-height: 1.5; color: #fff;
-            border-left: 3px solid var(--accent); padding-left: 18px; margin-top: 22px; }
-        .lp-source { font-size: 11.5px; color: rgba(240,237,226,.6); margin-top: 10px; }
-        .bd-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
-        .bd-label { font-size: 13px; width: 150px; color: rgba(240,237,226,.85); }
-        .bd-bar { flex: 1; height: 9px; background: rgba(255,255,255,.12); border-radius: 5px; overflow: hidden; }
-        .bd-fill { height: 100%; border-radius: 5px; background: var(--accent); }
-        .bd-val { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; width: 96px; text-align: right; color: #fff; }
-        .lp-why { margin-top: 40px; padding-top: 34px; border-top: 1px solid rgba(255,255,255,.14); position: relative; z-index: 1; }
-        .lp-why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-        .lp-why-card { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 18px; }
-        .lp-why-card .n { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--accent); margin-bottom: 8px; }
-        .lp-why-card p { font-size: 13.5px; color: rgba(240,237,226,.9); line-height: 1.55; margin: 0; }
-        .lp-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 30px; position: relative; z-index: 1; }
-        .lp-pcard { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 14px; padding: 18px; }
-        .lp-pcard .ic { font-size: 20px; margin-bottom: 10px; }
+        .lp-sub { font-size: 15px; color: rgba(244,244,248,.75); line-height: 1.65; max-width: 460px; }
+        .lp-quote { font-style: italic; font-size: 17px; line-height: 1.5; color: #fff;
+            border-left: 3px solid #a5b4fc; padding-left: 18px; margin-top: 20px; }
+        .lp-source { font-size: 11.5px; color: rgba(244,244,248,.5); margin-top: 10px; }
+        .bd-row { display: flex; align-items: center; gap: 12px; margin: 9px 0; }
+        .bd-label { font-size: 13px; width: 150px; color: rgba(244,244,248,.8); }
+        .bd-bar { flex: 1; height: 8px; background: rgba(255,255,255,.12); border-radius: 5px; overflow: hidden; }
+        .bd-fill { height: 100%; border-radius: 5px; background: #a5b4fc; }
+        .bd-val { font-size: 12.5px; width: 96px; text-align: right; font-weight: 700; color: #fff; }
+        .lp-why { margin-top: 34px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,.12); position: relative; z-index: 1; }
+        .lp-why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .lp-why-card { background: rgba(255,255,255,.06); border-radius: 16px; padding: 18px; }
+        .lp-why-card .n { font-size: 12px; color: #a5b4fc; font-weight: 700; margin-bottom: 8px; }
+        .lp-why-card p { font-size: 13.5px; color: rgba(244,244,248,.9); line-height: 1.55; margin: 0; }
+        .lp-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 28px; position: relative; z-index: 1; }
+        .lp-pcard { background: rgba(255,255,255,.08); border-radius: 16px; padding: 18px; }
         .lp-pcard b { display: block; font-size: 13.5px; margin-bottom: 5px; color: #fff; }
-        .lp-pcard span { font-size: 12px; color: rgba(240,237,226,.8); line-height: 1.5; }
-        .lp-section { padding: 52px 0; }
+        .lp-pcard span { font-size: 12px; color: rgba(244,244,248,.8); line-height: 1.5; }
+        .lp-section { padding: 56px 0; }
         .lp-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
-        .lp-2col h2 { font-size: 32px; margin: 0 0 16px; line-height: 1.2; }
+        .lp-2col h2 { font-size: 32px; margin: 0 0 16px; line-height: 1.2; font-weight: 800; }
         .lp-vault-item { display: flex; gap: 13px; align-items: flex-start; margin-bottom: 16px; }
-        .lp-vault-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--surface-alt);
-            display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-        .lp-vault-item b { font-size: 14px; display: block; margin-bottom: 2px; }
+        .lp-vault-icon { width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .lp-vault-item b { font-size: 14.5px; display: block; margin-bottom: 2px; }
         .lp-vault-item span { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
-        .lp-entry { display: flex; justify-content: space-between; align-items: center; padding: 11px 0;
+        .lp-entry { display: flex; justify-content: space-between; align-items: center; padding: 12px 0;
             border-bottom: 1px solid var(--border); font-size: 13px; }
         .lp-entry:last-child { border: none; }
         .lp-entry .meta { color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
-        .lp-entry .saved { color: var(--primary); font-size: 11.5px; font-weight: 600; }
         .lp-head { text-align: center; max-width: 620px; margin: 0 auto 40px; }
-        .lp-head h2 { font-size: 32px; margin: 0 0 10px; }
+        .lp-head h2 { font-size: 32px; margin: 0 0 10px; font-weight: 800; }
         .lp-head p { color: var(--text-muted); font-size: 15px; line-height: 1.6; }
-        table.lp-compare { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 16px;
-            overflow: hidden; border: 1px solid var(--border); }
-        table.lp-compare th, table.lp-compare td { padding: 14px 18px; text-align: center; font-size: 13.5px; border-bottom: 1px solid var(--border); }
-        table.lp-compare th { background: var(--surface-alt); font-weight: 600; font-size: 12.5px; }
-        table.lp-compare td:first-child, table.lp-compare th:first-child { text-align: left; font-weight: 500; }
+        table.lp-compare { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 20px;
+            overflow: hidden; box-shadow: var(--shadow); }
+        table.lp-compare th, table.lp-compare td { padding: 15px 18px; text-align: center; font-size: 13.5px; border-bottom: 1px solid var(--border); }
+        table.lp-compare th { background: var(--page-bg); font-weight: 700; font-size: 12.5px; }
+        table.lp-compare td:first-child, table.lp-compare th:first-child { text-align: left; font-weight: 600; }
         table.lp-compare tr:last-child td { border-bottom: none; }
-        .yes { color: var(--primary); font-weight: 700; }
+        .yes { color: var(--badge-green-fg); font-weight: 800; }
         .no { color: var(--text-muted); }
-        .partial { color: var(--accent); font-size: 12px; font-weight: 500; }
-        .mm-col { background: var(--surface-alt); font-weight: 600; }
-        .lp-reasons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 30px; }
-        .lp-reason { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
-        .lp-reason .ic { width: 36px; height: 36px; border-radius: 9px; background: var(--surface-alt);
-            display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 12px; }
-        .lp-reason h4 { font-size: 15.5px; font-weight: 600; margin: 0 0 6px; }
+        .partial { color: var(--accent); font-size: 12px; font-weight: 600; }
+        .mm-col { background: var(--badge-blue-bg); font-weight: 700; }
+        .lp-reasons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 30px; }
+        .lp-reason { background: var(--surface); border-radius: 18px; padding: 22px; box-shadow: var(--shadow); }
+        .lp-reason .ic { width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 17px; margin-bottom: 12px; }
+        .lp-reason h4 { font-size: 15.5px; font-weight: 700; margin: 0 0 6px; }
         .lp-reason p { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; margin: 0; }
-        .lp-cta { text-align: center; padding: 46px 0 72px; }
-        .lp-cta h2 { font-size: 30px; margin: 0 0 12px; }
+        .lp-cta { text-align: center; padding: 50px 0 60px; }
+        .lp-cta h2 { font-size: 30px; margin: 0 0 12px; font-weight: 800; }
         .lp-cta p { color: var(--text-muted); margin-bottom: 26px; }
         .lp-footer { border-top: 1px solid var(--border); padding: 26px 0; display: flex; justify-content: space-between;
             font-size: 12px; color: var(--text-muted); }
-        .btn-lg { padding: 14px 26px; font-size: 15px; border-radius: 10px; }
+        .btn-lg { padding: 14px 26px; font-size: 15px; }
         @media (max-width: 860px) {
             .lp-hero, .lp-cols, .lp-2col { grid-template-columns: 1fr; }
             .lp-why-grid, .lp-grid4, .lp-reasons { grid-template-columns: 1fr 1fr; }
@@ -100,7 +95,7 @@
     <nav class="lp-nav">
         <div class="lp-brand">
             <div class="lp-brand-mark">M</div>
-            <div class="lp-brand-name" th:text="${instanceSettings.instanceName}">MoneyMap</div>
+            <div th:text="${instanceSettings.instanceName}">MoneyMap</div>
         </div>
         <div>
             <a class="btn btn-secondary" th:href="@{/login}">Sign In</a>
@@ -125,7 +120,7 @@
                 <span>🚫 No bank linking, ever</span>
             </div>
         </div>
-        <div th:replace="~{fragments/mapviz :: mapviz}"></div>
+        <div th:replace="~{fragments/previewpanel :: previewpanel}"></div>
     </div>
 
     <!-- UNCLAIMED MONEY HOOK -->
@@ -149,7 +144,7 @@
             </div>
         </div>
         <div class="lp-why">
-            <h3 style="font-size:22px;margin:0 0 20px">This doesn't happen by accident. It happens for three quiet reasons:</h3>
+            <h3 style="font-size:22px;margin:0 0 20px;font-weight:800">This doesn't happen by accident. It happens for three quiet reasons:</h3>
             <div class="lp-why-grid">
                 <div class="lp-why-card"><div class="n">01</div><p>Outdated KYC and contact details mean institutions can't reach the rightful owner — or their family — when it matters.</p></div>
                 <div class="lp-why-card"><div class="n">02</div><p>Missing or invalid nominee details turn a simple claim into a legal maze for whoever is left behind.</p></div>
@@ -161,18 +156,18 @@
     <!-- PRIVACY -->
     <div class="lp-dark" style="background:var(--primary)">
         <div style="position:relative;z-index:1;max-width:560px">
-            <div class="lp-stat-label" style="color:#cfe8d9">While other apps read your SMS</div>
-            <h3 style="font-family:'Fraunces',serif;font-size:32px;font-weight:600;margin:8px 0 14px;line-height:1.25">
+            <div class="lp-stat-label" style="color:#e3e4fb">While other apps read your SMS</div>
+            <h3 style="font-size:32px;font-weight:800;margin:8px 0 14px;line-height:1.25">
                 Your data is none of anyone's business. Literally.</h3>
-            <p class="lp-sub">Most "free" finance apps make money by reading your transaction messages and selling
+            <p class="lp-sub" style="color:rgba(255,255,255,.85)">Most "free" finance apps make money by reading your transaction messages and selling
                 spending patterns. MoneyMap runs on your own server: it doesn't connect to your bank, doesn't read
                 your SMS, and there is no company on the other side to sell anything to anyone.</p>
         </div>
         <div class="lp-grid4">
-            <div class="lp-pcard"><div class="ic">🏠</div><b>Your server, your rules</b><span>The entire app and every byte of data lives on hardware you control.</span></div>
-            <div class="lp-pcard"><div class="ic">🚫</div><b>Nothing sold, ever</b><span>No advertisers, no data brokers, no "anonymized insights" — structurally impossible.</span></div>
-            <div class="lp-pcard"><div class="ic">📤</div><b>Leave anytime</b><span>Full JSON, Excel and PDF export at all times. Zero lock-in, by design.</span></div>
-            <div class="lp-pcard"><div class="ic">👪</div><b>Family-safe by design</b><span>Choose exactly what each family member can see — full detail or just emergency contacts.</span></div>
+            <div class="lp-pcard"><b>🏠 Your server, your rules</b><span>The entire app and every byte of data lives on hardware you control.</span></div>
+            <div class="lp-pcard"><b>🚫 Nothing sold, ever</b><span>No advertisers, no data brokers, no "anonymized insights" — structurally impossible.</span></div>
+            <div class="lp-pcard"><b>📤 Leave anytime</b><span>Full JSON, Excel and PDF export at all times. Zero lock-in, by design.</span></div>
+            <div class="lp-pcard"><b>👪 Family-safe by design</b><span>Choose exactly what each family member can see — full detail or just emergency contacts.</span></div>
         </div>
     </div>
 
@@ -185,23 +180,23 @@
                 <p style="color:var(--text-muted);font-size:15.5px;line-height:1.65;margin-bottom:26px">
                     Family Vault is built directly for the problem above. Everything you hold — and exactly
                     who to call about it — lives in one place, with access that unlocks only when it's actually needed.</p>
-                <div class="lp-vault-item"><div class="lp-vault-icon">🔑</div>
+                <div class="lp-vault-item"><div class="lp-vault-icon" style="background:var(--badge-blue-bg)">🔑</div>
                     <div><b>Granular family access</b><span>Decide who sees full numbers, and who only sees "who to contact" — per family member, not all-or-nothing.</span></div></div>
-                <div class="lp-vault-item"><div class="lp-vault-icon">⏳</div>
+                <div class="lp-vault-item"><div class="lp-vault-icon" style="background:var(--badge-amber-bg)">⏳</div>
                     <div><b>Request &amp; wait, not instant unlock</b><span>A family member requests access. You get notified and have time to decline. If you can't respond, it opens automatically.</span></div></div>
-                <div class="lp-vault-item"><div class="lp-vault-icon">📇</div>
+                <div class="lp-vault-item"><div class="lp-vault-icon" style="background:var(--badge-green-bg)">📇</div>
                     <div><b>Every contact, attached</b><span>Customer care numbers, branch addresses, nominee names, policy portals — stored right next to the asset they belong to.</span></div></div>
                 <p><a class="btn btn-lg" th:if="${registrationOpen}" th:href="@{/register}">Set up your Family Vault</a></p>
             </div>
             <div class="card">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-                    <h3 style="margin:0">"If I'm Not Around" Summary</h3>
+                    <h3 style="margin:0;font-size:16px;text-transform:none;letter-spacing:0;color:var(--text)">"If I'm Not Around" Summary</h3>
                     <span class="pill pill-active">Preview</span>
                 </div>
-                <div class="lp-entry"><div><div>HDFC Term Insurance</div><div class="meta">Policy #HT-2291045 · Nominee: Spouse</div></div><div class="saved">📇 Contact saved</div></div>
-                <div class="lp-entry"><div><div>SBI Fixed Deposit</div><div class="meta">A/C ending 4821 · Matures Mar 2028</div></div><div class="saved">📇 Contact saved</div></div>
-                <div class="lp-entry"><div><div>ICICI Pru Bluechip Fund</div><div class="meta">Folio 88291004 · 412 units</div></div><div class="saved">📇 Contact saved</div></div>
-                <div class="lp-entry"><div><div>EPFO — UAN 100928374651</div><div class="meta">3 employer records linked</div></div><div class="saved">📇 Contact saved</div></div>
+                <div class="lp-entry"><div><div>HDFC Term Insurance</div><div class="meta">Policy #HT-2291045 · Nominee: Spouse</div></div><span class="pill pill-active">📇 Saved</span></div>
+                <div class="lp-entry"><div><div>SBI Fixed Deposit</div><div class="meta">A/C ending 4821 · Matures Mar 2028</div></div><span class="pill pill-active">📇 Saved</span></div>
+                <div class="lp-entry"><div><div>ICICI Pru Bluechip Fund</div><div class="meta">Folio 88291004 · 412 units</div></div><span class="pill pill-active">📇 Saved</span></div>
+                <div class="lp-entry"><div><div>EPFO — UAN 100928374651</div><div class="meta">3 employer records linked</div></div><span class="pill pill-active">📇 Saved</span></div>
                 <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--text-muted)">
                     <span>Access granted to: <b style="color:var(--primary)">Spouse, 1 child</b></span>
                     <span>Last reviewed: today</span>
@@ -229,17 +224,17 @@
         </table>
 
         <div class="lp-reasons">
-            <div class="lp-reason"><div class="ic">🧮</div><h4>Your actual payslip, not a template</h4>
+            <div class="lp-reason"><div class="ic" style="background:var(--badge-blue-bg)">🧮</div><h4>Your actual payslip, not a template</h4>
                 <p>Build your salary breakup exactly as your employer structures it. Switch tax regimes and see the real difference.</p></div>
-            <div class="lp-reason"><div class="ic">🎯</div><h4>Goals with real math behind them</h4>
+            <div class="lp-reason"><div class="ic" style="background:var(--badge-green-bg)">🎯</div><h4>Goals with real math behind them</h4>
                 <p>Required monthly SIP, shown both inflation-adjusted and in today's money — side by side.</p></div>
-            <div class="lp-reason"><div class="ic">🪙</div><h4>One gold rate, everywhere</h4>
+            <div class="lp-reason"><div class="ic" style="background:var(--badge-amber-bg)">🪙</div><h4>One gold rate, everywhere</h4>
                 <p>Update today's 22K/24K price once. Every gold holding revalues instantly.</p></div>
-            <div class="lp-reason"><div class="ic">👪</div><h4>One login for the whole household</h4>
+            <div class="lp-reason"><div class="ic" style="background:var(--badge-violet-bg)">👪</div><h4>One login for the whole household</h4>
                 <p>Tag every asset to a family member. View individually or as one combined household net worth.</p></div>
-            <div class="lp-reason"><div class="ic">🎨</div><h4>Looks the way you want it to</h4>
-                <p>Five full themes — every chart, card, and accent repaints instantly, saved to your profile.</p></div>
-            <div class="lp-reason"><div class="ic">🧾</div><h4>Your data leaves whenever you want</h4>
+            <div class="lp-reason"><div class="ic" style="background:var(--badge-pink-bg)">🎨</div><h4>Looks the way you want it to</h4>
+                <p>Light or Dark — every chart, card, and accent repaints instantly, saved to your profile.</p></div>
+            <div class="lp-reason"><div class="ic" style="background:var(--badge-blue-bg)">🧾</div><h4>Your data leaves whenever you want</h4>
                 <p>Export to JSON, Excel, or a print-ready PDF anytime. It was always yours.</p></div>
         </div>
     </div>
@@ -256,5 +251,7 @@
         <div>Self-hosted · Private · Exportable</div>
     </footer>
 </div>
+<script th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:src="@{/js/preview-chart.js}"></script>
 </body>
 </html>

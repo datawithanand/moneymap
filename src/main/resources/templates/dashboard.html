@@ -67,7 +67,12 @@
              total that's 100% PPF and 0% EPF/NPS is a real, useful signal. -->
         <div class="bucket-grid">
             <div class="card bucket-card">
-                <h3>Cash</h3>
+                <div class="stat-top">
+                    <h3>Cash</h3>
+                    <span class="stat-badge" style="background:var(--badge-blue-bg);color:var(--badge-blue-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+                    </span>
+                </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).CASH), user)}"></p>
                 <div class="bucket-chart-wrap" th:if="${!cashBreakdown.isEmpty()}">
                     <canvas id="cashChart" width="110" height="110"></canvas>
@@ -79,7 +84,12 @@
                 </div>
             </div>
             <div class="card bucket-card">
-                <h3>Retirement</h3>
+                <div class="stat-top">
+                    <h3>Retirement</h3>
+                    <span class="stat-badge" style="background:var(--badge-violet-bg);color:var(--badge-violet-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4-3 8-7 8-12a8 8 0 1 0-16 0c0 5 4 9 8 12Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </span>
+                </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).RETIREMENT), user)}"></p>
                 <div class="bucket-chart-wrap" th:if="${!retirementBreakdown.isEmpty()}">
                     <canvas id="retirementChart" width="110" height="110"></canvas>
@@ -91,7 +101,12 @@
                 </div>
             </div>
             <div class="card bucket-card">
-                <h3>Investments</h3>
+                <div class="stat-top">
+                    <h3>Investments</h3>
+                    <span class="stat-badge" style="background:var(--badge-green-bg);color:var(--badge-green-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    </span>
+                </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).INVESTMENTS), user)}"></p>
                 <div class="bucket-chart-wrap" th:if="${!investmentsBreakdown.isEmpty()}">
                     <canvas id="investmentsChart" width="110" height="110"></canvas>
@@ -103,7 +118,12 @@
                 </div>
             </div>
             <div class="card bucket-card">
-                <h3>Allocation</h3>
+                <div class="stat-top">
+                    <h3>Allocation</h3>
+                    <span class="stat-badge" style="background:var(--badge-pink-bg);color:var(--badge-pink-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9h-9Z"/></svg>
+                    </span>
+                </div>
                 <div class="allocation-chart-wrap">
                     <canvas id="allocationChart" width="130" height="130"></canvas>
                 </div>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Dashboard preview panel: a static, illustrative glimpse of the product (not real user
+     data — this renders pre-auth, on the landing/login/register pages). Replaces the old
+     "map of assets" illustration with an actual product preview, per the modern-SaaS-dashboard
+     design direction. -->
+<div th:fragment="previewpanel" class="preview-panel">
+    <div class="preview-nav"><span></span><span></span><span></span></div>
+    <div class="preview-grid">
+        <div class="preview-tile">
+            <div class="badge" style="background:var(--badge-blue-bg);color:var(--badge-blue-fg)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+            </div>
+            <div class="num">₹4,50,000</div><div class="lbl">Cash</div>
+        </div>
+        <div class="preview-tile">
+            <div class="badge" style="background:var(--badge-violet-bg);color:var(--badge-violet-fg)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4-3 8-7 8-12a8 8 0 1 0-16 0c0 5 4 9 8 12Z"/></svg>
+            </div>
+            <div class="num">₹8,00,000</div><div class="lbl">Retirement</div>
+        </div>
+        <div class="preview-tile">
+            <div class="badge" style="background:var(--badge-green-bg);color:var(--badge-green-fg)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            </div>
+            <div class="num">₹5,12,124</div><div class="lbl">Investments</div>
+        </div>
+    </div>
+    <div class="preview-chart"><canvas id="previewChart" height="70"></canvas></div>
+</div>
+</body>
+</html>
