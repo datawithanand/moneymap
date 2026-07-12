@@ -82,11 +82,8 @@
                         </select></div>
                     <div><label>Default Theme (new users)</label>
                         <select name="defaultTheme">
-                            <option value="GREEN" th:selected="${instanceSettings.defaultTheme.name() == 'GREEN'}">Green</option>
-                            <option value="SLATE_BLUE" th:selected="${instanceSettings.defaultTheme.name() == 'SLATE_BLUE'}">Slate Blue</option>
-                            <option value="MAROON" th:selected="${instanceSettings.defaultTheme.name() == 'MAROON'}">Maroon</option>
-                            <option value="FOREST_COPPER" th:selected="${instanceSettings.defaultTheme.name() == 'FOREST_COPPER'}">Forest &amp; Copper</option>
-                            <option value="MIDNIGHT" th:selected="${instanceSettings.defaultTheme.name() == 'MIDNIGHT'}">Midnight</option>
+                            <option value="LIGHT" th:selected="${instanceSettings.defaultTheme.name() == 'LIGHT'}">Light</option>
+                            <option value="DARK" th:selected="${instanceSettings.defaultTheme.name() == 'DARK'}">Dark</option>
                         </select></div>
                 </div>
                 <p><button type="submit">Save Email &amp; Defaults</button></p>

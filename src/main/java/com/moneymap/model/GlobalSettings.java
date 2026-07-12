@@ -22,7 +22,7 @@ public class GlobalSettings {
     private String smtpPasswordEncrypted;        // reversible AES — deliberate exception, Section 01B
     private String smtpFromAddress;
     private User.CurrencyPreference defaultCurrency = User.CurrencyPreference.INR;
-    private User.Theme defaultTheme = User.Theme.GREEN;
+    private User.Theme defaultTheme = User.Theme.LIGHT;
     private Instant lastBackupMarkedAt;
     private Instant fundMasterLastSyncedAt;
     private Integer fundMasterSchemeCount;

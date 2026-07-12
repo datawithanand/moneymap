@@ -1,51 +1,55 @@
 /* MoneyMap — base design system (Section 14). Fonts: Fraunces (headings),
    IBM Plex Sans (body), IBM Plex Mono (figures). Theme via CSS custom properties.
-   NOTE: Green is fully specified; the other four themes carry their core palette here
-   and receive their complete Section 14 token pass in the theming increment. */
+   Two themes only — Light and Dark — plus a fixed rich indigo brand color used for the
+   navbar band regardless of theme (see --brand-navbar below), so the header always reads
+   as a confident, deliberate piece of chrome rather than blending into the page surface. */
 
-:root, .theme-green {
-  --bg: #f6f3ea;            /* warm cream */
+:root, .theme-light {
+  --bg: #f7f7fb;
   --surface: #ffffff;
-  --surface-alt: #efeadd;
-  --primary: #4a6741;       /* moss green */
-  --primary-strong: #3a5233;
-  --primary-soft: #e7edE3;
-  --accent: #b98b3e;        /* warm gold */
-  --text: #2b2b26;
-  --text-muted: #6f6d64;
-  --border: #ddd7c8;
-  --danger: #a63d40;
-  --warning-bg: #f4e9d3;
-  --success-bg: #e6efe2;
+  --surface-alt: #eef0f8;
+  --primary: #4338ca;        /* indigo-700 */
+  --primary-strong: #372aa8;
+  --primary-soft: #e3e4fb;
+  --accent: #d97706;         /* warm amber, used sparingly for secondary emphasis */
+  --text: #1c1b2e;
+  --text-muted: #66677e;
+  --border: #e2e3ef;
+  --danger: #dc2626;
+  --warning-bg: #fef3c7;
+  --success-bg: #dcfce7;
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow-sm: 0 1px 2px rgba(43,43,38,.05);
-  --shadow: 0 2px 6px rgba(43,43,38,.06), 0 8px 24px rgba(43,43,38,.07);
-  --shadow-lg: 0 12px 32px rgba(43,43,38,.14), 0 4px 12px rgba(43,43,38,.08);
+  --shadow-sm: 0 1px 2px rgba(28,27,46,.05);
+  --shadow: 0 2px 6px rgba(28,27,46,.06), 0 8px 24px rgba(28,27,46,.07);
+  --shadow-lg: 0 12px 32px rgba(28,27,46,.14), 0 4px 12px rgba(28,27,46,.08);
 }
-.theme-slate-blue {
-  --bg: #eef1f5; --surface: #ffffff; --surface-alt: #e3e8ef; --primary-soft: #e4eaf1;
-  --primary: #3b5372; --primary-strong: #2c405a; --accent: #7d9bbf;
-  --text: #22262c; --text-muted: #64707e; --border: #d3dae3;
-}
-.theme-maroon {
-  --bg: #f7f0ee; --surface: #ffffff; --surface-alt: #f0e3df; --primary-soft: #f0e1e2;
-  --primary: #6e2f34; --primary-strong: #57252a; --accent: #c58f52;
-  --text: #2b2424; --text-muted: #77686a; --border: #e2d3cf;
-}
-.theme-forest-copper {
-  --bg: #f1f2ec; --surface: #ffffff; --surface-alt: #e6e8dd; --primary-soft: #e3e8dc;
-  --primary: #2f4a3c; --primary-strong: #253b30; --accent: #b46a3c;
-  --text: #232823; --text-muted: #68705f; --border: #d6dac9;
-}
-.theme-midnight {
-  --bg: #14161c; --surface: #1c2029; --surface-alt: #262b36; --primary-soft: #253028;
-  --primary: #6f9c7f; --primary-strong: #85b295; --accent: #c9a25e;
-  --text: #e8e6df; --text-muted: #9aa0aa; --border: #333947;
+.theme-dark {
+  --bg: #101018;
+  --surface: #1a1a26;
+  --surface-alt: #23233a;
+  --primary: #818cf8;        /* indigo-400 — brighter for contrast on a dark surface */
+  --primary-strong: #a5b4fc;
+  --primary-soft: #2e2b55;
+  --accent: #fbbf24;
+  --text: #edeef7;
+  --text-muted: #9a9ab5;
+  --border: #2c2c40;
+  --danger: #f87171;
+  --warning-bg: #3f2f12;
+  --success-bg: #123321;
   --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
   --shadow: 0 2px 6px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
   --shadow-lg: 0 16px 40px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.4);
-  --warning-bg: #3b3423; --success-bg: #1e2e24;
+}
+:root, .theme-light, .theme-dark {
+  /* Fixed brand color for the navbar band — deliberately NOT a theme variable, so the header
+     reads as a constant piece of brand chrome in both Light and Dark mode. */
+  --brand-navbar: #312e81;
+  --brand-navbar-text: #f1f0ff;
+  --brand-navbar-muted: #b8b6e8;
+  --brand-navbar-hover: rgba(255,255,255,.12);
+  --brand-navbar-active: rgba(255,255,255,.18);
 }
 
 * { box-sizing: border-box; }
@@ -65,9 +69,12 @@ a { color: var(--primary); }
 svg { display: block; }
 
 /* ── Top navigation bar ─────────────────────────────────────────────────── */
+/* Fixed rich indigo band in both Light and Dark mode (--brand-navbar) — the one deliberately
+   colorful piece of chrome, so the header reads as a considered brand element rather than
+   just another white/dark panel. Its flyout dropdowns/popovers stay theme-surface colored. */
 .topbar {
   position: sticky; top: 0; z-index: 100;
-  background: var(--surface); border-bottom: 1px solid var(--border);
+  background: var(--brand-navbar); border-bottom: 1px solid rgba(255,255,255,.08);
   box-shadow: var(--shadow-sm);
 }
 .topbar-inner {
@@ -75,26 +82,26 @@ svg { display: block; }
   display: flex; align-items: center; gap: 4px; height: 58px;
 }
 .topbar .brand {
-  font-size: 1.25rem; font-weight: 700; color: var(--primary);
+  font-size: 1.25rem; font-weight: 700; color: var(--brand-navbar-text);
   margin-right: 18px; white-space: nowrap; display: flex; align-items: center; gap: 8px;
   text-decoration: none;
 }
 .topbar .brand .brand-mark {
-  width: 26px; height: 26px; border-radius: 8px; background: var(--primary);
-  color: #fff; display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,.16);
+  color: var(--brand-navbar-text); display: flex; align-items: center; justify-content: center;
   font-family: "Fraunces", serif; font-size: 15px; font-weight: 700; flex-shrink: 0;
 }
 .topnav { display: flex; align-items: center; gap: 2px; flex: 1; }
 .topnav-item { position: relative; }
 .topnav-link {
   display: flex; align-items: center; gap: 6px; padding: 9px 13px; border-radius: var(--radius-sm);
-  color: var(--text); text-decoration: none; font-weight: 500; font-size: .93rem;
+  color: var(--brand-navbar-muted); text-decoration: none; font-weight: 500; font-size: .93rem;
   white-space: nowrap; background: none; border: none; cursor: pointer; font-family: inherit;
 }
 .topnav-link svg { width: 16px; height: 16px; opacity: .75; flex-shrink: 0; }
 .topnav-link .chev { width: 11px; height: 11px; opacity: .55; margin-left: -2px; transition: transform .15s; }
-.topnav-link:hover, .topnav-item:hover .topnav-link, .topnav-item.active > .topnav-link { background: var(--surface-alt); color: var(--text); }
-.topnav-item.active > .topnav-link { color: var(--primary); font-weight: 600; }
+.topnav-link:hover, .topnav-item:hover .topnav-link, .topnav-item.active > .topnav-link { background: var(--brand-navbar-hover); color: var(--brand-navbar-text); }
+.topnav-item.active > .topnav-link { background: var(--brand-navbar-active); color: var(--brand-navbar-text); font-weight: 600; }
 .topnav-item.active > .topnav-link svg { opacity: 1; }
 .topnav-item:hover .chev { transform: rotate(180deg); }
 
@@ -157,10 +164,10 @@ svg { display: block; }
 .topbar-icon-btn {
   position: relative; display: flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; padding: 0; border-radius: 50%; border: none; background: none;
-  color: var(--text); cursor: pointer; text-decoration: none;
+  color: var(--brand-navbar-muted); cursor: pointer; text-decoration: none;
 }
-.topbar-icon-btn:hover { background: var(--surface-alt); }
-.topbar-icon-btn.active { background: var(--primary-soft); color: var(--primary-strong); }
+.topbar-icon-btn:hover { background: var(--brand-navbar-hover); color: var(--brand-navbar-text); }
+.topbar-icon-btn.active { background: var(--brand-navbar-active); color: var(--brand-navbar-text); }
 .topbar-icon-btn svg { width: 19px; height: 19px; flex-shrink: 0; }
 .topbar-icon-btn .badge {
   position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 3px;
@@ -177,13 +184,13 @@ svg { display: block; }
   .topbar-icon-btn.theme-picker-btn { padding: 0; width: 36px; justify-content: center; }
 }
 .topbar-avatar {
-  width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #fff;
+  width: 32px; height: 32px; border-radius: 50%; background: #ffffff; color: var(--brand-navbar);
   display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
   margin-left: 6px; cursor: pointer; flex-shrink: 0;
 }
 
 /* Mobile nav toggle */
-.topnav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--text); }
+.topnav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--brand-navbar-text); }
 .topnav-toggle svg { width: 22px; height: 22px; }
 
 @media (max-width: 480px) {
@@ -201,7 +208,13 @@ svg { display: block; }
   }
   .topnav.open { display: flex; }
   .topnav-item { width: 100%; }
-  .topnav-link { width: 100%; }
+  /* The mobile panel is a normal theme surface (white/dark), not the brand navbar band,
+     so nav links need theme text color here instead of the brand-navbar-muted tint. */
+  .topnav-link { width: 100%; color: var(--text); }
+  .topnav-link:hover, .topnav-item:hover .topnav-link, .topnav-item.active > .topnav-link {
+    background: var(--surface-alt); color: var(--text);
+  }
+  .topnav-item.active > .topnav-link { color: var(--primary); font-weight: 600; }
   .topnav-dropdown {
     position: static; box-shadow: none; border: none; opacity: 1; visibility: visible;
     transform: none; display: none; max-width: none; margin-left: 12px;

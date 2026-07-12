@@ -90,7 +90,7 @@
 <script th:if="${snapshots.size() >= 2}" th:inline="javascript">
 /*<![CDATA[*/
 (function () {
-    var isDark = document.body.classList.contains('theme-midnight');
+    var isDark = document.body.classList.contains('theme-dark');
     // Fixed categorical palette, same slots as the main dashboard: blue = Net Worth, aqua/green =
     // Assets, red = Liabilities — independent of the site's accent theme (see dataviz skill).
     var netWorthColor = isDark ? '#3987e5' : '#2a78d6';

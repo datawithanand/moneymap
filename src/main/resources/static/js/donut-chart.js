@@ -6,7 +6,7 @@
 function renderNamedDonut(canvasId, breakdown) {
     var canvas = document.getElementById(canvasId);
     if (!canvas || !breakdown || breakdown.length === 0) return;
-    var isDark = document.body.classList.contains('theme-midnight');
+    var isDark = document.body.classList.contains('theme-dark');
     var labels = breakdown.map(function (b) { return b.name; });
     var values = breakdown.map(function (b) { return b.total; });
     var colors = breakdown.map(function (b) { return isDark ? b.colorDark : b.color; });

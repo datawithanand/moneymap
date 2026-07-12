@@ -17,7 +17,7 @@
                 </div>
                 <div class="legend legend-compact">
                     <span th:each="b : ${outstandingBreakdown}"
-                          th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${b['colorDark']} : ${b['color']})"
+                          th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"
                           th:text="${b['name']} + ' ' + ${b['formattedTotal']}"></span>
                 </div>
             </div>

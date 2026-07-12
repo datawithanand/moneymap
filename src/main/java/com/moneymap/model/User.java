@@ -1,7 +1,10 @@
 package com.moneymap.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Locale;
 
 /**
  * User record — schema per PRD Section 17 §1.1 / Section 01 §9.
@@ -13,7 +16,23 @@ public class User {
     public enum Status { ACTIVE, DISABLED, PENDING_DELETION }
     public enum CurrencyPreference { INR, USD }
     public enum NumberFormat { INDIAN, INTERNATIONAL }
-    public enum Theme { GREEN, SLATE_BLUE, MAROON, FOREST_COPPER, MIDNIGHT }
+
+    /**
+     * Only Light and Dark are offered going forward. The {@link #from} factory maps every value
+     * ever stored on disk (including the five retired themes) so existing users.json records
+     * deserialize cleanly instead of throwing on an unrecognized enum constant — Midnight users
+     * land on Dark, everyone else (Green/Slate Blue/Maroon/Forest & Copper) lands on Light.
+     */
+    public enum Theme {
+        LIGHT, DARK;
+
+        @JsonCreator
+        public static Theme from(String value) {
+            if (value == null) return LIGHT;
+            return "DARK".equals(value.toUpperCase(Locale.ROOT)) || "MIDNIGHT".equals(value.toUpperCase(Locale.ROOT))
+                    ? DARK : LIGHT;
+        }
+    }
 
     private String id;
     private String username;          // immutable, unique, case-insensitive
@@ -32,7 +51,7 @@ public class User {
     private CurrencyPreference currencyPreference = CurrencyPreference.INR;
     private String dateFormat = "DD/MM/YYYY";  // DD/MM/YYYY | MM/DD/YYYY | YYYY-MM-DD
     private NumberFormat numberFormat = NumberFormat.INDIAN;
-    private Theme theme = Theme.GREEN;
+    private Theme theme = Theme.LIGHT;
     private String profilePhotoPath;
     private boolean notifyInApp = true;
     private boolean notifyEmail = false;

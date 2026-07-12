@@ -177,16 +177,10 @@
                 <span>Theme</span>
             </button>
             <div class="theme-menu" id="themeMenu" th:attr="data-csrf=${csrf}">
-                <button type="button" class="theme-option" data-theme="GREEN" th:classappend="${currentUser.theme.name() == 'GREEN'} ? 'active'">
-                    <span class="sw" style="background:#4a6741"></span> Green <span class="check">✓</span></button>
-                <button type="button" class="theme-option" data-theme="SLATE_BLUE" th:classappend="${currentUser.theme.name() == 'SLATE_BLUE'} ? 'active'">
-                    <span class="sw" style="background:#3b5372"></span> Slate Blue <span class="check">✓</span></button>
-                <button type="button" class="theme-option" data-theme="MAROON" th:classappend="${currentUser.theme.name() == 'MAROON'} ? 'active'">
-                    <span class="sw" style="background:#6e2f34"></span> Maroon <span class="check">✓</span></button>
-                <button type="button" class="theme-option" data-theme="FOREST_COPPER" th:classappend="${currentUser.theme.name() == 'FOREST_COPPER'} ? 'active'">
-                    <span class="sw" style="background:linear-gradient(135deg,#2f4a3c 60%,#b46a3c)"></span> Forest &amp; Copper <span class="check">✓</span></button>
-                <button type="button" class="theme-option" data-theme="MIDNIGHT" th:classappend="${currentUser.theme.name() == 'MIDNIGHT'} ? 'active'">
-                    <span class="sw" style="background:#171a21;border:1px solid #888"></span> Midnight <span class="check">✓</span></button>
+                <button type="button" class="theme-option" data-theme="LIGHT" th:classappend="${currentUser.theme.name() == 'LIGHT'} ? 'active'">
+                    <span class="sw" style="background:#ffffff;border:1px solid #d3d3e0"></span> Light <span class="check">✓</span></button>
+                <button type="button" class="theme-option" data-theme="DARK" th:classappend="${currentUser.theme.name() == 'DARK'} ? 'active'">
+                    <span class="sw" style="background:#101018;border:1px solid #444"></span> Dark <span class="check">✓</span></button>
             </div>
         </div>
 

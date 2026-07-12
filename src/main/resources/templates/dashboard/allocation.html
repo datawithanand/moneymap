@@ -22,7 +22,7 @@
                     <thead><tr><th>Class</th><th>Value</th><th>Actual %</th><th>Target %</th><th>Drift</th><th>Rebalance</th></tr></thead>
                     <tbody>
                     <tr th:each="a : ${allocationClasses}">
-                        <td><span th:style="'color:' + (${currentUser.theme.name() == 'MIDNIGHT'} ? ${a['colorDark']} : ${a['color']})">●</span> <span th:text="${a['name']}"></span></td>
+                        <td><span th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${a['colorDark']} : ${a['color']})">●</span> <span th:text="${a['name']}"></span></td>
                         <td class="mono" th:text="${fmt.money(a['value'], currentUser)}"></td>
                         <td class="mono" th:text="${a['percent']} + '%'"></td>
                         <td class="mono" th:switch="${a['cls'].name()}">
@@ -110,7 +110,7 @@
     <script th:inline="javascript">
     /*<![CDATA[*/
     (function () {
-        var isDark = document.body.classList.contains('theme-midnight');
+        var isDark = document.body.classList.contains('theme-dark');
         var allocationClasses = /*[[${allocationClasses}]]*/ [];
         var labels = [], values = [], colors = [];
         allocationClasses.forEach(function (a) {
