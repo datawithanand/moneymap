@@ -12,7 +12,7 @@
 
 <!-- Admin read-only view banner (Section 01 §6.3) -->
 <div th:fragment="adminViewBanner" th:if="${adminViewedUser != null}" class="banner-admin-view">
-    <strong th:text="'Viewing ' + ${adminViewedUser.username} + '''s data as Administrator — Read Only.'">Read only</strong>
+    <strong th:text="|Viewing ${adminViewedUser.username}'s data as Administrator — Read Only.|">Read only</strong>
     <form class="inline" th:action="@{/admin/view/exit}" method="post">
         <input type="hidden" name="_csrf" th:value="${csrf}">
         <button type="submit" class="btn-sm btn-secondary">Exit Admin View</button>
