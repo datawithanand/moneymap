@@ -383,7 +383,7 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .hero-chart .chart-link { align-self: flex-end; font-size: .82rem; margin-top: 6px; }
 .trend-up { color: var(--primary); font-weight: 600; }
 .trend-down { color: var(--danger); font-weight: 600; }
-.bucket-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+.bucket-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 16px; }
 .bucket-grid .card { margin-bottom: 0; }
 .al-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; margin: 14px 0 10px; background: var(--surface-alt); }
 .al-bar > div { height: 100%; transition: flex .3s; }
