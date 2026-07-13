@@ -305,10 +305,11 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .pill-disabled { background: var(--surface-alt); color: var(--text-muted); }
 .pill-pending { background: var(--warning-bg); color: var(--accent); }
 
-/* Login/Register page — two-panel split */
-.login-wrap { display: flex; min-height: 100vh; background: var(--page-bg); }
+/* Login/Register page — two-panel split. Capped and centered so the content and
+   form card sit close together on wide screens instead of stretching edge-to-edge. */
+.login-wrap { display: flex; min-height: 100vh; background: var(--page-bg); max-width: 1040px; margin: 0 auto; }
 .login-left {
-  flex: 0 0 55%; padding: 60px 56px;
+  flex: 0 0 55%; padding: 60px 48px 60px 0;
   display: flex; flex-direction: column; justify-content: center;
 }
 .login-left .brand { font-size: 1.15rem; font-weight: 800; color: var(--text); margin-bottom: 24px;
@@ -399,6 +400,49 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .bucket-chart-wrap { display: flex; justify-content: center; margin: 10px 0 4px; }
 .bucket-chart-wrap canvas { max-width: 110px; max-height: 110px; }
 .legend-compact { margin-top: 8px; gap: 8px 14px; font-size: .8rem; }
+
+/* Stat card sparkline row (donut + 6-month trend line side by side) */
+.stat-body { display: flex; align-items: center; gap: 12px; margin: 10px 0 4px; }
+.stat-body .bucket-chart-wrap { margin: 0; flex-shrink: 0; }
+.stat-spark { flex: 1; min-width: 0; height: 44px; }
+.stat-spark canvas { width: 100%; height: 100%; }
+
+/* "This Month at a Glance" row */
+.glance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.glance-card { display: flex; align-items: center; gap: 14px; }
+.glance-icon { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.glance-icon svg { width: 19px; height: 19px; }
+.glance-title { font-size: .78rem; color: var(--text-muted); font-weight: 700; margin: 0 0 3px; }
+.glance-figure { font-size: 1.1rem; font-weight: 700; margin: 0; }
+.glance-sub { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+.glance-sub a { color: var(--primary); font-weight: 600; }
+
+/* Quick-link cards into the domain dashboards */
+.quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.quick-card { display: block; color: inherit; }
+.quick-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.quick-title { font-size: .82rem; font-weight: 700; color: var(--text-muted); }
+.quick-badge { width: 30px; height: 30px; border-radius: 9px; }
+.quick-badge svg { width: 15px; height: 15px; }
+.quick-figure { font-size: 1.1rem; font-weight: 700; margin: 4px 0 4px; }
+.quick-sub { font-size: .78rem; color: var(--text-muted); }
+
+/* Family snapshot bars */
+.family-row { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.family-name { width: 110px; font-size: .85rem; font-weight: 700; flex-shrink: 0; }
+.family-bar-wrap { flex: 1; height: 10px; background: var(--surface-alt); border-radius: 5px; overflow: hidden; }
+.family-bar { height: 100%; border-radius: 5px; background: var(--primary); }
+.family-val { width: 120px; text-align: right; font-size: .82rem; font-weight: 700; flex-shrink: 0; }
+
+/* Compact semi-circle gauges (EMI burden, insurance coverage, retirement readiness) — sized to
+   sit inline in a normal card, not as a large standalone panel. */
+.gauge-inline { display: flex; align-items: center; gap: 14px; }
+.gauge-inline canvas { width: 110px !important; height: 66px !important; }
+.gauge-inline-figure { font-size: 1.15rem; font-weight: 800; }
+.gauge-inline-label { font-size: .78rem; color: var(--text-muted); font-weight: 600; }
+.gauge-zones { font-size: .72rem; color: var(--text-muted); margin-top: 4px; }
+.gap-note { display: inline-block; margin-top: 8px; font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  background: var(--warning-bg); color: var(--accent); }
 .family-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .banner-context { position: sticky; top: 0; z-index: 150; background: var(--accent); color: #fff;
   padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }

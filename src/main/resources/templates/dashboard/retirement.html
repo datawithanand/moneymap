@@ -46,12 +46,11 @@
 
         <div class="card" th:if="${result != null}">
             <h2>Result</h2>
-            <div th:if="${readinessPercent != null}">
-                <div class="bar-track"><div class="bar-fill" th:classappend="${readinessPercent < 50 ? 'bar-danger' : ''}"
-                                              th:style="'width:' + ${readinessPercent} + '%'"></div></div>
-                <div class="bar-labels">
-                    <span th:text="${fmt.money(result.currentCorpus(), currentUser)} + ' saved'"></span>
-                    <span th:text="${readinessPercent} + '% of target corpus'"></span>
+            <div class="gauge-inline" th:if="${readinessPercent != null}">
+                <canvas id="readyGauge" width="110" height="66"></canvas>
+                <div>
+                    <div class="gauge-inline-figure" th:text="${readinessPercent} + '%'"></div>
+                    <div class="gauge-inline-label" th:text="${fmt.money(result.currentCorpus(), currentUser)} + ' of ' + ${fmt.money(result.corpusRequired(), currentUser)} + ' corpus required'"></div>
                 </div>
             </div>
             <table class="data" style="margin-top:16px">
@@ -68,5 +67,12 @@
         </div>
     </main>
 </div>
+<script th:if="${readinessPercent != null}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${readinessPercent != null}" th:src="@{/js/donut-chart.js}"></script>
+<script th:if="${readinessPercent != null}" th:inline="javascript">
+/*<![CDATA[*/
+renderGauge('readyGauge', /*[[${readinessPercent}]]*/ 0, '#4338ca');
+/*]]>*/
+</script>
 </body>
 </html>

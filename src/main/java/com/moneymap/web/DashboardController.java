@@ -156,9 +156,178 @@ public class DashboardController {
                     goalRows.add(Map.of("goal", g, "nominalSip", sips[0], "inflationAdjustedSip", sips[1]));
                 });
         model.addAttribute("goalRows", goalRows);
-        model.addAttribute("reminders", reminderService.upcoming(owner, 30).stream().limit(5).toList());
+        List<ReminderService.ReminderItem> upcomingReminders = reminderService.upcoming(owner, 30);
+        model.addAttribute("reminders", upcomingReminders.stream().limit(5).toList());
         model.addAttribute("recentActivity", recentActivity(owner, 8));
+
+        // Bucket sparklines on the stat cards — real history from the same snapshots as the net worth trend.
+        model.addAttribute("cashSpark", recentSnapshots.stream().map(NetWorthSnapshot::getCashBucket).toList());
+        model.addAttribute("retirementSpark", recentSnapshots.stream().map(NetWorthSnapshot::getRetirementBucket).toList());
+        model.addAttribute("investmentsSpark", recentSnapshots.stream().map(NetWorthSnapshot::getInvestmentsBucket).toList());
+
+        // "This Month at a Glance" row
+        model.addAttribute("upcomingReminderCount", upcomingReminders.size());
+        model.addAttribute("nextReminder", upcomingReminders.isEmpty() ? null : upcomingReminders.get(0));
+        model.addAttribute("quickHealthScore", quickHealthScore(owner));
+        model.addAttribute("taxRegimeGlance", quickTaxRegimeSavings(owner));
+        model.addAttribute("totalMonthlyEmi", activeLoansMonthlyEmi(owner.getId()));
+
+        // Quick-link cards into the domain dashboards
+        model.addAttribute("loansQuick", loansQuickStat(owner.getId()));
+        model.addAttribute("insuranceQuick", insuranceQuickStat(owner.getId()));
+        model.addAttribute("goalsQuick", goalsQuickStat(owner.getId()));
+        model.addAttribute("retirementQuick", retirementQuickStat(owner));
+
+        // Family snapshot — only meaningful with more than just the default "Self" entry
+        List<com.moneymap.model.HouseholdMember> members = householdMembers.findByOwnerId(owner.getId());
+        if (members.size() > 1) {
+            List<Map<String, Object>> familyRows = new ArrayList<>();
+            BigDecimal maxNetWorth = BigDecimal.ONE;
+            List<BigDecimal> memberNetWorths = new ArrayList<>();
+            for (var m : members) {
+                BigDecimal netWorth = aggregation.aggregate(owner, m.getLabel()).netWorth;
+                memberNetWorths.add(netWorth);
+                if (netWorth.compareTo(maxNetWorth) > 0) maxNetWorth = netWorth;
+            }
+            for (int idx = 0; idx < members.size(); idx++) {
+                BigDecimal netWorth = memberNetWorths.get(idx);
+                // Clamp to [0, 100] — a negative net worth (more liabilities than assets) has no
+                // sensible bar width, and an invalid negative CSS width falls back to full-width.
+                int barPercent = netWorth.signum() <= 0 ? 0 : netWorth.multiply(BigDecimal.valueOf(100))
+                        .divide(maxNetWorth, 0, RoundingMode.HALF_UP).min(BigDecimal.valueOf(100)).intValue();
+                familyRows.add(Map.of("label", members.get(idx).getLabel(), "netWorth", netWorth, "barPercent", barPercent));
+            }
+            model.addAttribute("familyRows", familyRows);
+        }
         return "dashboard";
+    }
+
+    /** Compact 0-100 score for the home page glance card, mirroring the full Health Score
+        dashboard's formula. Returns null if the user hasn't filled in health-score inputs yet. */
+    private Integer quickHealthScore(User owner) {
+        String uid = owner.getId();
+        com.moneymap.model.FinancialHealthInputs inputs = db.financialHealthInputs
+                .findWhere(x -> uid.equals(x.getOwnerId())).stream().findFirst().orElse(null);
+        if (inputs == null || inputs.getMonthlyExpense() == null || inputs.getMonthlyExpense().signum() <= 0) {
+            return null;
+        }
+        var summary = aggregation.aggregate(owner);
+        BigDecimal monthlyExpense = inputs.getMonthlyExpense();
+        BigDecimal cashBucket = summary.bucket(Bucket.CASH);
+        double emergencyMonths = cashBucket.divide(monthlyExpense, 1, RoundingMode.HALF_UP).doubleValue();
+        int emergencyScore = scoreBand(emergencyMonths, 3, 6);
+
+        BigDecimal totalTermCover = db.termInsurance.findWhere(r -> uid.equals(r.getOwnerId()))
+                .stream().map(TermInsurance::getSumAssured).map(Valuation::nz).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal annualIncome = db.salaryProfiles.findWhere(r -> uid.equals(r.getOwnerId())).stream()
+                .map(SalaryProfile::grossMonthly).filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).multiply(BigDecimal.valueOf(12));
+        List<Integer> componentScores = new ArrayList<>();
+        componentScores.add(emergencyScore);
+        if (annualIncome.signum() > 0) {
+            BigDecimal recommended = annualIncome.multiply(BigDecimal.valueOf(12));
+            double coverRatio = totalTermCover.multiply(BigDecimal.valueOf(100))
+                    .divide(recommended, 1, RoundingMode.HALF_UP).doubleValue();
+            componentScores.add(scoreBand(coverRatio, 50, 100));
+        }
+        BigDecimal totalMonthlyEmi = activeLoansMonthlyEmi(uid);
+        BigDecimal monthlyIncome = annualIncome.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+        if (monthlyIncome.signum() > 0) {
+            double emiPercent = totalMonthlyEmi.multiply(BigDecimal.valueOf(100))
+                    .divide(monthlyIncome, 1, RoundingMode.HALF_UP).doubleValue();
+            componentScores.add(Math.max(0, Math.min(100, 100 - (int) Math.round(Math.max(0, emiPercent - 20) * (100.0 / 20)))));
+        }
+        if (inputs.getMonthlySavings() != null && monthlyIncome.signum() > 0) {
+            double savingsPercent = inputs.getMonthlySavings().multiply(BigDecimal.valueOf(100))
+                    .divide(monthlyIncome, 1, RoundingMode.HALF_UP).doubleValue();
+            componentScores.add(scoreBand(savingsPercent, 10, 20));
+        }
+        return (int) Math.round(componentScores.stream().mapToInt(Integer::intValue).average().orElse(0));
+    }
+
+    public record TaxRegimeGlance(String betterRegime, BigDecimal savings) {}
+
+    /** Compact old-vs-new regime comparison for the home page glance card, same formula as the
+        Tax Regime calculator. Returns null if there's no salary profile / tax slabs to compare. */
+    private TaxRegimeGlance quickTaxRegimeSavings(User owner) {
+        String uid = owner.getId();
+        BigDecimal grossIncome = db.salaryProfiles.findWhere(r -> uid.equals(r.getOwnerId())).stream()
+                .map(SalaryProfile::grossMonthly).filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).multiply(BigDecimal.valueOf(12));
+        if (grossIncome.signum() <= 0) return null;
+        String financialYear = db.taxSlabSets.findAll().stream()
+                .map(TaxSlabSet::getFinancialYear).max(Comparator.naturalOrder()).orElse(null);
+        if (financialYear == null) return null;
+        Optional<TaxSlabSet> oldSet = taxService.findSet(financialYear, "OLD");
+        Optional<TaxSlabSet> newSet = taxService.findSet(financialYear, "NEW");
+        if (oldSet.isEmpty() || newSet.isEmpty()) return null;
+
+        BigDecimal ppf = db.ppfAccounts.findWhere(r -> uid.equals(r.getOwnerId())).stream()
+                .map(PpfAccount::getYearlyContribution).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal epf = db.pfEmployerRecords.findWhere(r -> uid.equals(r.getOwnerId()) && "ACTIVE".equals(r.getStatus())).stream()
+                .map(r -> Valuation.nz(r.getEmployeeContributionPerMonth()).add(Valuation.nz(r.getVpfContributionPerMonth()))
+                        .multiply(BigDecimal.valueOf(12)))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal elss = db.mutualFunds.findWhere(r -> uid.equals(r.getOwnerId()) && r.getIsElss() && "ACTIVE".equals(r.getSipStatus()))
+                .stream().map(r -> Valuation.nz(r.getSipAmount()).multiply(BigDecimal.valueOf(12)))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal deductions = ppf.add(epf).add(elss);
+
+        BigDecimal oldStdDeduction = Valuation.nz(oldSet.get().getStandardDeduction());
+        BigDecimal newStdDeduction = Valuation.nz(newSet.get().getStandardDeduction());
+        BigDecimal taxableOld = grossIncome.subtract(oldStdDeduction).subtract(deductions).max(BigDecimal.ZERO);
+        BigDecimal taxableNew = grossIncome.subtract(newStdDeduction).max(BigDecimal.ZERO);
+        BigDecimal taxOld = taxService.computeTax(taxableOld, oldSet.get());
+        BigDecimal taxNew = taxService.computeTax(taxableNew, newSet.get());
+        String better = taxOld.compareTo(taxNew) <= 0 ? "OLD" : "NEW";
+        return new TaxRegimeGlance(better, taxOld.subtract(taxNew).abs());
+    }
+
+    public record LoansQuickStat(BigDecimal totalOutstanding, int activeLoanCount) {}
+
+    private LoansQuickStat loansQuickStat(String uid) {
+        List<Loan> activeLoans = db.loans.findWhere(l -> uid.equals(l.getOwnerId())
+                && Valuation.nz(l.getOutstandingBalance()).signum() != 0);
+        BigDecimal totalOutstanding = activeLoans.stream().map(Loan::getOutstandingBalance)
+                .map(Valuation::nz).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new LoansQuickStat(totalOutstanding, activeLoans.size());
+    }
+
+    public record InsuranceQuickStat(BigDecimal totalCover, Integer coveragePercent) {}
+
+    private InsuranceQuickStat insuranceQuickStat(String uid) {
+        BigDecimal totalTermCover = db.termInsurance.findWhere(r -> uid.equals(r.getOwnerId()))
+                .stream().map(TermInsurance::getSumAssured).map(Valuation::nz).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal annualIncome = db.salaryProfiles.findWhere(r -> uid.equals(r.getOwnerId())).stream()
+                .map(SalaryProfile::grossMonthly).filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).multiply(BigDecimal.valueOf(12));
+        Integer coveragePercent = null;
+        if (annualIncome.signum() > 0) {
+            BigDecimal recommended = annualIncome.multiply(BigDecimal.valueOf(12));
+            coveragePercent = totalTermCover.multiply(BigDecimal.valueOf(100))
+                    .divide(recommended, 0, RoundingMode.HALF_UP).min(BigDecimal.valueOf(100)).intValue();
+        }
+        return new InsuranceQuickStat(totalTermCover, coveragePercent);
+    }
+
+    public record GoalsQuickStat(int totalGoals, int onTrackGoals) {}
+
+    private GoalsQuickStat goalsQuickStat(String uid) {
+        LocalDate today = LocalDate.now();
+        List<FinancialGoal> goals = db.financialGoals.findWhere(g -> uid.equals(g.getOwnerId()));
+        // "On track" here means the target date hasn't already passed — a simple, honest proxy
+        // given MoneyMap doesn't track saved-so-far progress per goal.
+        long onTrack = goals.stream().filter(g -> g.getTargetDate() == null || !g.getTargetDate().isBefore(today)).count();
+        return new GoalsQuickStat(goals.size(), (int) onTrack);
+    }
+
+    public record RetirementQuickStat(BigDecimal currentCorpus) {}
+
+    // Readiness % needs a saved FIRE calculation (annual expense, SWR, expected return) which is
+    // only entered on the Retirement Readiness page itself, not persisted — so the home page
+    // quick-link shows the corpus MoneyMap already tracks rather than a fabricated percentage.
+    private RetirementQuickStat retirementQuickStat(User owner) {
+        return new RetirementQuickStat(aggregation.aggregate(owner).bucket(Bucket.RETIREMENT));
     }
 
     @GetMapping("/dashboard/reminders")

@@ -28,3 +28,22 @@ function renderNamedDonut(canvasId, breakdown) {
         }
     });
 }
+
+/**
+ * Renders a compact semi-circle gauge (percent filled, colored by zone) — used for EMI burden,
+ * insurance coverage-vs-recommended, and retirement readiness. Sized to sit inline in a normal
+ * card, not as a large standalone panel.
+ */
+function renderGauge(canvasId, percent, color) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var clamped = Math.max(0, Math.min(100, percent));
+    var isDark = document.body.classList.contains('theme-dark');
+    new Chart(canvas, {
+        type: 'doughnut',
+        data: { datasets: [{ data: [clamped, 100 - clamped],
+            backgroundColor: [color, isDark ? '#2a2b33' : '#ecedf1'], borderWidth: 0,
+            circumference: 180, rotation: 270 }] },
+        options: { responsive: false, cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, events: [] }
+    });
+}

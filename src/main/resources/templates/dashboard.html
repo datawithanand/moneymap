@@ -46,6 +46,60 @@
             </div>
         </div>
 
+        <!-- This Month at a Glance -->
+        <div class="glance-grid">
+            <div class="card glance-card">
+                <span class="glance-icon" style="background:var(--badge-amber-bg);color:var(--badge-amber-fg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </span>
+                <div>
+                    <p class="glance-title">Upcoming Reminders</p>
+                    <p class="glance-figure" th:text="${upcomingReminderCount} + (${upcomingReminderCount == 1} ? ' due' : ' due')"></p>
+                    <div class="glance-sub" th:if="${nextReminder != null}" th:text="${nextReminder.description()}"></div>
+                    <div class="glance-sub" th:if="${nextReminder == null}">Nothing due in the next 30 days</div>
+                </div>
+            </div>
+            <div class="card glance-card">
+                <span class="glance-icon" style="background:var(--badge-green-bg);color:var(--badge-green-fg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </span>
+                <div>
+                    <p class="glance-title">Financial Health Score</p>
+                    <p class="glance-figure" th:if="${quickHealthScore != null}" th:text="${quickHealthScore} + ' / 100'"></p>
+                    <p class="glance-figure" th:if="${quickHealthScore == null}">—</p>
+                    <div class="glance-sub" th:if="${quickHealthScore == null}">
+                        <a th:href="@{/dashboard/health-score}">Set up your health score →</a></div>
+                    <div class="glance-sub" th:if="${quickHealthScore != null}">
+                        <a th:href="@{/dashboard/health-score}">View breakdown →</a></div>
+                </div>
+            </div>
+            <div class="card glance-card">
+                <span class="glance-icon" style="background:var(--badge-blue-bg);color:var(--badge-blue-fg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </span>
+                <div>
+                    <p class="glance-title">Tax Regime</p>
+                    <p class="glance-figure" th:if="${taxRegimeGlance != null}"
+                       th:text="${#strings.capitalize(#strings.toLowerCase(taxRegimeGlance.betterRegime()))} + ' saves ' + ${fmt.money(taxRegimeGlance.savings(), user)}"></p>
+                    <p class="glance-figure" th:if="${taxRegimeGlance == null}">—</p>
+                    <div class="glance-sub" th:if="${taxRegimeGlance == null}">
+                        <a th:href="@{/dashboard/tax}">Add a salary profile →</a></div>
+                    <div class="glance-sub" th:if="${taxRegimeGlance != null}">
+                        <a th:href="@{/dashboard/tax}">View tax planning →</a></div>
+                </div>
+            </div>
+            <div class="card glance-card">
+                <span class="glance-icon" style="background:var(--badge-pink-bg);color:var(--badge-pink-fg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>
+                </span>
+                <div>
+                    <p class="glance-title">Total Monthly EMI</p>
+                    <p class="glance-figure" th:text="${fmt.money(totalMonthlyEmi, user)}"></p>
+                    <div class="glance-sub"><a th:href="@{/dashboard/loans}">View loan overview →</a></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Upcoming reminders (FD/RD/govt scheme maturity, insurance premium/renewal, card payment, SIP due) -->
         <div class="card" th:if="${!reminders.isEmpty()}">
             <h2>Upcoming Reminders</h2>
@@ -74,8 +128,11 @@
                     </span>
                 </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).CASH), user)}"></p>
-                <div class="bucket-chart-wrap" th:if="${!cashBreakdown.isEmpty()}">
-                    <canvas id="cashChart" width="110" height="110"></canvas>
+                <div class="stat-body">
+                    <div class="bucket-chart-wrap" th:if="${!cashBreakdown.isEmpty()}">
+                        <canvas id="cashChart" width="90" height="90"></canvas>
+                    </div>
+                    <div class="stat-spark" th:if="${!cashBreakdown.isEmpty() and cashSpark.size() >= 2}"><canvas id="cashSpark"></canvas></div>
                 </div>
                 <p class="hint" th:if="${cashBreakdown.isEmpty()}">No cash accounts added yet.</p>
                 <div class="legend legend-compact">
@@ -91,8 +148,11 @@
                     </span>
                 </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).RETIREMENT), user)}"></p>
-                <div class="bucket-chart-wrap" th:if="${!retirementBreakdown.isEmpty()}">
-                    <canvas id="retirementChart" width="110" height="110"></canvas>
+                <div class="stat-body">
+                    <div class="bucket-chart-wrap" th:if="${!retirementBreakdown.isEmpty()}">
+                        <canvas id="retirementChart" width="90" height="90"></canvas>
+                    </div>
+                    <div class="stat-spark" th:if="${!retirementBreakdown.isEmpty() and retirementSpark.size() >= 2}"><canvas id="retirementSpark"></canvas></div>
                 </div>
                 <p class="hint" th:if="${retirementBreakdown.isEmpty()}">No retirement accounts added yet.</p>
                 <div class="legend legend-compact">
@@ -108,8 +168,11 @@
                     </span>
                 </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).INVESTMENTS), user)}"></p>
-                <div class="bucket-chart-wrap" th:if="${!investmentsBreakdown.isEmpty()}">
-                    <canvas id="investmentsChart" width="110" height="110"></canvas>
+                <div class="stat-body">
+                    <div class="bucket-chart-wrap" th:if="${!investmentsBreakdown.isEmpty()}">
+                        <canvas id="investmentsChart" width="90" height="90"></canvas>
+                    </div>
+                    <div class="stat-spark" th:if="${!investmentsBreakdown.isEmpty() and investmentsSpark.size() >= 2}"><canvas id="investmentsSpark"></canvas></div>
                 </div>
                 <p class="hint" th:if="${investmentsBreakdown.isEmpty()}">No investments added yet.</p>
                 <div class="legend legend-compact">
@@ -132,6 +195,57 @@
                           th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${a['colorDark']} : ${a['color']})"
                           th:text="${a['name']} + ' ' + ${a['percent']} + '%'"></span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Quick links into the domain dashboards -->
+        <div class="quick-grid">
+            <a class="card quick-card" th:href="@{/dashboard/loans}">
+                <div class="quick-top"><span class="quick-title">Loans &amp; Debt</span>
+                    <span class="stat-badge quick-badge" style="background:var(--badge-amber-bg);color:var(--badge-amber-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+                    </span>
+                </div>
+                <p class="quick-figure" th:text="${fmt.money(loansQuick.totalOutstanding(), user)} + ' outstanding'"></p>
+                <span class="quick-sub" th:text="${loansQuick.activeLoanCount()} + ' active loan' + (${loansQuick.activeLoanCount() == 1} ? '' : 's')"></span>
+            </a>
+            <a class="card quick-card" th:href="@{/dashboard/insurance}">
+                <div class="quick-top"><span class="quick-title">Insurance Coverage</span>
+                    <span class="stat-badge quick-badge" style="background:var(--badge-green-bg);color:var(--badge-green-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+                    </span>
+                </div>
+                <p class="quick-figure" th:text="${fmt.money(insuranceQuick.totalCover(), user)} + ' covered'"></p>
+                <span class="quick-sub" th:if="${insuranceQuick.coveragePercent() != null}" th:text="${insuranceQuick.coveragePercent()} + '% of recommended cover'"></span>
+                <span class="quick-sub" th:if="${insuranceQuick.coveragePercent() == null}">Add a salary profile to see coverage %</span>
+            </a>
+            <a class="card quick-card" th:href="@{/assets/goals}">
+                <div class="quick-top"><span class="quick-title">Goals</span>
+                    <span class="stat-badge quick-badge" style="background:var(--badge-violet-bg);color:var(--badge-violet-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+                    </span>
+                </div>
+                <p class="quick-figure" th:text="${goalsQuick.onTrackGoals()} + ' of ' + ${goalsQuick.totalGoals()} + ' on track'"></p>
+                <span class="quick-sub">By target date, not yet overdue</span>
+            </a>
+            <a class="card quick-card" th:href="@{/dashboard/retirement}">
+                <div class="quick-top"><span class="quick-title">Retirement</span>
+                    <span class="stat-badge quick-badge" style="background:var(--badge-blue-bg);color:var(--badge-blue-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4-3 8-7 8-12a8 8 0 1 0-16 0c0 5 4 9 8 12Z"/></svg>
+                    </span>
+                </div>
+                <p class="quick-figure" th:text="${fmt.money(retirementQuick.currentCorpus(), user)} + ' corpus'"></p>
+                <span class="quick-sub">Check readiness against your target →</span>
+            </a>
+        </div>
+
+        <!-- Family snapshot — only when there's more than the default "Self" entry -->
+        <div class="card" th:if="${familyRows != null}">
+            <h2>Family Snapshot</h2>
+            <div class="family-row" th:each="f : ${familyRows}">
+                <span class="family-name" th:text="${f['label']}"></span>
+                <div class="family-bar-wrap"><div class="family-bar" th:style="'width:' + ${f['barPercent']} + '%'"></div></div>
+                <span class="family-val" th:text="${fmt.money(f['netWorth'], user)}"></span>
             </div>
         </div>
 
@@ -241,6 +355,24 @@
             }
         });
     }
+
+    /** Renders a small trend line under a bucket stat card (Cash/Retirement/Investments),
+        reusing the same snapshot history as the net worth mini chart above. */
+    function renderSpark(canvasId, values, color) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas || !values || values.length < 2) return;
+        new Chart(canvas, {
+            type: 'line',
+            data: { labels: values.map(function () { return ''; }),
+                datasets: [{ data: values, borderColor: color, backgroundColor: color + '22',
+                    fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { display: false } } }
+        });
+    }
+    renderSpark('cashSpark', /*[[${cashSpark}]]*/ [], '#3b6fe0');
+    renderSpark('retirementSpark', /*[[${retirementSpark}]]*/ [], '#7c4dea');
+    renderSpark('investmentsSpark', /*[[${investmentsSpark}]]*/ [], '#1fa15c');
 
     /** Renders a small composition doughnut. tooltipLabels, if given, overrides the raw value in tooltips
         (used for bucket breakdowns so the tooltip shows formatted money instead of a raw number). */
