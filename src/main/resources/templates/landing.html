@@ -8,8 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/main.css}">
     <style>
-        /* Landing-page-only accent: red, distinct from the indigo used in the logged-in app. */
-        .lp-wrap { --lp-accent: #e0405e; --lp-accent-light: #ea6b82; max-width: 1180px; margin: 0 auto; padding: 0 40px; }
+        /* Same cyan accent as the rest of the app. */
+        .lp-wrap { --lp-accent: var(--primary); --lp-accent-light: var(--primary-light); max-width: 1180px; margin: 0 auto; padding: 0 40px; }
         .lp-wrap .btn { background: linear-gradient(135deg, var(--lp-accent), var(--lp-accent-light)); border-color: transparent; }
         .lp-nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
         .lp-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }

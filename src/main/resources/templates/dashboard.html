@@ -128,11 +128,10 @@
                     </span>
                 </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).CASH), user)}"></p>
-                <div class="stat-body">
-                    <div class="bucket-chart-wrap" th:if="${!cashBreakdown.isEmpty()}">
-                        <canvas id="cashChart" width="90" height="90"></canvas>
-                    </div>
-                    <div class="stat-spark" th:if="${!cashBreakdown.isEmpty() and cashSpark.size() >= 2}"><canvas id="cashSpark"></canvas></div>
+                <!-- Two/multi-way liquid split reads faster as a bar than a single-purpose donut -->
+                <div class="split-bar-wrap" th:if="${!cashBreakdown.isEmpty()}">
+                    <div th:each="b : ${cashBreakdown}"
+                         th:style="'width:' + ${b['percent']} + '%;background:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"></div>
                 </div>
                 <p class="hint" th:if="${cashBreakdown.isEmpty()}">No cash accounts added yet.</p>
                 <div class="legend legend-compact">
@@ -148,11 +147,12 @@
                     </span>
                 </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).RETIREMENT), user)}"></p>
-                <div class="stat-body">
-                    <div class="bucket-chart-wrap" th:if="${!retirementBreakdown.isEmpty()}">
-                        <canvas id="retirementChart" width="90" height="90"></canvas>
-                    </div>
-                    <div class="stat-spark" th:if="${!retirementBreakdown.isEmpty() and retirementSpark.size() >= 2}"><canvas id="retirementSpark"></canvas></div>
+                <!-- A growth story matters more for retirement than a single-slice donut -->
+                <div class="growth-chart" th:if="${!retirementBreakdown.isEmpty() and retirementSpark.size() >= 2}">
+                    <canvas id="retirementGrowth"></canvas>
+                </div>
+                <div class="bucket-chart-wrap" th:if="${!retirementBreakdown.isEmpty() and retirementSpark.size() < 2}">
+                    <canvas id="retirementChart" width="90" height="90"></canvas>
                 </div>
                 <p class="hint" th:if="${retirementBreakdown.isEmpty()}">No retirement accounts added yet.</p>
                 <div class="legend legend-compact">
@@ -172,7 +172,9 @@
                     <div class="bucket-chart-wrap" th:if="${!investmentsBreakdown.isEmpty()}">
                         <canvas id="investmentsChart" width="90" height="90"></canvas>
                     </div>
-                    <div class="stat-spark" th:if="${!investmentsBreakdown.isEmpty() and investmentsSpark.size() >= 2}"><canvas id="investmentsSpark"></canvas></div>
+                    <span class="perf-badge" th:if="${investmentsDeltaPercent != null}"
+                          th:classappend="${investmentsDeltaPercent.signum() >= 0 ? 'up' : 'down'}"
+                          th:text="${(investmentsDeltaPercent.signum() >= 0 ? '▲ ' : '▼ ') + investmentsDeltaPercent.abs() + '% since last snapshot'}"></span>
                 </div>
                 <p class="hint" th:if="${investmentsBreakdown.isEmpty()}">No investments added yet.</p>
                 <div class="legend legend-compact">
@@ -187,7 +189,12 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9h-9Z"/></svg>
                     </span>
                 </div>
-                <div class="allocation-chart-wrap">
+                <!-- Target-vs-actual ring when a target mix is set, else the actual mix alone -->
+                <div class="target-ring-wrap" th:if="${hasAllocationTarget}">
+                    <canvas id="allocTargetRing" width="84" height="84"></canvas>
+                    <canvas id="allocationChart" class="actual-ring" width="64" height="64"></canvas>
+                </div>
+                <div class="allocation-chart-wrap" th:unless="${hasAllocationTarget}">
                     <canvas id="allocationChart" width="130" height="130"></canvas>
                 </div>
                 <div class="legend legend-compact">
@@ -198,7 +205,7 @@
             </div>
         </div>
 
-        <!-- Quick links into the domain dashboards -->
+        <!-- Quick links into the domain dashboards — one visualization per domain -->
         <div class="quick-grid">
             <a class="card quick-card" th:href="@{/dashboard/loans}">
                 <div class="quick-top"><span class="quick-title">Loans &amp; Debt</span>
@@ -207,7 +214,14 @@
                     </span>
                 </div>
                 <p class="quick-figure" th:text="${fmt.money(loansQuick.totalOutstanding(), user)} + ' outstanding'"></p>
-                <span class="quick-sub" th:text="${loansQuick.activeLoanCount()} + ' active loan' + (${loansQuick.activeLoanCount() == 1} ? '' : 's')"></span>
+                <div class="payoff-segments" th:if="${!loansQuick.topLoans().isEmpty()}">
+                    <div th:each="l : ${loansQuick.topLoans()}">
+                        <div class="payoff-seg-track"><div class="payoff-seg-fill" th:style="'width:' + ${l.payoffPercent()} + '%'"></div></div>
+                        <div class="payoff-seg-label"><span th:text="${l.lenderName()}"></span><span th:text="${l.payoffPercent()} + '%'"></span></div>
+                    </div>
+                </div>
+                <span class="quick-sub" th:if="${loansQuick.topLoans().isEmpty()}"
+                      th:text="${loansQuick.activeLoanCount()} + ' active loan' + (${loansQuick.activeLoanCount() == 1} ? '' : 's')"></span>
             </a>
             <a class="card quick-card" th:href="@{/dashboard/insurance}">
                 <div class="quick-top"><span class="quick-title">Insurance Coverage</span>
@@ -216,7 +230,10 @@
                     </span>
                 </div>
                 <p class="quick-figure" th:text="${fmt.money(insuranceQuick.totalCover(), user)} + ' covered'"></p>
-                <span class="quick-sub" th:if="${insuranceQuick.coveragePercent() != null}" th:text="${insuranceQuick.coveragePercent()} + '% of recommended cover'"></span>
+                <div class="mini-gauge-row" th:if="${insuranceQuick.coveragePercent() != null}">
+                    <canvas id="insQuickGauge" width="84" height="50"></canvas>
+                    <div><div class="mini-gauge-figure" th:text="${insuranceQuick.coveragePercent()} + '%'"></div><div class="mini-gauge-label">of recommended cover</div></div>
+                </div>
                 <span class="quick-sub" th:if="${insuranceQuick.coveragePercent() == null}">Add a salary profile to see coverage %</span>
             </a>
             <a class="card quick-card" th:href="@{/assets/goals}">
@@ -226,7 +243,12 @@
                     </span>
                 </div>
                 <p class="quick-figure" th:text="${goalsQuick.onTrackGoals()} + ' of ' + ${goalsQuick.totalGoals()} + ' on track'"></p>
-                <span class="quick-sub">By target date, not yet overdue</span>
+                <div class="goal-dots" th:if="${!goalsQuick.dots().isEmpty()}">
+                    <div class="goal-dot" th:each="d : ${goalsQuick.dots()}">
+                        <span th:style="'background:' + ${d.color()}"></span><span th:text="${d.goalName()}"></span>
+                    </div>
+                </div>
+                <span class="quick-sub" th:if="${goalsQuick.dots().isEmpty()}">Add a goal to see status here</span>
             </a>
             <a class="card quick-card" th:href="@{/dashboard/retirement}">
                 <div class="quick-top"><span class="quick-title">Retirement</span>
@@ -234,18 +256,34 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4-3 8-7 8-12a8 8 0 1 0-16 0c0 5 4 9 8 12Z"/></svg>
                     </span>
                 </div>
-                <p class="quick-figure" th:text="${fmt.money(retirementQuick.currentCorpus(), user)} + ' corpus'"></p>
-                <span class="quick-sub">Check readiness against your target →</span>
+                <div class="mini-ring-row" th:if="${retirementQuick.readinessPercent() != null}">
+                    <div class="mini-ring-wrap"><canvas id="retireQuickRing"></canvas><div class="mini-ring-label" th:text="${retirementQuick.readinessPercent()} + '%'"></div></div>
+                    <div><p class="quick-figure" style="margin:0" th:text="${fmt.money(retirementQuick.currentCorpus(), user)}"></p>
+                        <span class="quick-sub" th:text="'of ' + ${fmt.money(retirementQuick.corpusRequired(), user)} + ' target'"></span></div>
+                </div>
+                <p class="quick-figure" th:if="${retirementQuick.readinessPercent() == null}" th:text="${fmt.money(retirementQuick.currentCorpus(), user)} + ' corpus'"></p>
+                <span class="quick-sub" th:if="${retirementQuick.readinessPercent() == null}">Set up your health score to see readiness %</span>
             </a>
         </div>
 
         <!-- Family snapshot — only when there's more than the default "Self" entry -->
         <div class="card" th:if="${familyRows != null}">
             <h2>Family Snapshot</h2>
-            <div class="family-row" th:each="f : ${familyRows}">
-                <span class="family-name" th:text="${f['label']}"></span>
-                <div class="family-bar-wrap"><div class="family-bar" th:style="'width:' + ${f['barPercent']} + '%'"></div></div>
-                <span class="family-val" th:text="${fmt.money(f['netWorth'], user)}"></span>
+            <div class="family-layout">
+                <div class="family-donut-wrap">
+                    <canvas id="familyDonut" width="140" height="140"></canvas>
+                    <div class="family-donut-total"><b th:text="${fmt.money(householdTotal, user)}"></b><span>Household total</span></div>
+                </div>
+                <div class="family-list">
+                    <div class="family-item" th:each="f : ${familyRows}">
+                        <span class="family-avatar" th:style="'background:' + ${f['color']}" th:text="${f['initial']}"></span>
+                        <div class="family-item-body">
+                            <div class="family-item-top"><b th:text="${f['label']}"></b><span class="val" th:text="${fmt.money(f['netWorth'], user)}"></span></div>
+                            <div class="family-item-bar-wrap"><div class="family-item-bar" th:style="'width:' + ${f['barPercent']} + '%;background:' + ${f['color']}"></div></div>
+                            <div class="family-item-share" th:text="${f['barPercent']} + '% of household net worth'"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -315,6 +353,7 @@
 </div>
 
 <script th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:src="@{/js/donut-chart.js}"></script>
 <script th:inline="javascript">
 /*<![CDATA[*/
 (function () {
@@ -356,27 +395,24 @@
         });
     }
 
-    /** Renders a small trend line under a bucket stat card (Cash/Retirement/Investments),
-        reusing the same snapshot history as the net worth mini chart above. */
-    function renderSpark(canvasId, values, color) {
-        var canvas = document.getElementById(canvasId);
-        if (!canvas || !values || values.length < 2) return;
-        new Chart(canvas, {
+    // Retirement: full-width growth area chart instead of a near-empty single-slice donut
+    var retirementSpark = /*[[${retirementSpark}]]*/ [];
+    var retirementGrowthCanvas = document.getElementById('retirementGrowth');
+    if (retirementGrowthCanvas && retirementSpark.length >= 2) {
+        new Chart(retirementGrowthCanvas, {
             type: 'line',
-            data: { labels: values.map(function () { return ''; }),
-                datasets: [{ data: values, borderColor: color, backgroundColor: color + '22',
-                    fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2 }] },
+            data: { labels: retirementSpark.map(function () { return ''; }),
+                datasets: [{ data: retirementSpark, borderColor: '#7c4dea', backgroundColor: 'rgba(124,77,234,.1)',
+                    fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2.5 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
                 scales: { x: { display: false }, y: { display: false } } }
         });
     }
-    renderSpark('cashSpark', /*[[${cashSpark}]]*/ [], '#3b6fe0');
-    renderSpark('retirementSpark', /*[[${retirementSpark}]]*/ [], '#7c4dea');
-    renderSpark('investmentsSpark', /*[[${investmentsSpark}]]*/ [], '#1fa15c');
 
     /** Renders a small composition doughnut. tooltipLabels, if given, overrides the raw value in tooltips
-        (used for bucket breakdowns so the tooltip shows formatted money instead of a raw number). */
-    function renderDonut(canvasId, labels, values, colors, tooltipLabels) {
+        (used for bucket breakdowns so the tooltip shows formatted money instead of a raw number). cutout
+        defaults to 68% but can be overridden for nested-ring layouts (e.g. the allocation target ring). */
+    function renderDonut(canvasId, labels, values, colors, tooltipLabels, cutout) {
         var canvas = document.getElementById(canvasId);
         if (!canvas) return;
         new Chart(canvas, {
@@ -387,7 +423,7 @@
             },
             options: {
                 responsive: false,
-                cutout: '68%',
+                cutout: cutout || '68%',
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -403,6 +439,11 @@
     var allocationLabels = [];
     var allocationValues = [];
     var allocationColors = [];
+    // Target-ring arrays are built in lockstep with every category (not just the ones the user
+    // actually holds), so values/colors never drift out of alignment with each other.
+    var targetLabels = [];
+    var targetValues = [];
+    var targetColors = [];
     var allocationClasses = /*[[${allocationClasses}]]*/ [];
     allocationClasses.forEach(function (a) {
         if (a.percent > 0) {
@@ -410,13 +451,46 @@
             allocationValues.push(a.percent);
             allocationColors.push(seriesColor(a));
         }
+        if (a.targetPercent) {
+            targetLabels.push(a.name);
+            targetValues.push(a.targetPercent);
+            targetColors.push(seriesColor(a) + '55');
+        }
     });
     if (allocationValues.length === 0) {
         allocationLabels = ['No data yet'];
         allocationValues = [1];
         allocationColors = [border];
     }
-    renderDonut('allocationChart', allocationLabels, allocationValues, allocationColors);
+    var hasTargetRing = document.getElementById('allocTargetRing') != null;
+    renderDonut('allocationChart', allocationLabels, allocationValues, allocationColors, null, hasTargetRing ? '74%' : '68%');
+    if (hasTargetRing && targetValues.length > 0) {
+        renderDonut('allocTargetRing', targetLabels, targetValues, targetColors, null, '88%');
+    }
+
+    // Family snapshot composition donut
+    var familyCanvas = document.getElementById('familyDonut');
+    if (familyCanvas) {
+        var familyRows = /*[[${familyRows}]]*/ [];
+        var familyValues = [], familyColors = [];
+        familyRows.forEach(function (f) {
+            if (f.barPercent > 0) { familyValues.push(f.netWorth); familyColors.push(f.color); }
+        });
+        if (familyValues.length > 0) renderDonut('familyDonut', [], familyValues, familyColors, null, '62%');
+    }
+
+    // Quick-link mini visuals
+    var insCoveragePercent = /*[[${insuranceQuick.coveragePercent()}]]*/ null;
+    if (insCoveragePercent != null) renderGauge('insQuickGauge', insCoveragePercent, insCoveragePercent < 50 ? '#e0405e' : '#d6900a');
+
+    var retireReadinessPercent = /*[[${retirementQuick.readinessPercent()}]]*/ null;
+    if (retireReadinessPercent != null) {
+        new Chart(document.getElementById('retireQuickRing'), {
+            type: 'doughnut',
+            data: { datasets: [{ data: [retireReadinessPercent, 100 - retireReadinessPercent], backgroundColor: [primary, border], borderWidth: 0 }] },
+            options: { responsive: false, cutout: '72%', plugins: { legend: { display: false } }, events: [] }
+        });
+    }
 
     function renderBucketDonut(canvasId, breakdown) {
         if (!breakdown || breakdown.length === 0) return;

@@ -120,7 +120,10 @@ public class DashboardController {
         model.addAttribute("summary", summary);
         model.addAttribute("tag", tag);
         model.addAttribute("household", householdMembers.findByOwnerId(owner.getId()));
-        model.addAttribute("allocationClasses", allocationRows(summary));
+        AllocationTarget allocationTarget = db.allocationTargets
+                .findWhere(t -> owner.getId().equals(t.getOwnerId())).stream().findFirst().orElse(null);
+        model.addAttribute("allocationClasses", allocationRows(summary, allocationTarget));
+        model.addAttribute("hasAllocationTarget", allocationTarget != null);
         model.addAttribute("cashBreakdown", bucketBreakdown(summary, Bucket.CASH, owner));
         model.addAttribute("retirementBreakdown", bucketBreakdown(summary, Bucket.RETIREMENT, owner));
         model.addAttribute("investmentsBreakdown", bucketBreakdown(summary, Bucket.INVESTMENTS, owner));
@@ -134,6 +137,15 @@ public class DashboardController {
             NetWorthSnapshot last = ownerSnapshots.get(ownerSnapshots.size() - 1);
             model.addAttribute("lastSnapshot", last);
             model.addAttribute("delta", summary.netWorth.subtract(last.getTotalNetWorth()));
+
+            // Investments performance badge — change vs. the last snapshot's investments bucket.
+            BigDecimal lastInvestments = Valuation.nz(last.getInvestmentsBucket());
+            BigDecimal currentInvestments = summary.bucket(Bucket.INVESTMENTS);
+            if (lastInvestments.signum() > 0) {
+                BigDecimal investmentsDeltaPercent = currentInvestments.subtract(lastInvestments)
+                        .multiply(BigDecimal.valueOf(100)).divide(lastInvestments, 1, RoundingMode.HALF_UP);
+                model.addAttribute("investmentsDeltaPercent", investmentsDeltaPercent);
+            }
         }
         // Compact trend series for the dashboard's mini chart — last 12 snapshots, oldest first.
         List<NetWorthSnapshot> recentSnapshots = ownerSnapshots.size() > 12
@@ -160,10 +172,8 @@ public class DashboardController {
         model.addAttribute("reminders", upcomingReminders.stream().limit(5).toList());
         model.addAttribute("recentActivity", recentActivity(owner, 8));
 
-        // Bucket sparklines on the stat cards — real history from the same snapshots as the net worth trend.
-        model.addAttribute("cashSpark", recentSnapshots.stream().map(NetWorthSnapshot::getCashBucket).toList());
+        // Retirement growth chart — real history from the same snapshots as the net worth trend.
         model.addAttribute("retirementSpark", recentSnapshots.stream().map(NetWorthSnapshot::getRetirementBucket).toList());
-        model.addAttribute("investmentsSpark", recentSnapshots.stream().map(NetWorthSnapshot::getInvestmentsBucket).toList());
 
         // "This Month at a Glance" row
         model.addAttribute("upcomingReminderCount", upcomingReminders.size());
@@ -181,23 +191,32 @@ public class DashboardController {
         // Family snapshot — only meaningful with more than just the default "Self" entry
         List<com.moneymap.model.HouseholdMember> members = householdMembers.findByOwnerId(owner.getId());
         if (members.size() > 1) {
-            List<Map<String, Object>> familyRows = new ArrayList<>();
-            BigDecimal maxNetWorth = BigDecimal.ONE;
+            String[] familyColors = {"#0e7490", "#7c4dea", "#1fa15c", "#d6900a", "#e0405e", "#3b6fe0"};
             List<BigDecimal> memberNetWorths = new ArrayList<>();
             for (var m : members) {
-                BigDecimal netWorth = aggregation.aggregate(owner, m.getLabel()).netWorth;
-                memberNetWorths.add(netWorth);
-                if (netWorth.compareTo(maxNetWorth) > 0) maxNetWorth = netWorth;
+                memberNetWorths.add(aggregation.aggregate(owner, m.getLabel()).netWorth);
             }
+            // Household total for the composition donut counts only positive contributions —
+            // a negative member net worth has no sensible donut slice or bar width.
+            BigDecimal householdTotal = memberNetWorths.stream()
+                    .filter(nw -> nw.signum() > 0).reduce(BigDecimal.ZERO, BigDecimal::add);
+            List<Map<String, Object>> familyRows = new ArrayList<>();
             for (int idx = 0; idx < members.size(); idx++) {
                 BigDecimal netWorth = memberNetWorths.get(idx);
-                // Clamp to [0, 100] — a negative net worth (more liabilities than assets) has no
-                // sensible bar width, and an invalid negative CSS width falls back to full-width.
-                int barPercent = netWorth.signum() <= 0 ? 0 : netWorth.multiply(BigDecimal.valueOf(100))
-                        .divide(maxNetWorth, 0, RoundingMode.HALF_UP).min(BigDecimal.valueOf(100)).intValue();
-                familyRows.add(Map.of("label", members.get(idx).getLabel(), "netWorth", netWorth, "barPercent", barPercent));
+                int sharePercent = netWorth.signum() <= 0 || householdTotal.signum() <= 0 ? 0
+                        : netWorth.multiply(BigDecimal.valueOf(100))
+                                .divide(householdTotal, 0, RoundingMode.HALF_UP).min(BigDecimal.valueOf(100)).intValue();
+                String label = members.get(idx).getLabel();
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("label", label);
+                row.put("initial", label.isEmpty() ? "?" : label.substring(0, 1).toUpperCase());
+                row.put("netWorth", netWorth);
+                row.put("barPercent", sharePercent);
+                row.put("color", familyColors[idx % familyColors.length]);
+                familyRows.add(row);
             }
             model.addAttribute("familyRows", familyRows);
+            model.addAttribute("householdTotal", householdTotal);
         }
         return "dashboard";
     }
@@ -283,14 +302,28 @@ public class DashboardController {
         return new TaxRegimeGlance(better, taxOld.subtract(taxNew).abs());
     }
 
-    public record LoansQuickStat(BigDecimal totalOutstanding, int activeLoanCount) {}
+    public record LoanPayoffRow(String lenderName, int payoffPercent) {}
+    public record LoansQuickStat(BigDecimal totalOutstanding, int activeLoanCount, List<LoanPayoffRow> topLoans) {}
 
     private LoansQuickStat loansQuickStat(String uid) {
         List<Loan> activeLoans = db.loans.findWhere(l -> uid.equals(l.getOwnerId())
                 && Valuation.nz(l.getOutstandingBalance()).signum() != 0);
         BigDecimal totalOutstanding = activeLoans.stream().map(Loan::getOutstandingBalance)
                 .map(Valuation::nz).reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new LoansQuickStat(totalOutstanding, activeLoans.size());
+
+        LocalDate today = LocalDate.now();
+        List<LoanPayoffRow> topLoans = activeLoans.stream()
+                .filter(l -> !"CREDIT_CARD".equals(l.getLoanType())
+                        && l.getTenureMonths() != null && l.getTenureMonths() > 0 && l.getStartDate() != null)
+                .sorted(Comparator.comparing(Loan::getOutstandingBalance, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(2)
+                .map(l -> {
+                    long elapsed = ChronoUnit.MONTHS.between(l.getStartDate(), today);
+                    int percent = (int) Math.max(0, Math.min(100, elapsed * 100 / l.getTenureMonths()));
+                    return new LoanPayoffRow(l.getLenderName(), percent);
+                })
+                .toList();
+        return new LoansQuickStat(totalOutstanding, activeLoans.size(), topLoans);
     }
 
     public record InsuranceQuickStat(BigDecimal totalCover, Integer coveragePercent) {}
@@ -310,7 +343,17 @@ public class DashboardController {
         return new InsuranceQuickStat(totalTermCover, coveragePercent);
     }
 
-    public record GoalsQuickStat(int totalGoals, int onTrackGoals) {}
+    public record GoalDot(String goalName, String color) {}
+    public record GoalsQuickStat(int totalGoals, int onTrackGoals, List<GoalDot> dots) {}
+
+    // Urgency color derived purely from days-to-target — the same honest proxy used everywhere
+    // else in this dashboard, since MoneyMap doesn't track a saved-so-far amount per goal.
+    private String goalUrgencyColor(Long daysRemaining) {
+        if (daysRemaining == null) return "#8b8d98";
+        if (daysRemaining < 90) return "#e0405e";
+        if (daysRemaining < 365) return "#d6900a";
+        return "#1fa15c";
+    }
 
     private GoalsQuickStat goalsQuickStat(String uid) {
         LocalDate today = LocalDate.now();
@@ -318,16 +361,34 @@ public class DashboardController {
         // "On track" here means the target date hasn't already passed — a simple, honest proxy
         // given MoneyMap doesn't track saved-so-far progress per goal.
         long onTrack = goals.stream().filter(g -> g.getTargetDate() == null || !g.getTargetDate().isBefore(today)).count();
-        return new GoalsQuickStat(goals.size(), (int) onTrack);
+        List<GoalDot> dots = goals.stream()
+                .sorted(Comparator.comparing(FinancialGoal::getTargetDate, Comparator.nullsLast(Comparator.naturalOrder())))
+                .limit(6)
+                .map(g -> new GoalDot(g.getGoalName(),
+                        goalUrgencyColor(g.getTargetDate() == null ? null : ChronoUnit.DAYS.between(today, g.getTargetDate()))))
+                .toList();
+        return new GoalsQuickStat(goals.size(), (int) onTrack, dots);
     }
 
-    public record RetirementQuickStat(BigDecimal currentCorpus) {}
+    public record RetirementQuickStat(BigDecimal currentCorpus, BigDecimal corpusRequired, Integer readinessPercent) {}
 
-    // Readiness % needs a saved FIRE calculation (annual expense, SWR, expected return) which is
-    // only entered on the Retirement Readiness page itself, not persisted — so the home page
-    // quick-link shows the corpus MoneyMap already tracks rather than a fabricated percentage.
+    // The full FIRE calculation (annual expense, SWR, expected return) is only entered on the
+    // Retirement Readiness page and isn't persisted. For a home-page estimate we reuse the
+    // monthly-expense figure from the Financial Health Score setup (if the user has filled it
+    // in) with a standard 4% safe withdrawal rate — a real, if approximate, number rather than
+    // no number at all. Falls back to just the corpus if that input hasn't been set up.
     private RetirementQuickStat retirementQuickStat(User owner) {
-        return new RetirementQuickStat(aggregation.aggregate(owner).bucket(Bucket.RETIREMENT));
+        BigDecimal currentCorpus = aggregation.aggregate(owner).bucket(Bucket.RETIREMENT);
+        com.moneymap.model.FinancialHealthInputs inputs = db.financialHealthInputs
+                .findWhere(x -> owner.getId().equals(x.getOwnerId())).stream().findFirst().orElse(null);
+        if (inputs == null || inputs.getMonthlyExpense() == null || inputs.getMonthlyExpense().signum() <= 0) {
+            return new RetirementQuickStat(currentCorpus, null, null);
+        }
+        BigDecimal annualExpense = inputs.getMonthlyExpense().multiply(BigDecimal.valueOf(12));
+        BigDecimal corpusRequired = annualExpense.divide(BigDecimal.valueOf(0.04), 0, RoundingMode.HALF_UP);
+        int readinessPercent = currentCorpus.multiply(BigDecimal.valueOf(100))
+                .divide(corpusRequired, 0, RoundingMode.HALF_UP).min(BigDecimal.valueOf(100)).max(BigDecimal.ZERO).intValue();
+        return new RetirementQuickStat(currentCorpus, corpusRequired, readinessPercent);
     }
 
     @GetMapping("/dashboard/reminders")
@@ -404,6 +465,7 @@ public class DashboardController {
     private List<Map<String, Object>> namedBreakdown(List<Map<String, Object>> entries, User owner) {
         List<Map<String, Object>> rows = new ArrayList<>(entries);
         rows.sort((a, b) -> ((BigDecimal) b.get("total")).compareTo((BigDecimal) a.get("total")));
+        BigDecimal grandTotal = rows.stream().map(r -> (BigDecimal) r.get("total")).reduce(BigDecimal.ZERO, BigDecimal::add);
         List<Map<String, Object>> out = new ArrayList<>();
         int colorIndex = 0;
         for (var entry : rows) {
@@ -413,6 +475,11 @@ public class DashboardController {
             row.put("formattedTotal", fmt.money((BigDecimal) entry.get("total"), owner));
             row.put("color", CHART_PALETTE_LIGHT[colorIndex % CHART_PALETTE_LIGHT.length]);
             row.put("colorDark", CHART_PALETTE_DARK[colorIndex % CHART_PALETTE_DARK.length]);
+            int percent = grandTotal.signum() > 0
+                    ? ((BigDecimal) entry.get("total")).multiply(BigDecimal.valueOf(100))
+                            .divide(grandTotal, 0, RoundingMode.HALF_UP).intValue()
+                    : 0;
+            row.put("percent", percent);
             out.add(row);
             colorIndex++;
         }
@@ -464,6 +531,7 @@ public class DashboardController {
             cumulativePercent += percent.doubleValue();
             BigDecimal targetPercent = targetPercentFor(target, cls);
             if (targetPercent != null) {
+                row.put("targetPercent", targetPercent);
                 BigDecimal rebalance = targetPercent.subtract(s.allocationPercent(cls))
                         .multiply(totalValue).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
                 row.put("rebalance", rebalance);

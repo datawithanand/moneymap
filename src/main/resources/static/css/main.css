@@ -6,10 +6,10 @@
   --bg: #f1f2f6;
   --surface: #ffffff;
   --surface-alt: #eef0f8;
-  --primary: #4338ca;        /* indigo-700 */
-  --primary-strong: #372aa8;
-  --primary-soft: #e3e4fb;
-  --primary-dark: #14151a;   /* near-black, used for the active-nav pill and primary buttons */
+  --primary: #0e7490;        /* cyan-700 */
+  --primary-strong: #0b5b71;
+  --primary-soft: #d7f0f5;
+  --primary-light: #22a6c9;  /* lighter cyan, paired with --primary in button/pill gradients */
   --accent: #d97706;         /* warm amber, used sparingly for secondary emphasis */
   --text: #14151a;
   --text-muted: #8b8d98;
@@ -38,10 +38,10 @@
   --bg: #101018;
   --surface: #1a1a26;
   --surface-alt: #23233a;
-  --primary: #818cf8;        /* indigo-400 — brighter for contrast on a dark surface */
-  --primary-strong: #a5b4fc;
-  --primary-soft: #2e2b55;
-  --primary-dark: #f4f4f8;   /* the "active pill" flips to light-on-dark in dark mode */
+  --primary: #22d3ee;        /* cyan-400 — brighter for contrast on a dark surface */
+  --primary-strong: #67e8f9;
+  --primary-soft: #123640;
+  --primary-light: #67e8f9;  /* lighter cyan, paired with --primary in button/pill gradients */
   --accent: #fbbf24;
   --text: #edeef7;
   --text-muted: #9a9ab5;
@@ -97,11 +97,10 @@ svg { display: block; }
   text-decoration: none;
 }
 .topbar .brand .brand-mark {
-  width: 28px; height: 28px; border-radius: 9px; background: var(--primary-dark);
-  color: var(--surface); display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 9px; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff; display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 800; flex-shrink: 0;
 }
-.theme-dark .topbar .brand .brand-mark { color: var(--bg); }
 .topnav { display: flex; align-items: center; gap: 2px; flex: 1; }
 .topnav-item { position: relative; }
 .topnav-link {
@@ -112,8 +111,7 @@ svg { display: block; }
 .topnav-link svg { width: 15px; height: 15px; opacity: .75; flex-shrink: 0; }
 .topnav-link .chev { width: 11px; height: 11px; opacity: .55; margin-left: -2px; transition: transform .15s; }
 .topnav-link:hover, .topnav-item:hover .topnav-link { background: var(--surface-alt); color: var(--text); }
-.topnav-item.active > .topnav-link { background: var(--primary-dark); color: var(--surface); font-weight: 700; }
-.theme-dark .topnav-item.active > .topnav-link { color: var(--bg); }
+.topnav-item.active > .topnav-link { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; font-weight: 700; }
 .topnav-item.active > .topnav-link svg { opacity: 1; }
 .topnav-item:hover .chev { transform: rotate(180deg); }
 
@@ -272,7 +270,8 @@ input:focus, select:focus, textarea:focus {
 .field-error { color: var(--danger); font-size: .85rem; margin-top: 3px; }
 button, .btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 999px;
-  border: 1px solid transparent; background: var(--primary-dark); color: var(--surface); font: inherit; font-weight: 700;
+  border: 1px solid transparent; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff; font: inherit; font-weight: 700;
   cursor: pointer; text-decoration: none; transition: opacity .12s, transform .05s;
 }
 button:hover, .btn:hover { opacity: .85; }
@@ -401,11 +400,30 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .bucket-chart-wrap canvas { max-width: 110px; max-height: 110px; }
 .legend-compact { margin-top: 8px; gap: 8px 14px; font-size: .8rem; }
 
-/* Stat card sparkline row (donut + 6-month trend line side by side) */
+/* Stat card body row (donut + performance badge, etc.) */
 .stat-body { display: flex; align-items: center; gap: 12px; margin: 10px 0 4px; }
 .stat-body .bucket-chart-wrap { margin: 0; flex-shrink: 0; }
 .stat-spark { flex: 1; min-width: 0; height: 44px; }
 .stat-spark canvas { width: 100%; height: 100%; }
+
+/* Cash: two/multi-segment split bar instead of a donut — reads faster for a liquid-funds split */
+.split-bar-wrap { height: 10px; border-radius: 5px; overflow: hidden; display: flex; margin: 12px 0 8px; }
+.split-bar-wrap > div { height: 100%; }
+
+/* Retirement: full-width growth area chart instead of a near-empty single-slice donut */
+.growth-chart { height: 54px; margin: 10px 0 2px; }
+.growth-chart canvas { width: 100% !important; height: 100% !important; }
+
+/* Investments: composition donut + a performance delta badge */
+.perf-badge { display: inline-flex; align-items: center; gap: 3px; font-size: .72rem; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px; }
+.perf-badge.up { background: var(--pill-up-bg); color: var(--pill-up-fg); }
+.perf-badge.down { background: var(--pill-down-bg); color: var(--pill-down-fg); }
+
+/* Allocation: target ring — thin outer ring shows the target mix, filled inner ring shows actual */
+.target-ring-wrap { position: relative; width: 84px; height: 84px; margin: 0 auto; }
+.target-ring-wrap canvas { position: absolute; width: 84px !important; height: 84px !important; }
+.target-ring-wrap .actual-ring { top: 10px; left: 10px; width: 64px !important; height: 64px !important; }
 
 /* "This Month at a Glance" row */
 .glance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
@@ -417,9 +435,13 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .glance-sub { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
 .glance-sub a { color: var(--primary); font-weight: 600; }
 
-/* Quick-link cards into the domain dashboards */
+/* Quick-link cards into the domain dashboards — each domain gets a visualization suited to its
+   own data instead of the same bar-chart shape repeated four times. */
 .quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
-.quick-card { display: block; color: inherit; }
+.quick-card { display: block; color: inherit; text-decoration: none; }
+.quick-card .quick-title,
+.quick-card .quick-cta { text-decoration: underline; text-underline-offset: 2px; }
+.quick-card .quick-cta { color: var(--primary); font-weight: 700; display: block; margin-top: 8px; }
 .quick-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
 .quick-title { font-size: .82rem; font-weight: 700; color: var(--text-muted); }
 .quick-badge { width: 30px; height: 30px; border-radius: 9px; }
@@ -427,12 +449,50 @@ table.data tbody tr:hover { background: var(--surface-alt); }
 .quick-figure { font-size: 1.1rem; font-weight: 700; margin: 4px 0 4px; }
 .quick-sub { font-size: .78rem; color: var(--text-muted); }
 
-/* Family snapshot bars */
-.family-row { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
-.family-name { width: 110px; font-size: .85rem; font-weight: 700; flex-shrink: 0; }
-.family-bar-wrap { flex: 1; height: 10px; background: var(--surface-alt); border-radius: 5px; overflow: hidden; }
-.family-bar { height: 100%; border-radius: 5px; background: var(--primary); }
-.family-val { width: 120px; text-align: right; font-size: .82rem; font-weight: 700; flex-shrink: 0; }
+/* Loans quick-link: per-loan payoff segments */
+.payoff-segments { display: flex; flex-direction: column; gap: 5px; margin: 4px 0 2px; }
+.payoff-seg-track { height: 6px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; }
+.payoff-seg-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+.payoff-seg-label { font-size: .68rem; color: var(--text-muted); font-weight: 600; display: flex; justify-content: space-between; }
+
+/* Insurance quick-link: mini semi-circle gauge */
+.mini-gauge-row { display: flex; align-items: center; gap: 12px; margin: 2px 0; }
+.mini-gauge-row canvas { width: 84px !important; height: 50px !important; }
+.mini-gauge-figure { font-size: 1.02rem; font-weight: 800; }
+.mini-gauge-label { font-size: .7rem; color: var(--text-muted); font-weight: 600; }
+
+/* Goals quick-link: a status dot per goal, colored by urgency */
+.goal-dots { display: flex; gap: 14px; margin: 10px 0 2px; flex-wrap: wrap; row-gap: 10px; }
+.goal-dot { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .64rem;
+  color: var(--text-muted); font-weight: 700; width: 46px; text-align: center; }
+.goal-dot span:first-child { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.goal-dot span:last-child { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Retirement quick-link: a radial ring with % centered */
+.mini-ring-row { display: flex; align-items: center; gap: 14px; margin: 2px 0; }
+.mini-ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+.mini-ring-wrap canvas { width: 64px !important; height: 64px !important; }
+.mini-ring-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 800; }
+
+/* Family snapshot v2 — composition donut (how household net worth splits) + a ranked
+   leaderboard list with avatar initials, instead of parallel bars with no shared total. */
+.family-layout { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+.family-donut-wrap { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.family-donut-wrap canvas { width: 140px !important; height: 140px !important; }
+.family-donut-total { text-align: center; }
+.family-donut-total b { display: block; font-size: 1.1rem; font-weight: 800; }
+.family-donut-total span { font-size: .72rem; color: var(--text-muted); font-weight: 600; }
+.family-list { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 12px; }
+.family-item { display: flex; align-items: center; gap: 12px; }
+.family-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: .82rem; font-weight: 800; color: #fff; flex-shrink: 0; }
+.family-item-body { flex: 1; min-width: 0; }
+.family-item-top { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: 4px; gap: 8px; }
+.family-item-top b { font-weight: 700; }
+.family-item-top .val { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.family-item-bar-wrap { height: 6px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; }
+.family-item-bar { height: 100%; border-radius: 3px; }
+.family-item-share { font-size: .68rem; color: var(--text-muted); font-weight: 600; margin-top: 3px; }
 
 /* Compact semi-circle gauges (EMI burden, insurance coverage, retirement readiness) — sized to
    sit inline in a normal card, not as a large standalone panel. */
