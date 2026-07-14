@@ -6,14 +6,20 @@
 <div class="shell">
     <nav th:replace="~{fragments/layout :: sidebar(${'assets-' + module.path})}"></nav>
     <main class="content">
-        <h1 th:text="${module.displayName}">Module</h1>
+        <div th:with="newUrl=@{'/assets/' + ${module.path} + '/new'(loanType=${loanType})}"
+             style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:6px">
+            <h1 th:text="${module.displayName}">Module</h1>
+            <button type="button" class="btn"
+                    th:attr="onclick=|openDrawer('${newUrl}', 'Add ${module.displayName}')|"
+                    th:text="'+ Add ' + ${module.displayName}">+ Add</button>
+        </div>
         <p class="hint" th:if="${loanType != null and !loanType.isEmpty()}">
             Filtered to <strong th:text="${#strings.replace(loanType, '_', ' ')}"></strong> —
             <a th:href="@{'/assets/' + ${module.path}}">show all loan types</a>.</p>
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
         <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
                 <form method="get" th:action="@{'/assets/' + ${module.path}}">
                     <input type="hidden" name="loanType" th:value="${loanType}">
                     <select name="tag" onchange="this.form.submit()">
@@ -22,8 +28,6 @@
                                 th:selected="${tag == m.label}"></option>
                     </select>
                 </form>
-                <a class="btn" th:href="@{'/assets/' + ${module.path} + '/new'(loanType=${loanType})}"
-                   th:text="'Add ' + ${module.displayName}">Add</a>
             </div>
 
             <table class="data">
@@ -40,8 +44,8 @@
                     <td style="white-space:nowrap;text-align:right">
                         <a th:if="${module.path == 'mutual-funds'}" class="btn btn-sm btn-secondary"
                            th:href="@{'/assets/mutual-funds/' + ${row['id']} + '/transactions'}">Transactions</a>
-                        <a class="btn btn-sm btn-secondary"
-                           th:href="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/edit'}">Edit</a>
+                        <button type="button" class="btn-sm btn-secondary"
+                                th:attr="onclick=|openDrawer('${'/assets/' + module.path + '/' + row['id'] + '/edit'}', 'Edit ${module.displayName}')|">Edit</button>
                         <form class="inline" th:action="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/delete'}"
                               method="post" onsubmit="return confirm('Delete this record?');">
                             <input type="hidden" name="_csrf" th:value="${csrf}">
@@ -57,6 +61,125 @@
         </div>
     </main>
 </div>
+
+<!-- Slide-over drawer: Add/Edit forms load here via fetch() instead of a full page navigation.
+     Falls back gracefully — /assets/{path}/new and /{id}/edit still work as real standalone
+     pages (form.html) if opened directly or if JS fails. -->
+<div class="drawer-scrim" id="drawerScrim" onclick="closeDrawer()"></div>
+<div class="drawer" id="assetDrawer">
+    <div class="drawer-header">
+        <h2 id="drawerTitle">Add record</h2>
+        <button type="button" class="drawer-close" onclick="closeDrawer()" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<script>
+function openDrawer(url, title) {
+    document.getElementById('drawerTitle').textContent = title;
+    document.getElementById('drawerBody').innerHTML = '<p class="muted">Loading…</p>';
+    document.getElementById('drawerScrim').classList.add('open');
+    document.getElementById('assetDrawer').classList.add('open');
+    loadDrawerContent(url);
+}
+function closeDrawer() {
+    document.getElementById('drawerScrim').classList.remove('open');
+    document.getElementById('assetDrawer').classList.remove('open');
+}
+function loadDrawerContent(url) {
+    fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var root = doc.getElementById('assetFormRoot');
+        document.getElementById('drawerBody').innerHTML = root ? root.innerHTML : '<p>Could not load form.</p>';
+        bindDrawerForm();
+        applyDrawerVisibility();
+        bindDrawerFundPicker();
+    });
+}
+function bindDrawerForm() {
+    var form = document.querySelector('#drawerBody form');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin' })
+            .then(function (r) {
+                if (r.redirected) { window.location.href = r.url; return; }
+                return r.text().then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var root = doc.getElementById('assetFormRoot');
+                    document.getElementById('drawerBody').innerHTML = root ? root.innerHTML : html;
+                    bindDrawerForm();
+                    applyDrawerVisibility();
+                    bindDrawerFundPicker();
+                });
+            });
+    });
+}
+// Conditional field visibility inside the drawer (e.g. Loan's per-type field groups) —
+// mirrors form.html's own standalone-page copy of this logic (assets/form.html), since
+// injected HTML doesn't execute its own embedded <script> tags.
+function applyDrawerVisibility() {
+    document.querySelectorAll('#drawerBody [data-visible-if]').forEach(function (el) {
+        var cond = el.getAttribute('data-visible-if');
+        if (!cond) return;
+        var eq = cond.indexOf('=');
+        var field = cond.substring(0, eq), wanted = cond.substring(eq + 1).split('|');
+        var src = document.getElementById(field) || document.querySelector('#drawerBody [name="' + field + '"]');
+        if (!src) return;
+        var current = src.type === 'checkbox' ? String(src.checked) : src.value;
+        el.style.display = wanted.indexOf(current) !== -1 ? '' : 'none';
+    });
+}
+document.addEventListener('change', function (e) {
+    if (e.target.closest && e.target.closest('#drawerBody')) applyDrawerVisibility();
+});
+// Mutual funds' live fund-picker, rebound each time the drawer content is (re)loaded —
+// mirrors form.html's own standalone-page copy of this logic.
+function bindDrawerFundPicker() {
+    var searchBox = document.getElementById('fundPickerSearch');
+    if (!searchBox) return;
+    var categorySelect = document.getElementById('fundPickerCategory');
+    var resultsList = document.getElementById('fundPickerResults');
+    var debounceTimer;
+    function runSearch() {
+        var q = searchBox.value.trim();
+        if (q.length < 2) { resultsList.innerHTML = ''; return; }
+        var url = '/assets/mutual-funds/fund-search?q=' + encodeURIComponent(q)
+                + '&category=' + encodeURIComponent(categorySelect.value);
+        fetch(url).then(function (r) { return r.json(); }).then(function (items) {
+            resultsList.innerHTML = '';
+            items.forEach(function (item) {
+                var li = document.createElement('li');
+                li.style.cursor = 'pointer';
+                li.style.padding = '4px 0';
+                li.textContent = item.schemeName + (item.fundHouse ? ' — ' + item.fundHouse : '');
+                li.addEventListener('click', function () { selectFund(item.schemeCode); });
+                resultsList.appendChild(li);
+            });
+        });
+    }
+    function selectFund(schemeCode) {
+        fetch('/assets/mutual-funds/fund-detail/' + schemeCode).then(function (r) { return r.json(); })
+            .then(function (detail) {
+                if (detail.error) { alert(detail.error); return; }
+                document.getElementById('schemeCode').value = detail.schemeCode;
+                document.getElementById('fundName').value = detail.schemeName;
+                if (detail.fundHouse) document.getElementById('amcName').value = detail.fundHouse;
+                if (detail.latestNav) document.getElementById('currentNavPerUnit').value = detail.latestNav;
+                if (detail.navAsOfDate) document.getElementById('navAsOfDate').value = detail.navAsOfDate;
+                resultsList.innerHTML = '';
+                searchBox.value = detail.schemeName;
+            });
+    }
+    searchBox.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runSearch, 300);
+    });
+    categorySelect.addEventListener('change', runSearch);
+}
+</script>
 
 </body>
 </html>
