@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${pageTitle} + ' · ' + ${instanceSettings.instanceName}">MoneyMap</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/main.css}">
 </head>
 <body>
@@ -19,148 +19,134 @@
     </form>
 </div>
 
-<!-- Top navigation bar. Fragment name kept as "sidebar" so every existing page's
-     th:replace="~{fragments/layout :: sidebar('key')}" call keeps working unchanged. -->
-<nav th:fragment="sidebar(active)" class="topbar">
-  <div class="topbar-inner">
+<!-- Fragment name kept as "sidebar" so every existing page's
+     th:replace="~{fragments/layout :: sidebar('key')}" call keeps working unchanged.
+     Renders two sibling elements (an <aside> nav + a fixed utility topbar) in place of
+     each page's single <nav th:replace> placeholder — see .shell/.app-sidebar/.app-topbar
+     in main.css for how they lay out side-by-side without every page needing to change. -->
+<th:block th:fragment="sidebar(active)">
+<aside class="app-sidebar" id="appSidebar">
     <a class="brand" th:href="@{/dashboard}">
         <span class="brand-mark">M</span>
         <span th:text="${instanceSettings.instanceName}">MoneyMap</span>
     </a>
 
-    <button type="button" class="topnav-toggle" onclick="document.getElementById('mainTopnav').classList.toggle('open')" aria-label="Menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
+    <div class="nav-group">
+        <a class="nav-link" th:classappend="${active == 'dashboard'} ? 'active'" th:href="@{/dashboard}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            Dashboard
+        </a>
 
-    <div class="topnav" id="mainTopnav">
-        <div class="topnav-item" th:classappend="${active == 'dashboard'} ? 'active'">
-            <a class="topnav-link" th:href="@{/dashboard}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-                Dashboard
-            </a>
-        </div>
-
-        <div class="topnav-item" th:classappend="${#strings.startsWith(active, 'assets-')} ? 'active'"
-             onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
-            <button type="button" class="topnav-link">
+        <div class="nav-section-label">Assets &amp; Liabilities</div>
+        <div class="nav-item" th:classappend="${#strings.startsWith(active, 'assets-')} ? 'open'">
+            <button type="button" class="nav-link" th:classappend="${#strings.startsWith(active, 'assets-')} ? 'active'"
+                    onclick="this.closest('.nav-item').classList.toggle('open')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>
-                Assets &amp; Liabilities
+                All Modules
                 <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="topnav-dropdown has-submenu">
-                <div class="topnav-subitem" onclick="if (window.innerWidth <= 980) { event.stopPropagation(); this.classList.toggle('open'); }">
-                    <button type="button" class="topnav-sublink">
-                        Assets
-                        <svg class="chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <div class="topnav-submenu">
-                        <div class="topnav-subitem" th:each="group : ${moduleGroups}" th:if="${group.key != 'Loans & Cards'}"
-                             onclick="if (window.innerWidth <= 980) { event.stopPropagation(); this.classList.toggle('open'); }">
-                            <button type="button" class="topnav-sublink">
-                                <span th:text="${group.key}"></span>
-                                <svg class="chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="topnav-submenu leaf">
-                                <a th:each="m : ${group.value}"
-                                   th:classappend="${active == 'assets-' + m.path} ? 'active'"
-                                   th:href="@{'/assets/' + ${m.path}}" th:text="${m.displayName}"></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="topnav-subitem" onclick="if (window.innerWidth <= 980) { event.stopPropagation(); this.classList.toggle('open'); }">
-                    <button type="button" class="topnav-sublink">
-                        Liabilities
-                        <svg class="chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <div class="topnav-submenu leaf">
-                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='HOME_LOAN')}">Home Loan</a>
-                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='PERSONAL_LOAN')}">Personal Loan</a>
-                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='CAR_LOAN')}">Vehicle Loan</a>
-                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='EDUCATION_LOAN')}">Education Loan</a>
-                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='CREDIT_CARD')}">Credit Cards</a>
-                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='OTHER')}">Other Loans</a>
-                        <div class="topnav-dropdown-divider"></div>
-                        <a th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans}">All Loans &amp; Credit Cards</a>
-                    </div>
-                </div>
+            <div class="nav-subgroup">
+                <th:block th:each="group : ${moduleGroups}" th:if="${group.key != 'Loans & Cards'}">
+                    <div class="nav-section-label" style="padding:10px 12px 2px" th:text="${group.key}"></div>
+                    <a class="nav-sublink" th:each="m : ${group.value}"
+                       th:classappend="${active == 'assets-' + m.path} ? 'active'"
+                       th:href="@{'/assets/' + ${m.path}}" th:text="${m.displayName}"></a>
+                </th:block>
+                <div class="nav-section-label" style="padding:10px 12px 2px">Liabilities</div>
+                <a class="nav-sublink" th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='HOME_LOAN')}">Home Loan</a>
+                <a class="nav-sublink" th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='PERSONAL_LOAN')}">Personal Loan</a>
+                <a class="nav-sublink" th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='CAR_LOAN')}">Vehicle Loan</a>
+                <a class="nav-sublink" th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='EDUCATION_LOAN')}">Education Loan</a>
+                <a class="nav-sublink" th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='CREDIT_CARD')}">Credit Cards</a>
+                <a class="nav-sublink" th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans(loanType='OTHER')}">Other Loans</a>
+                <a class="nav-sublink" th:classappend="${active == 'assets-loans'} ? 'active'" th:href="@{/assets/loans}">All Loans &amp; Credit Cards</a>
             </div>
         </div>
 
-        <div class="topnav-item"
-             th:classappend="${active == 'trend' or active == 'allocation' or active == 'tax' or active == 'reminders' or active == 'loans-dashboard' or active == 'insurance-dashboard' or active == 'goals-dashboard' or active == 'retirement-dashboard' or active == 'retirement-buckets' or active == 'health-score' or active == 'nifty-valuation' or active == 'export'} ? 'active'"
-             onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
-            <button type="button" class="topnav-link">
+        <div class="nav-section-label">Analytics</div>
+        <div class="nav-item"
+             th:classappend="${active == 'trend' or active == 'allocation' or active == 'tax' or active == 'reminders' or active == 'loans-dashboard' or active == 'insurance-dashboard' or active == 'goals-dashboard' or active == 'retirement-dashboard' or active == 'retirement-buckets' or active == 'health-score' or active == 'nifty-valuation' or active == 'export'} ? 'open'">
+            <button type="button" class="nav-link"
+                    th:classappend="${active == 'trend' or active == 'allocation' or active == 'tax' or active == 'reminders' or active == 'loans-dashboard' or active == 'insurance-dashboard' or active == 'goals-dashboard' or active == 'retirement-dashboard' or active == 'retirement-buckets' or active == 'health-score' or active == 'nifty-valuation' or active == 'export'} ? 'active'"
+                    onclick="this.closest('.nav-item').classList.toggle('open')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 Analytics
                 <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="topnav-dropdown">
-                <a th:classappend="${active == 'trend'} ? 'active'" th:href="@{/dashboard/trend}">Net Worth Trend</a>
-                <a th:classappend="${active == 'allocation'} ? 'active'" th:href="@{/dashboard/allocation}">Portfolio Allocation</a>
-                <a th:classappend="${active == 'tax'} ? 'active'" th:href="@{/dashboard/tax}">Tax Planning</a>
-                <a th:classappend="${active == 'reminders'} ? 'active'" th:href="@{/dashboard/reminders}">Upcoming Reminders</a>
-                <a th:classappend="${active == 'loans-dashboard'} ? 'active'" th:href="@{/dashboard/loans}">Loan / Debt Overview</a>
-                <a th:classappend="${active == 'insurance-dashboard'} ? 'active'" th:href="@{/dashboard/insurance}">Insurance Coverage</a>
-                <a th:classappend="${active == 'goals-dashboard'} ? 'active'" th:href="@{/dashboard/goals}">Goals</a>
-                <a th:classappend="${active == 'retirement-dashboard'} ? 'active'" th:href="@{/dashboard/retirement}">Retirement Readiness</a>
-                <a th:classappend="${active == 'retirement-buckets'} ? 'active'" th:href="@{/dashboard/retirement-buckets}">Retirement Bucket Planner</a>
-                <a th:classappend="${active == 'health-score'} ? 'active'" th:href="@{/dashboard/health-score}">Financial Health Score</a>
-                <a th:classappend="${active == 'nifty-valuation'} ? 'active'" th:href="@{/dashboard/nifty-valuation}">Nifty Valuation</a>
-                <div class="topnav-dropdown-divider"></div>
-                <a th:classappend="${active == 'export'} ? 'active'" th:href="@{/export}">Export / Import</a>
+            <div class="nav-subgroup">
+                <a class="nav-sublink" th:classappend="${active == 'trend'} ? 'active'" th:href="@{/dashboard/trend}">Net Worth Trend</a>
+                <a class="nav-sublink" th:classappend="${active == 'allocation'} ? 'active'" th:href="@{/dashboard/allocation}">Portfolio Allocation</a>
+                <a class="nav-sublink" th:classappend="${active == 'tax'} ? 'active'" th:href="@{/dashboard/tax}">Tax Planning</a>
+                <a class="nav-sublink" th:classappend="${active == 'reminders'} ? 'active'" th:href="@{/dashboard/reminders}">Upcoming Reminders</a>
+                <a class="nav-sublink" th:classappend="${active == 'loans-dashboard'} ? 'active'" th:href="@{/dashboard/loans}">Loan / Debt Overview</a>
+                <a class="nav-sublink" th:classappend="${active == 'insurance-dashboard'} ? 'active'" th:href="@{/dashboard/insurance}">Insurance Coverage</a>
+                <a class="nav-sublink" th:classappend="${active == 'goals-dashboard'} ? 'active'" th:href="@{/dashboard/goals}">Goals</a>
+                <a class="nav-sublink" th:classappend="${active == 'retirement-dashboard'} ? 'active'" th:href="@{/dashboard/retirement}">Retirement Readiness</a>
+                <a class="nav-sublink" th:classappend="${active == 'retirement-buckets'} ? 'active'" th:href="@{/dashboard/retirement-buckets}">Retirement Bucket Planner</a>
+                <a class="nav-sublink" th:classappend="${active == 'health-score'} ? 'active'" th:href="@{/dashboard/health-score}">Financial Health Score</a>
+                <a class="nav-sublink" th:classappend="${active == 'nifty-valuation'} ? 'active'" th:href="@{/dashboard/nifty-valuation}">Nifty Valuation</a>
+                <a class="nav-sublink" th:classappend="${active == 'export'} ? 'active'" th:href="@{/export}">Export / Import</a>
             </div>
         </div>
 
-        <div class="topnav-item" th:classappend="${#strings.startsWith(active, 'calc-')} ? 'active'"
-             onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
-            <button type="button" class="topnav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/><line x1="8" y1="19" x2="8" y2="19"/><line x1="12" y1="19" x2="12" y2="19"/><line x1="16" y1="19" x2="16" y2="19"/></svg>
+        <div class="nav-item" th:classappend="${#strings.startsWith(active, 'calc-')} ? 'open'">
+            <button type="button" class="nav-link" th:classappend="${#strings.startsWith(active, 'calc-')} ? 'active'"
+                    onclick="this.closest('.nav-item').classList.toggle('open')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/></svg>
                 Calculators
                 <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="topnav-dropdown">
-                <a th:classappend="${active == 'calc-index'} ? 'active'" th:href="@{/calculators}">All Calculators</a>
-                <div class="topnav-dropdown-divider"></div>
-                <a th:classappend="${active == 'calc-fire'} ? 'active'" th:href="@{/calculators/fire}">FIRE</a>
-                <a th:classappend="${active == 'calc-sip'} ? 'active'" th:href="@{/calculators/sip}">SIP</a>
-                <a th:classappend="${active == 'calc-swp'} ? 'active'" th:href="@{/calculators/swp}">SWP</a>
-                <a th:classappend="${active == 'calc-nps'} ? 'active'" th:href="@{/calculators/nps}">NPS Projector</a>
-                <a th:classappend="${active == 'calc-fd'} ? 'active'" th:href="@{/calculators/fd}">FD</a>
-                <a th:classappend="${active == 'calc-loan'} ? 'active'" th:href="@{/calculators/loan}">Loan / EMI</a>
-                <a th:classappend="${active == 'calc-ppf'} ? 'active'" th:href="@{/calculators/ppf}">PPF Projector</a>
-                <a th:classappend="${active == 'calc-tax'} ? 'active'" th:href="@{/calculators/tax-regime}">Tax Regime Compare</a>
-                <a th:classappend="${active == 'calc-cagr'} ? 'active'" th:href="@{/calculators/cagr}">CAGR</a>
-                <a th:classappend="${active == 'calc-direct-vs-regular'} ? 'active'" th:href="@{/calculators/direct-vs-regular}">Direct vs Regular MF</a>
-                <a th:classappend="${active == 'calc-debt-fund-vs-fd'} ? 'active'" th:href="@{/calculators/debt-fund-vs-fd}">Debt Fund vs FD</a>
+            <div class="nav-subgroup">
+                <a class="nav-sublink" th:classappend="${active == 'calc-index'} ? 'active'" th:href="@{/calculators}">All Calculators</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-fire'} ? 'active'" th:href="@{/calculators/fire}">FIRE</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-sip'} ? 'active'" th:href="@{/calculators/sip}">SIP</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-swp'} ? 'active'" th:href="@{/calculators/swp}">SWP</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-nps'} ? 'active'" th:href="@{/calculators/nps}">NPS Projector</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-fd'} ? 'active'" th:href="@{/calculators/fd}">FD</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-loan'} ? 'active'" th:href="@{/calculators/loan}">Loan / EMI</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-ppf'} ? 'active'" th:href="@{/calculators/ppf}">PPF Projector</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-tax'} ? 'active'" th:href="@{/calculators/tax-regime}">Tax Regime Compare</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-cagr'} ? 'active'" th:href="@{/calculators/cagr}">CAGR</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-direct-vs-regular'} ? 'active'" th:href="@{/calculators/direct-vs-regular}">Direct vs Regular MF</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-debt-fund-vs-fd'} ? 'active'" th:href="@{/calculators/debt-fund-vs-fd}">Debt Fund vs FD</a>
             </div>
         </div>
 
-        <div class="topnav-item" th:classappend="${active == 'family'} ? 'active'">
-            <a class="topnav-link" th:href="@{/family}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Family
-            </a>
-        </div>
+        <a class="nav-link" th:classappend="${active == 'family'} ? 'active'" th:href="@{/family}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Family
+        </a>
+    </div>
 
-        <div class="topnav-item" th:if="${currentUser != null and currentUser.role.name() == 'ADMIN'}"
-             th:classappend="${#strings.startsWith(active, 'admin-')} ? 'active'"
-             onclick="if (window.innerWidth <= 980) this.classList.toggle('open')">
-            <button type="button" class="topnav-link">
+    <div class="app-sidebar-bottom">
+        <div class="nav-item" th:if="${currentUser != null and currentUser.role.name() == 'ADMIN'}"
+             th:classappend="${#strings.startsWith(active, 'admin-')} ? 'open'">
+            <button type="button" class="nav-link" th:classappend="${#strings.startsWith(active, 'admin-')} ? 'active'"
+                    onclick="this.closest('.nav-item').classList.toggle('open')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4Z"/></svg>
                 Admin
                 <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="topnav-dropdown">
-                <a th:classappend="${active == 'admin-users'} ? 'active'" th:href="@{/admin/users}">Users</a>
-                <a th:classappend="${active == 'admin-settings'} ? 'active'" th:href="@{/admin/settings}">Global Settings</a>
-                <a th:classappend="${active == 'admin-health'} ? 'active'" th:href="@{/admin/health}">System Health</a>
-                <a th:classappend="${active == 'admin-audit'} ? 'active'" th:href="@{/admin/audit}">Audit Log</a>
-                <a th:classappend="${active == 'admin-tax'} ? 'active'" th:href="@{/admin/tax-slabs}">Tax Slabs</a>
-                <a th:classappend="${active == 'admin-fund-master'} ? 'active'" th:href="@{/admin/fund-master}">Fund Master List</a>
+            <div class="nav-subgroup">
+                <a class="nav-sublink" th:classappend="${active == 'admin-users'} ? 'active'" th:href="@{/admin/users}">Users</a>
+                <a class="nav-sublink" th:classappend="${active == 'admin-settings'} ? 'active'" th:href="@{/admin/settings}">Global Settings</a>
+                <a class="nav-sublink" th:classappend="${active == 'admin-health'} ? 'active'" th:href="@{/admin/health}">System Health</a>
+                <a class="nav-sublink" th:classappend="${active == 'admin-audit'} ? 'active'" th:href="@{/admin/audit}">Audit Log</a>
+                <a class="nav-sublink" th:classappend="${active == 'admin-tax'} ? 'active'" th:href="@{/admin/tax-slabs}">Tax Slabs</a>
+                <a class="nav-sublink" th:classappend="${active == 'admin-fund-master'} ? 'active'" th:href="@{/admin/fund-master}">Fund Master List</a>
             </div>
         </div>
+        <a class="nav-link" th:classappend="${active == 'settings'} ? 'active'" th:href="@{/settings}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+            Settings
+        </a>
     </div>
+</aside>
+
+<div class="app-topbar">
+    <button type="button" class="topnav-toggle" onclick="document.getElementById('appSidebar').classList.toggle('open')" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
 
     <div class="topbar-utility">
         <a class="topbar-icon-btn" th:href="@{/notifications}" title="Notifications">
@@ -197,7 +183,7 @@
 
         <div class="topbar-avatar" th:if="${currentUser != null}" th:text="${#strings.substring(currentUser.fullName, 0, 1)}" title="Account"></div>
     </div>
-  </div>
+</div>
 
   <script>
       document.addEventListener('click', function (e) {
@@ -231,7 +217,7 @@
           });
       })();
   </script>
-</nav>
+</th:block>
 
 <!-- Flash messages -->
 <th:block th:fragment="flash">

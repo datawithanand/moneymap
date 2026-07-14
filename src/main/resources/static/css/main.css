@@ -2,26 +2,31 @@
    figures) — see the modern-SaaS-dashboard reference direction. Two themes: Light and Dark. */
 
 :root, .theme-light {
-  --page-bg: #f1f2f6;
-  --bg: #f1f2f6;
+  --page-bg: oklch(97% 0.005 90);
+  --bg: oklch(97% 0.005 90);
   --surface: #ffffff;
-  --surface-alt: #eef0f8;
-  --primary: #0e7490;        /* cyan-700 */
-  --primary-strong: #0b5b71;
-  --primary-soft: #d7f0f5;
-  --primary-light: #22a6c9;  /* lighter cyan, paired with --primary in button/pill gradients */
-  --accent: #d97706;         /* warm amber, used sparingly for secondary emphasis */
-  --text: #14151a;
-  --text-muted: #8b8d98;
-  --border: #ecedf1;
-  --danger: #dc2626;
+  --surface-alt: oklch(95% 0.006 90);
+  --primary: oklch(48% 0.12 255);        /* indigo */
+  --primary-strong: oklch(40% 0.13 255);
+  --primary-soft: oklch(94% 0.03 255);
+  --primary-light: oklch(55% 0.12 255);  /* paired with --primary in the rare remaining gradients */
+  --ink: oklch(24% 0.02 260);            /* dark surface: hero cards, sidebar-adjacent bands */
+  --ink-inset: oklch(30% 0.02 260);      /* darker inset tiles inside ink surfaces */
+  --accent: oklch(60% 0.13 80);          /* amber, secondary emphasis / pending states */
+  --text: oklch(24% 0.02 260);
+  --text-muted: oklch(50% 0.02 260);
+  --border: oklch(90% 0.008 90);
+  --danger: oklch(56% 0.17 25);
   --warning-bg: #fef3c7;
   --success-bg: #dcfce7;
-  --radius: 20px;
-  --radius-sm: 12px;
+  --radius: 16px;
+  --radius-sm: 9px;
   --shadow-sm: 0 1px 2px rgba(20,21,26,.04);
   --shadow: 0 1px 2px rgba(20,21,26,.04), 0 8px 24px rgba(20,21,26,.06);
   --shadow-lg: 0 20px 50px rgba(20,21,26,.12);
+  --shadow-hero: 0 24px 60px -20px oklch(30% 0.03 260 / 0.18);
+  --shadow-drawer: -16px 0 40px oklch(20% 0.02 260 / 0.15);
+  --scrim: oklch(20% 0.01 260 / 0.35);
 
   /* Pastel icon-badge palette — each stat/module card gets its own soft accent instead of one
      brand color repeated everywhere (see dataviz-style categorical-by-identity thinking). */
@@ -38,10 +43,12 @@
   --bg: #101018;
   --surface: #1a1a26;
   --surface-alt: #23233a;
-  --primary: #22d3ee;        /* cyan-400 — brighter for contrast on a dark surface */
-  --primary-strong: #67e8f9;
-  --primary-soft: #123640;
-  --primary-light: #67e8f9;  /* lighter cyan, paired with --primary in button/pill gradients */
+  --primary: oklch(70% 0.12 255);
+  --primary-strong: oklch(78% 0.11 255);
+  --primary-soft: #23294f;
+  --primary-light: oklch(75% 0.11 255);
+  --ink: #0c0c14;
+  --ink-inset: #16161f;
   --accent: #fbbf24;
   --text: #edeef7;
   --text-muted: #9a9ab5;
@@ -52,6 +59,9 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
   --shadow: 0 2px 6px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
   --shadow-lg: 0 20px 50px rgba(0,0,0,.5);
+  --shadow-hero: 0 24px 60px -20px rgba(0,0,0,.45);
+  --shadow-drawer: -16px 0 40px rgba(0,0,0,.5);
+  --scrim: rgba(0,0,0,.55);
 
   --badge-blue-bg: #22314f;   --badge-blue-fg: #7ea6f2;
   --badge-green-bg: #163928;  --badge-green-fg: #4fd18d;
@@ -70,107 +80,76 @@ body {
   font-size: 15px; line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, .brand { letter-spacing: -.01em; font-weight: 800; }
-h1 { font-size: 1.6rem; font-weight: 800; margin: 0 0 6px; }
-h2 { font-size: 1.15rem; font-weight: 700; }
-h3 { font-size: .82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+h1, h2, h3, .brand, .brand-mark { font-family: "Manrope", "Inter", sans-serif; letter-spacing: -.01em; font-weight: 800; }
+h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 6px; letter-spacing: -.02em; }
+h2 { font-size: 1.1rem; font-weight: 700; }
+h3 { font-family: "Inter", sans-serif; font-size: .82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
 .figure, .mono { font-variant-numeric: tabular-nums; font-weight: 700; }
 a { color: var(--primary); }
 svg { display: block; }
 
-/* ── Top navigation bar ─────────────────────────────────────────────────── */
-/* Floating white/theme-surface pill — rounded, shadowed, sitting on the gray page background
-   with margin on all sides, rather than a full-width band. The active section is a solid
-   near-black (near-white in dark mode) pill, matching the modern-SaaS-dashboard reference. */
-.topbar {
-  position: sticky; top: 14px; z-index: 100;
-  max-width: 1400px; margin: 14px auto 22px; padding: 8px 10px 8px 8px;
-  background: var(--surface); border-radius: 999px; box-shadow: var(--shadow);
+/* ── App shell: persistent left sidebar + main column ──────────────────────
+   The "sidebar(active)" Thymeleaf fragment (fragments/layout.html) renders two sibling
+   elements in place of each page's single <nav th:replace> placeholder: the <aside> nav
+   itself, and a fixed utility topbar (notifications/theme/settings/logout/avatar) that
+   spans the width of the main column — so no per-page template needs to change to get
+   the new topbar, only the shared fragment. */
+.shell { display: flex; min-height: 100vh; }
+.app-sidebar {
+  width: 260px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; padding: 20px 14px; position: sticky; top: 0;
+  height: 100vh; overflow-y: auto; z-index: 120;
 }
-.topbar-inner {
-  margin: 0 auto; padding: 0 8px;
-  display: flex; align-items: center; gap: 4px; height: 42px;
+.app-sidebar .brand {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px 20px; text-decoration: none; color: var(--text);
 }
-.topbar .brand {
-  font-size: 1.05rem; font-weight: 800; color: var(--text);
-  margin-right: 14px; white-space: nowrap; display: flex; align-items: center; gap: 8px;
-  text-decoration: none;
-}
-.topbar .brand .brand-mark {
-  width: 28px; height: 28px; border-radius: 9px; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+.app-sidebar .brand .brand-mark {
+  width: 28px; height: 28px; border-radius: 8px; background: var(--primary);
   color: #fff; display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 800; flex-shrink: 0;
 }
-.topnav { display: flex; align-items: center; gap: 2px; flex: 1; }
-.topnav-item { position: relative; }
-.topnav-link {
-  display: flex; align-items: center; gap: 6px; padding: 9px 15px; border-radius: 999px;
-  color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: .89rem;
-  white-space: nowrap; background: none; border: none; cursor: pointer; font-family: inherit;
+.app-sidebar .brand span:not(.brand-mark) { font-size: 17px; }
+.nav-group { display: flex; flex-direction: column; gap: 2px; overflow-y: visible; }
+.nav-section-label {
+  font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+  letter-spacing: .05em; padding: 16px 12px 6px;
 }
-.topnav-link svg { width: 15px; height: 15px; opacity: .75; flex-shrink: 0; }
-.topnav-link .chev { width: 11px; height: 11px; opacity: .55; margin-left: -2px; transition: transform .15s; }
-.topnav-link:hover, .topnav-item:hover .topnav-link { background: var(--surface-alt); color: var(--text); }
-.topnav-item.active > .topnav-link { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; font-weight: 700; }
-.topnav-item.active > .topnav-link svg { opacity: 1; }
-.topnav-item:hover .chev { transform: rotate(180deg); }
+.nav-link {
+  display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: 9px;
+  font-size: 14px; font-weight: 600; color: var(--text-muted); text-decoration: none;
+  background: none; border: none; cursor: pointer; font-family: inherit; width: 100%; text-align: left;
+}
+.nav-link:hover { background: var(--surface-alt); color: var(--text); }
+.nav-link svg { width: 17px; height: 17px; flex-shrink: 0; opacity: .8; }
+.nav-link .dot { width: 6px; height: 6px; border-radius: 2px; background: oklch(75% 0.01 90); flex-shrink: 0; margin-left: 5px; }
+.nav-link.active { background: var(--primary-soft); color: var(--primary-strong); font-weight: 700; }
+.nav-link.active svg { opacity: 1; }
+.nav-link .chev { width: 11px; height: 11px; opacity: .55; margin-left: auto; transition: transform .15s; }
+.nav-link.open .chev, .nav-item.open > .nav-link .chev { transform: rotate(180deg); }
+.nav-subgroup { display: none; flex-direction: column; gap: 1px; padding-left: 8px; }
+.nav-item.open > .nav-subgroup { display: flex; }
+.nav-sublink {
+  display: flex; align-items: center; gap: 10px; padding: 7px 12px 7px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none;
+}
+.nav-sublink:hover { background: var(--surface-alt); color: var(--text); }
+.nav-sublink.active { background: var(--primary-soft); color: var(--primary-strong); font-weight: 700; }
+.app-sidebar-bottom { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 8px; }
+.app-sidebar-bottom .nav-link { font-size: 13.5px; }
 
-.topnav-dropdown {
-  position: absolute; top: calc(100% + 6px); left: 0; min-width: 240px; max-width: 320px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow-lg); padding: 8px; z-index: 200;
-  opacity: 0; visibility: hidden; transform: translateY(-6px);
-  transition: opacity .14s ease, transform .14s ease, visibility .14s;
-  max-height: 70vh; overflow-y: auto;
+/* Fixed utility topbar spanning the main column (right of the sidebar). Taken fully out
+   of the .shell flex-row flow with position:fixed — otherwise, as a flex sibling of
+   .app-sidebar/.content, it would sit in its own narrow column instead of stretching
+   across the top of the main column (content needs matching padding-top, below). */
+.app-topbar {
+  position: fixed; top: 0; left: 260px; right: 0; z-index: 110; height: 64px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+  display: flex; align-items: center; justify-content: flex-end; padding: 0 28px; gap: 4px;
 }
-.topnav-item:hover .topnav-dropdown,
-.topnav-item:focus-within .topnav-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
-.topnav-dropdown a {
-  display: block; padding: 8px 12px; border-radius: var(--radius-sm);
-  color: var(--text); text-decoration: none; font-size: .89rem; font-weight: 500;
+@media (max-width: 980px) {
+  .app-topbar { left: 0; }
 }
-.topnav-dropdown a:hover { background: var(--surface-alt); }
-.topnav-dropdown a.active { background: var(--primary-soft); color: var(--primary-strong); font-weight: 600; }
-.topnav-dropdown-label {
-  font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700;
-  color: var(--text-muted); padding: 8px 12px 4px;
-}
-.topnav-dropdown-divider { height: 1px; background: var(--border); margin: 6px 4px; }
-
-/* Nested flyout submenu (e.g. Assets & Liabilities -> Assets -> Bank Accounts) */
-.topnav-subitem { position: relative; }
-.topnav-subitem > .topnav-sublink {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  width: 100%; padding: 8px 12px; border-radius: var(--radius-sm);
-  color: var(--text); text-decoration: none; font-size: .89rem; font-weight: 600;
-  background: none; border: none; cursor: pointer; font-family: inherit; text-align: left;
-}
-.topnav-subitem > .topnav-sublink:hover { background: var(--surface-alt); }
-.topnav-subitem > .topnav-sublink .chev-right { width: 12px; height: 12px; opacity: .55; transform: rotate(-90deg); flex-shrink: 0; }
-.topnav-submenu {
-  position: absolute; top: -8px; left: calc(100% + 6px); min-width: 220px; max-width: 300px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow-lg); padding: 8px; z-index: 210;
-  opacity: 0; visibility: hidden; transform: translateX(-6px);
-  transition: opacity .14s ease, transform .14s ease, visibility .14s;
-}
-/* A submenu that itself nests another flyout (3rd level) must not clip it either — same
-   overflow-x-forced-to-auto issue as .topnav-dropdown. Leaf submenus (module lists) can be
-   long, so they alone opt into scrolling. */
-.topnav-submenu.leaf { max-height: 60vh; overflow-y: auto; }
-.topnav-subitem:hover > .topnav-submenu,
-.topnav-subitem:focus-within > .topnav-submenu { opacity: 1; visibility: visible; transform: translateX(0); }
-.topnav-submenu a {
-  display: block; padding: 8px 12px; border-radius: var(--radius-sm);
-  color: var(--text); text-decoration: none; font-size: .89rem; font-weight: 500;
-}
-.topnav-submenu a:hover { background: var(--surface-alt); }
-.topnav-submenu a.active { background: var(--primary-soft); color: var(--primary-strong); font-weight: 600; }
-/* A dropdown containing a flyout submenu must not clip it — overflow-y:auto alone forces
-   overflow-x to auto (clipping) per the CSS spec, so opt out explicitly where needed. */
-.topnav-dropdown.has-submenu { overflow: visible; max-height: none; }
-
-.topbar-utility { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.topbar-utility { display: flex; align-items: center; gap: 4px; }
 .topbar-icon-btn {
   position: relative; display: flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; padding: 0; border-radius: 50%; border: none; background: none;
@@ -184,7 +163,6 @@ svg { display: block; }
   border-radius: 999px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; line-height: 1;
 }
-/* Theme switcher gets a text label so it doesn't get lost among plain icon buttons. */
 .topbar-icon-btn.theme-picker-btn {
   width: auto; border-radius: 999px; padding: 0 12px 0 10px; gap: 6px; font-size: .8rem; font-weight: 700;
 }
@@ -199,55 +177,26 @@ svg { display: block; }
   margin-left: 6px; cursor: pointer; flex-shrink: 0;
 }
 
-/* Mobile nav toggle */
-.topnav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--text); }
+/* Mobile: sidebar collapses off-canvas, toggled by a hamburger in the fixed topbar */
+.topnav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; color: var(--text); margin-right: auto; }
 .topnav-toggle svg { width: 22px; height: 22px; }
-
+@media (max-width: 980px) {
+  .shell { position: relative; }
+  .app-sidebar {
+    position: fixed; top: 0; left: 0; transform: translateX(-100%); transition: transform .18s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  .app-sidebar.open { transform: translateX(0); }
+  .topnav-toggle { display: flex; }
+  .app-topbar { padding: 0 14px; }
+}
 @media (max-width: 480px) {
-  .topbar-inner { padding: 0 10px; gap: 0; }
-  .brand span:not(.brand-mark) { display: none; }
+  .app-topbar { padding: 0 10px; gap: 0; }
   .topbar-utility { gap: 0; }
   .topbar-avatar { margin-left: 2px; }
 }
-@media (max-width: 980px) {
-  .topnav-toggle { display: flex; }
-  .topnav {
-    display: none; position: fixed; top: 58px; left: 0; right: 0; bottom: 0;
-    background: var(--surface); flex-direction: column; align-items: stretch;
-    padding: 10px; overflow-y: auto; gap: 0; z-index: 150;
-  }
-  .topnav.open { display: flex; }
-  .topnav-item { width: 100%; }
-  /* The mobile panel is a normal theme surface (white/dark), not the brand navbar band,
-     so nav links need theme text color here instead of the brand-navbar-muted tint. */
-  .topnav-link { width: 100%; color: var(--text); }
-  .topnav-link:hover, .topnav-item:hover .topnav-link, .topnav-item.active > .topnav-link {
-    background: var(--surface-alt); color: var(--text);
-  }
-  .topnav-item.active > .topnav-link { color: var(--primary); font-weight: 600; }
-  .topnav-dropdown {
-    position: static; box-shadow: none; border: none; opacity: 1; visibility: visible;
-    transform: none; display: none; max-width: none; margin-left: 12px;
-    border-left: 2px solid var(--border);
-  }
-  .topnav-item.open .topnav-dropdown { display: block; }
-  .topnav-submenu {
-    position: static; box-shadow: none; border: none; opacity: 1; visibility: visible;
-    transform: none; display: none; max-width: none; margin-left: 12px;
-    border-left: 2px solid var(--border);
-  }
-  .topnav-subitem.open .topnav-submenu { display: block; }
-  .topnav-subitem > .topnav-sublink .chev-right { transform: rotate(0deg); transition: transform .15s; }
-  .topnav-subitem.open > .topnav-sublink .chev-right { transform: rotate(90deg); }
-  .topbar-utility { gap: 0; }
-}
 
-/* App shell — plain block flow, not flex. Safari has a long-standing bug where
-   position: sticky breaks on a flex item inside a column flex container, which
-   made the topbar (position: sticky) vanish on scroll when it was a direct
-   flex child of .shell. Nothing here relied on flex distributing space. */
-.shell { min-height: 100vh; padding: 0 clamp(16px, 4vw, 40px); }
-.content { padding: 6px 0 30px; max-width: 1240px; width: 100%; margin: 0 auto; }
+.content { flex: 1; min-width: 0; padding: 92px 28px 28px; max-width: 1240px; width: 100%; margin: 0 auto; }
 
 /* Cards & forms */
 .card {
@@ -269,18 +218,69 @@ input:focus, select:focus, textarea:focus {
 .hint { color: var(--text-muted); font-size: .85rem; margin-top: 3px; }
 .field-error { color: var(--danger); font-size: .85rem; margin-top: 3px; }
 button, .btn {
-  display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 999px;
-  border: 1px solid transparent; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px;
+  border: 1px solid transparent; background: var(--primary);
   color: #fff; font: inherit; font-weight: 700;
-  cursor: pointer; text-decoration: none; transition: opacity .12s, transform .05s;
+  cursor: pointer; text-decoration: none; transition: background .12s, transform .05s;
 }
-button:hover, .btn:hover { opacity: .85; }
+button:hover, .btn:hover { background: var(--primary-strong); }
 button:active, .btn:active { transform: translateY(1px); }
 .btn-secondary { background: var(--surface-alt); color: var(--text); }
-.btn-secondary:hover { background: var(--border); opacity: 1; }
+.btn-secondary:hover { background: var(--border); }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-sm { padding: 6px 14px; font-size: .82rem; }
 form.inline { display: inline; }
+
+/* Pill-style filter/tab switcher — module sub-category filters, Analytics tabs,
+   Admin tabs, Calculators list selection. Only one tab active at a time. */
+.pill-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.pill-tab {
+  padding: 8px 18px; border-radius: 100px; border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--text); font-weight: 600; font-size: .85rem; cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
+}
+.pill-tab:hover { border-color: var(--primary); }
+.pill-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+/* Toggle switch — Settings (2FA, notification prefs) */
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0; background: var(--border); border-radius: 999px; cursor: pointer;
+  transition: background .15s;
+}
+.toggle-track::before {
+  content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; border-radius: 50%;
+  background: #fff; transition: left .15s; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.toggle-switch input:checked + .toggle-track { background: var(--primary); }
+.toggle-switch input:checked + .toggle-track::before { left: 21px; }
+
+/* Slide-over drawer — Add/Edit forms across all 6 asset modules */
+.drawer-scrim {
+  position: fixed; inset: 0; background: var(--scrim); z-index: 300;
+  opacity: 0; visibility: hidden; transition: opacity .15s ease, visibility .15s;
+}
+.drawer-scrim.open { opacity: 1; visibility: visible; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: var(--surface);
+  box-shadow: var(--shadow-drawer); z-index: 301; display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform .2s ease;
+}
+.drawer.open { transform: translateX(0); }
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between; padding: 20px 24px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.drawer-header h2 { margin: 0; }
+.drawer-close { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; }
+.drawer-close:hover { background: var(--surface-alt); color: var(--text); }
+.drawer-close svg { width: 20px; height: 20px; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.drawer-footer {
+  display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
 
 /* Alerts & banners */
 .alert { padding: 13px 18px; border-radius: var(--radius-sm); margin-bottom: 16px; border: none; font-size: .92rem; font-weight: 600; }
