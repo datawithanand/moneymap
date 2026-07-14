@@ -5,28 +5,40 @@
 
 <div class="login-wrap">
     <div class="login-left">
-        <div class="brand">
-            <span class="brand-mark" style="width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg, var(--primary), var(--primary-light));color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800">M</span>
+        <a class="brand" th:href="@{/}" style="text-decoration:none">
+            <span class="brand-mark">M</span>
             <span th:text="${instanceSettings.instanceName}">MoneyMap</span>
+        </a>
+        <div>
+            <div class="quote">Create your household's own MoneyMap instance.</div>
+            <ul>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Your data stays on this server — nowhere else
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Track every asset, policy and loan in one dashboard
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Family emergency access, on your terms
+                </li>
+            </ul>
         </div>
-        <h1>Create your account.</h1>
-        <div th:replace="~{fragments/previewpanel :: previewpanel}"></div>
-        <ul>
-            <li>Your data stays on this server — nowhere else</li>
-            <li>Track every asset, policy and loan in one dashboard</li>
-            <li>Family emergency access, on your terms</li>
-        </ul>
+        <div class="copyright" th:text="'© ' + ${#dates.year(#dates.createNow())} + ' ' + ${instanceSettings.instanceName}">© MoneyMap</div>
     </div>
     <div class="login-right">
-        <div class="card login-card">
+        <div class="login-card">
             <th:block th:if="${inviteOnly}">
-                <h2 class="mt0">Registration is by invitation only</h2>
+                <h2>Registration is by invitation only</h2>
                 <p>Ask your instance administrator for an invite link.</p>
                 <p><a th:href="@{/login}">Log in instead</a></p>
             </th:block>
 
             <th:block th:unless="${inviteOnly}">
-                <h2 class="mt0">Create an account</h2>
+                <h2>Create an account</h2>
+                <p class="subhead">Set up your household's own MoneyMap instance.</p>
                 <form th:action="@{/register}" method="post">
                     <input type="hidden" name="_csrf" th:value="${csrf}">
                     <input type="hidden" name="invite" th:value="${invite}">
@@ -65,7 +77,5 @@
 </div>
 
 <script th:src="@{/js/password-strength.js}"></script>
-<script th:src="@{/js/vendor/chart.min.js}"></script>
-<script th:src="@{/js/preview-chart.js}"></script>
 </body>
 </html>
