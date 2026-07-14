@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${categoryTitle})}"></head>
+<body th:class="${themeClass}">
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar(${'assets-' + categoryKey})}"></nav>
+    <main class="content">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:6px">
+            <div>
+                <h1 style="margin-bottom:4px" th:text="${categoryTitle}">Category</h1>
+                <p class="hint" style="margin:0" th:text="${categoryDescription}"></p>
+            </div>
+            <button type="button" class="btn" th:if="${genericCrud}"
+                    th:with="newUrl=@{'/assets/' + ${activeModulePath} + '/new'(loanType=${newUrlLoanType})}"
+                    th:attr="onclick=|openDrawer('${newUrl}', 'Add ${activeTabLabel}')|"
+                    th:text="'+ Add ' + ${activeTabLabel}">+ Add</button>
+        </div>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:18px 0">
+            <div class="card" style="margin-bottom:0" th:each="k : ${kpis}">
+                <div class="hint" style="margin-bottom:6px" th:text="${k.label}"></div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px"
+                     th:if="${k.type == 'money'}" th:text="${fmt.money(k.value, currentUser)}"></div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px"
+                     th:if="${k.type == 'percent'}" th:text="(${k.value} != null and ${k.value} >= 0 ? '+' : '') + ${k.value} + '%'"></div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px"
+                     th:if="${k.type == 'count'}" th:text="${k.value}"></div>
+            </div>
+        </div>
+
+        <div class="pill-tabs" style="margin-bottom:16px">
+            <a th:each="t : ${tabs}" th:href="@{''(tab=${t.key})}"
+               class="pill-tab" th:classappend="${t.active} ? ' active'" th:text="${t.label}"></a>
+        </div>
+
+        <p class="hint" th:if="${categoryNote}" th:utext="${categoryNote}" style="margin-top:-8px;margin-bottom:14px"></p>
+
+        <div class="card" th:if="${activeModule == null}">
+            <p class="muted" style="margin:0">There's no dedicated module for
+                <strong th:text="${activeTabLabel}"></strong> yet — nothing to show here.</p>
+        </div>
+
+        <div class="card" th:if="${activeModule != null and !genericCrud}">
+            <p class="muted" style="margin:0"><strong th:text="${activeTabLabel}"></strong> uses its own dedicated
+                page (a custom form, not the generic table) — manage it at
+                <a th:href="@{'/assets/' + ${activeModulePath}}" th:text="'/assets/' + ${activeModulePath}"></a>.</p>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden" th:if="${activeModule != null and genericCrud}">
+            <table class="data">
+                <thead>
+                <tr>
+                    <th th:each="entry : ${labels}" th:text="${entry.value}"></th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${rows}">
+                    <td th:each="entry : ${labels}" class="mono"
+                        th:text="${fmt.cell(row[entry.key], currentUser)}"></td>
+                    <td style="white-space:nowrap;text-align:right">
+                        <a th:if="${activeModulePath == 'mutual-funds'}" class="btn btn-sm btn-secondary"
+                           th:href="@{'/assets/mutual-funds/' + ${row['id']} + '/transactions'}">Transactions</a>
+                        <button type="button" class="btn-sm btn-secondary"
+                                th:attr="onclick=|openDrawer('${'/assets/' + activeModulePath + '/' + row['id'] + '/edit'}', 'Edit ${activeTabLabel}')|">Edit</button>
+                        <form class="inline" th:action="@{'/assets/' + ${activeModulePath} + '/' + ${row['id']} + '/delete'}"
+                              method="post" onsubmit="return confirm('Delete this record?');">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <button type="submit" class="btn-sm btn-secondary">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${rows.isEmpty()}">
+                    <td th:colspan="${labels.size() + 1}" class="muted">Nothing here yet — add your first record.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- Slide-over drawer: Add/Edit forms load here via fetch() instead of a full page navigation.
+     Falls back gracefully — /assets/{path}/new and /{id}/edit still work as real standalone
+     pages (form.html) if opened directly or if JS fails. -->
+<div class="drawer-scrim" id="drawerScrim" onclick="closeDrawer()"></div>
+<div class="drawer" id="assetDrawer">
+    <div class="drawer-header">
+        <h2 id="drawerTitle">Add record</h2>
+        <button type="button" class="drawer-close" onclick="closeDrawer()" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<script>
+function openDrawer(url, title) {
+    document.getElementById('drawerTitle').textContent = title;
+    document.getElementById('drawerBody').innerHTML = '<p class="muted">Loading…</p>';
+    document.getElementById('drawerScrim').classList.add('open');
+    document.getElementById('assetDrawer').classList.add('open');
+    loadDrawerContent(url);
+}
+function closeDrawer() {
+    document.getElementById('drawerScrim').classList.remove('open');
+    document.getElementById('assetDrawer').classList.remove('open');
+}
+function loadDrawerContent(url) {
+    fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var root = doc.getElementById('assetFormRoot');
+        document.getElementById('drawerBody').innerHTML = root ? root.innerHTML : '<p>Could not load form.</p>';
+        bindDrawerForm();
+        applyDrawerVisibility();
+        bindDrawerFundPicker();
+    });
+}
+function bindDrawerForm() {
+    var form = document.querySelector('#drawerBody form');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin' })
+            .then(function (r) {
+                if (r.redirected) { window.location.href = r.url; return; }
+                return r.text().then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var root = doc.getElementById('assetFormRoot');
+                    document.getElementById('drawerBody').innerHTML = root ? root.innerHTML : html;
+                    bindDrawerForm();
+                    applyDrawerVisibility();
+                    bindDrawerFundPicker();
+                });
+            });
+    });
+}
+function applyDrawerVisibility() {
+    document.querySelectorAll('#drawerBody [data-visible-if]').forEach(function (el) {
+        var cond = el.getAttribute('data-visible-if');
+        if (!cond) return;
+        var eq = cond.indexOf('=');
+        var field = cond.substring(0, eq), wanted = cond.substring(eq + 1).split('|');
+        var src = document.getElementById(field) || document.querySelector('#drawerBody [name="' + field + '"]');
+        if (!src) return;
+        var current = src.type === 'checkbox' ? String(src.checked) : src.value;
+        el.style.display = wanted.indexOf(current) !== -1 ? '' : 'none';
+    });
+}
+document.addEventListener('change', function (e) {
+    if (e.target.closest && e.target.closest('#drawerBody')) applyDrawerVisibility();
+});
+function bindDrawerFundPicker() {
+    var searchBox = document.getElementById('fundPickerSearch');
+    if (!searchBox) return;
+    var categorySelect = document.getElementById('fundPickerCategory');
+    var resultsList = document.getElementById('fundPickerResults');
+    var debounceTimer;
+    function runSearch() {
+        var q = searchBox.value.trim();
+        if (q.length < 2) { resultsList.innerHTML = ''; return; }
+        var url = '/assets/mutual-funds/fund-search?q=' + encodeURIComponent(q)
+                + '&category=' + encodeURIComponent(categorySelect.value);
+        fetch(url).then(function (r) { return r.json(); }).then(function (items) {
+            resultsList.innerHTML = '';
+            items.forEach(function (item) {
+                var li = document.createElement('li');
+                li.style.cursor = 'pointer';
+                li.style.padding = '4px 0';
+                li.textContent = item.schemeName + (item.fundHouse ? ' — ' + item.fundHouse : '');
+                li.addEventListener('click', function () { selectFund(item.schemeCode); });
+                resultsList.appendChild(li);
+            });
+        });
+    }
+    function selectFund(schemeCode) {
+        fetch('/assets/mutual-funds/fund-detail/' + schemeCode).then(function (r) { return r.json(); })
+            .then(function (detail) {
+                if (detail.error) { alert(detail.error); return; }
+                document.getElementById('schemeCode').value = detail.schemeCode;
+                document.getElementById('fundName').value = detail.schemeName;
+                if (detail.fundHouse) document.getElementById('amcName').value = detail.fundHouse;
+                if (detail.latestNav) document.getElementById('currentNavPerUnit').value = detail.latestNav;
+                if (detail.navAsOfDate) document.getElementById('navAsOfDate').value = detail.navAsOfDate;
+                resultsList.innerHTML = '';
+                searchBox.value = detail.schemeName;
+            });
+    }
+    searchBox.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runSearch, 300);
+    });
+    categorySelect.addEventListener('change', runSearch);
+}
+</script>
+
+</body>
+</html>
