@@ -219,6 +219,17 @@
   </script>
 </th:block>
 
+<!-- Analytics pill-tab quick-nav — the 5 core analytics dashboards link to each other via
+     pill-style tabs matching the Claude Design handoff (Analytics.dc.html), instead of only
+     being reachable through the sidebar's Analytics submenu. -->
+<div th:fragment="analyticsTabs(active)" class="pill-tabs">
+    <a class="pill-tab" th:classappend="${active == 'trend'} ? 'active'" th:href="@{/dashboard/trend}">Net Worth Trend</a>
+    <a class="pill-tab" th:classappend="${active == 'allocation'} ? 'active'" th:href="@{/dashboard/allocation}">Portfolio Allocation</a>
+    <a class="pill-tab" th:classappend="${active == 'tax'} ? 'active'" th:href="@{/dashboard/tax}">Tax Planning</a>
+    <a class="pill-tab" th:classappend="${active == 'retirement-dashboard'} ? 'active'" th:href="@{/dashboard/retirement}">Retirement Readiness</a>
+    <a class="pill-tab" th:classappend="${active == 'health-score'} ? 'active'" th:href="@{/dashboard/health-score}">Financial Health Score</a>
+</div>
+
 <!-- Flash messages -->
 <th:block th:fragment="flash">
     <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>

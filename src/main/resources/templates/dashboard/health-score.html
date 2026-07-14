@@ -7,6 +7,7 @@
     <nav th:replace="~{fragments/layout :: sidebar('health-score')}"></nav>
     <main class="content">
         <h1>Financial Health Score</h1>
+        <div th:replace="~{fragments/layout :: analyticsTabs('health-score')}"></div>
         <p class="hint">A composite 0-100 score across the fundamentals: emergency fund coverage, term
             insurance adequacy, debt burden, and savings rate — computed from data already in MoneyMap
             plus two inputs it doesn't otherwise track (your monthly expense and savings).</p>
