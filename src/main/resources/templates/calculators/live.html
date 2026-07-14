@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Calculators')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-index')}"></nav>
+
+    <!-- Calculator list -->
+    <div style="width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;overflow-y:auto">
+        <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:18px;padding:6px 10px 16px">Calculators</div>
+        <button type="button" class="calc-list-item" data-key="sip" onclick="selectCalc('sip')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">SIP Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Systematic investment growth</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="stepup" onclick="selectCalc('stepup')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">Step-up SIP Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Annually increasing SIP</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="swp" onclick="selectCalc('swp')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">SWP Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Systematic withdrawal runway</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="lumpsum" onclick="selectCalc('lumpsum')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">Lumpsum Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">One-time investment growth</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="ppf" onclick="selectCalc('ppf')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">PPF Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Public Provident Fund maturity</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="nps" onclick="selectCalc('nps')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">NPS Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">National Pension System corpus</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="emi" onclick="selectCalc('emi')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">Loan EMI Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Monthly instalment &amp; interest</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="fire" onclick="selectCalc('fire')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">FIRE Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Financial independence target</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="corpus" onclick="selectCalc('corpus')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">Retirement Corpus Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Projected corpus at retirement</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="goal" onclick="selectCalc('goal')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">Goal Planning Calculator</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Reverse-SIP for a target goal</div>
+        </button>
+        <button type="button" class="calc-list-item" data-key="tax" onclick="selectCalc('tax')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
+            <div style="font-size:13.5px;font-weight:700">Tax Regime Comparison</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Old vs new regime tax</div>
+        </button>
+    </div>
+
+    <main class="content" style="max-width:none;margin:0;padding:0">
+        <div class="app-topbar" style="position:static">
+            <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;margin-right:auto" id="activeCalcName">Calculator</div>
+        </div>
+
+        <div style="padding:28px;display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:24px;align-items:start">
+
+            <!-- Inputs -->
+            <div class="card" style="margin-bottom:0;display:flex;flex-direction:column;gap:18px">
+                <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:15px">Inputs</div>
+                <div id="inputsContainer"></div>
+            </div>
+
+            <!-- Results -->
+            <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+                <div id="resultsStrip" style="background:var(--ink);border-radius:18px;padding:26px 30px;color:#fff;display:grid;gap:20px"></div>
+                <div class="card" style="margin-bottom:0">
+                    <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:14px;margin-bottom:14px">How this is calculated</div>
+                    <div id="noteText" style="font-size:13.5px;color:var(--text-muted);line-height:1.6"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+var ACTIVE_TYPE = /*[[${activeType}]]*/ 'sip';
+var DEFAULT_CORPUS = /*[[${defaultCorpus}]]*/ 0;
+
+var CALC_NAMES = {
+    sip: 'SIP Calculator', stepup: 'Step-up SIP Calculator', swp: 'SWP Calculator',
+    lumpsum: 'Lumpsum Calculator', ppf: 'PPF Calculator', nps: 'NPS Calculator',
+    emi: 'Loan EMI Calculator', fire: 'FIRE Calculator', corpus: 'Retirement Corpus Calculator',
+    goal: 'Goal Planning Calculator', tax: 'Tax Regime Comparison'
+};
+
+function fmtShort(v) {
+    v = Math.round(v);
+    if (v >= 10000000) return '₹' + (v / 10000000).toFixed(2) + ' Cr';
+    if (v >= 100000) return '₹' + (v / 100000).toFixed(2) + ' L';
+    return '₹' + v.toLocaleString('en-IN');
+}
+
+var INPUT_DEFS = {
+    sip: [
+        { key: 'amount', label: 'Monthly investment', min: 500, max: 200000, step: 500, value: 25000, fmt: v => '₹' + v.toLocaleString('en-IN') },
+        { key: 'years', label: 'Investment period', min: 1, max: 40, step: 1, value: 15, fmt: v => v + ' yrs' },
+        { key: 'rate', label: 'Expected return', min: 1, max: 20, step: 0.5, value: 12, fmt: v => v + '%' }
+    ],
+    stepup: [
+        { key: 'amount', label: 'Starting monthly SIP', min: 500, max: 200000, step: 500, value: 20000, fmt: v => '₹' + v.toLocaleString('en-IN') },
+        { key: 'stepup', label: 'Annual step-up', min: 0, max: 30, step: 1, value: 10, fmt: v => v + '%' },
+        { key: 'years', label: 'Investment period', min: 1, max: 40, step: 1, value: 15, fmt: v => v + ' yrs' },
+        { key: 'rate', label: 'Expected return', min: 1, max: 20, step: 0.5, value: 12, fmt: v => v + '%' }
+    ],
+    swp: [
+        { key: 'corpus', label: 'Starting corpus', min: 100000, max: 50000000, step: 100000, value: 5000000, fmt: v => fmtShort(v) },
+        { key: 'withdrawal', label: 'Monthly withdrawal', min: 1000, max: 500000, step: 1000, value: 30000, fmt: v => '₹' + v.toLocaleString('en-IN') },
+        { key: 'rate', label: 'Expected return', min: 1, max: 20, step: 0.5, value: 8, fmt: v => v + '%' }
+    ],
+    lumpsum: [
+        { key: 'amount', label: 'Investment amount', min: 10000, max: 50000000, step: 10000, value: 1000000, fmt: v => fmtShort(v) },
+        { key: 'years', label: 'Investment period', min: 1, max: 40, step: 1, value: 10, fmt: v => v + ' yrs' },
+        { key: 'rate', label: 'Expected return', min: 1, max: 20, step: 0.5, value: 11, fmt: v => v + '%' }
+    ],
+    ppf: [
+        { key: 'yearly', label: 'Yearly contribution', min: 500, max: 150000, step: 500, value: 150000, fmt: v => '₹' + v.toLocaleString('en-IN') },
+        { key: 'years', label: 'Investment period', min: 15, max: 40, step: 1, value: 15, fmt: v => v + ' yrs' },
+        { key: 'rate', label: 'PPF interest rate', min: 5, max: 10, step: 0.1, value: 7.1, fmt: v => v + '%' }
+    ],
+    nps: [
+        { key: 'monthly', label: 'Monthly contribution', min: 500, max: 100000, step: 500, value: 10000, fmt: v => '₹' + v.toLocaleString('en-IN') },
+        { key: 'years', label: 'Years to retirement', min: 1, max: 40, step: 1, value: 25, fmt: v => v + ' yrs' },
+        { key: 'rate', label: 'Expected return', min: 1, max: 15, step: 0.5, value: 10, fmt: v => v + '%' }
+    ],
+    emi: [
+        { key: 'principal', label: 'Loan amount', min: 100000, max: 50000000, step: 100000, value: 6000000, fmt: v => fmtShort(v) },
+        { key: 'rate', label: 'Interest rate', min: 4, max: 18, step: 0.1, value: 8.6, fmt: v => v + '%' },
+        { key: 'years', label: 'Loan tenure', min: 1, max: 30, step: 1, value: 20, fmt: v => v + ' yrs' }
+    ],
+    fire: [
+        { key: 'expenses', label: 'Monthly expenses', min: 10000, max: 1000000, step: 5000, value: 100000, fmt: v => '₹' + v.toLocaleString('en-IN') },
+        { key: 'years', label: 'Years to FI', min: 1, max: 40, step: 1, value: 20, fmt: v => v + ' yrs' },
+        { key: 'rate', label: 'Expected return', min: 1, max: 20, step: 0.5, value: 8, fmt: v => v + '%' }
+    ],
+    corpus: [
+        { key: 'current', label: 'Current retirement savings', min: 0, max: 50000000, step: 100000, value: 0, fmt: v => fmtShort(v) },
+        { key: 'monthly', label: 'Monthly contribution', min: 0, max: 200000, step: 1000, value: 40000, fmt: v => '₹' + v.toLocaleString('en-IN') },
+        { key: 'years', label: 'Years to retirement', min: 1, max: 40, step: 1, value: 22, fmt: v => v + ' yrs' },
+        { key: 'rate', label: 'Expected return', min: 1, max: 20, step: 0.5, value: 11, fmt: v => v + '%' }
+    ],
+    goal: [
+        { key: 'target', label: 'Target amount', min: 100000, max: 50000000, step: 100000, value: 4000000, fmt: v => fmtShort(v) },
+        { key: 'years', label: 'Time horizon', min: 1, max: 30, step: 1, value: 8, fmt: v => v + ' yrs' },
+        { key: 'rate', label: 'Expected return', min: 1, max: 20, step: 0.5, value: 12, fmt: v => v + '%' }
+    ],
+    tax: [
+        { key: 'income', label: 'Gross annual income', min: 300000, max: 10000000, step: 50000, value: 1800000, fmt: v => fmtShort(v) }
+    ]
+};
+if (DEFAULT_CORPUS > 0) {
+    INPUT_DEFS.corpus[0].value = DEFAULT_CORPUS;
+    var fireDef = INPUT_DEFS.fire; // FIRE's currentCorpus isn't a slider in this mockup (fixed at 0 per handoff) — left as-is intentionally.
+}
+
+var currentValues = {};
+
+function renderInputs(type) {
+    var defs = INPUT_DEFS[type];
+    if (!currentValues[type]) {
+        currentValues[type] = {};
+        defs.forEach(function (d) { currentValues[type][d.key] = d.value; });
+    }
+    var container = document.getElementById('inputsContainer');
+    container.innerHTML = '';
+    defs.forEach(function (d) {
+        var val = currentValues[type][d.key];
+        var wrap = document.createElement('div');
+        var labelRow = document.createElement('div');
+        labelRow.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px';
+        var labelSpan = document.createElement('span'); labelSpan.textContent = d.label;
+        var displaySpan = document.createElement('span'); displaySpan.style.color = 'var(--primary)'; displaySpan.textContent = d.fmt(val);
+        labelRow.appendChild(labelSpan); labelRow.appendChild(displaySpan);
+        var input = document.createElement('input');
+        input.type = 'range'; input.min = d.min; input.max = d.max; input.step = d.step; input.value = val;
+        input.style.width = '100%';
+        input.addEventListener('input', function () {
+            var v = parseFloat(input.value);
+            currentValues[type][d.key] = v;
+            displaySpan.textContent = d.fmt(v);
+            recompute();
+        });
+        wrap.appendChild(labelRow); wrap.appendChild(input);
+        container.appendChild(wrap);
+    });
+}
+
+function selectCalc(key) {
+    ACTIVE_TYPE = key;
+    document.getElementById('activeCalcName').textContent = CALC_NAMES[key];
+    document.querySelectorAll('.calc-list-item').forEach(function (btn) {
+        var active = btn.getAttribute('data-key') === key;
+        btn.style.background = active ? 'var(--primary-soft)' : 'var(--surface)';
+        btn.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+        btn.style.color = active ? 'var(--primary-strong)' : 'var(--text)';
+    });
+    renderInputs(key);
+    recompute();
+    history.replaceState(null, '', '/calculators/live?type=' + key);
+}
+
+function recompute() {
+    var v = currentValues[ACTIVE_TYPE];
+    var params = new URLSearchParams({ type: ACTIVE_TYPE });
+    Object.keys(v).forEach(function (k) { params.set(k, v[k]); });
+    fetch('/calculators/live-compute?' + params.toString()).then(function (r) { return r.json(); }).then(function (data) {
+        var strip = document.getElementById('resultsStrip');
+        strip.style.gridTemplateColumns = 'repeat(' + data.results.length + ',minmax(0,1fr))';
+        strip.innerHTML = '';
+        data.results.forEach(function (r) {
+            var cell = document.createElement('div');
+            var lbl = document.createElement('div'); lbl.style.cssText = 'font-size:12.5px;color:oklch(75% 0.01 260);margin-bottom:8px'; lbl.textContent = r.label;
+            var val = document.createElement('div'); val.style.cssText = "font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;overflow-wrap:anywhere"; val.textContent = r.value;
+            cell.appendChild(lbl); cell.appendChild(val);
+            strip.appendChild(cell);
+        });
+        document.getElementById('noteText').textContent = data.note;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    selectCalc(ACTIVE_TYPE);
+});
+/*]]>*/
+</script>
+</body>
+</html>

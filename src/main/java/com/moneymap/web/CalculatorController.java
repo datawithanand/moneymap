@@ -29,9 +29,11 @@ public class CalculatorController {
         return (User) request.getAttribute("currentUser");
     }
 
+    /** The Calculators design handoff is one unified page (sidebar list + live sliders), not a
+        separate index — redirect here so every entry point lands on that experience. */
     @GetMapping("/calculators")
     public String index() {
-        return "calculators/index";
+        return "redirect:/calculators/live";
     }
 
     // ── FIRE ─────────────────────────────────────────────────────────────────

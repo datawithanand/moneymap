@@ -97,18 +97,18 @@
                 <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="nav-subgroup">
-                <a class="nav-sublink" th:classappend="${active == 'calc-index'} ? 'active'" th:href="@{/calculators}">All Calculators</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-fire'} ? 'active'" th:href="@{/calculators/fire}">FIRE</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-sip'} ? 'active'" th:href="@{/calculators/sip}">SIP</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-swp'} ? 'active'" th:href="@{/calculators/swp}">SWP</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-nps'} ? 'active'" th:href="@{/calculators/nps}">NPS Projector</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-fd'} ? 'active'" th:href="@{/calculators/fd}">FD</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-loan'} ? 'active'" th:href="@{/calculators/loan}">Loan / EMI</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-ppf'} ? 'active'" th:href="@{/calculators/ppf}">PPF Projector</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-tax'} ? 'active'" th:href="@{/calculators/tax-regime}">Tax Regime Compare</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-cagr'} ? 'active'" th:href="@{/calculators/cagr}">CAGR</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-direct-vs-regular'} ? 'active'" th:href="@{/calculators/direct-vs-regular}">Direct vs Regular MF</a>
-                <a class="nav-sublink" th:classappend="${active == 'calc-debt-fund-vs-fd'} ? 'active'" th:href="@{/calculators/debt-fund-vs-fd}">Debt Fund vs FD</a>
+                <a class="nav-sublink" th:classappend="${active == 'calc-index'} ? 'active'" th:href="@{/calculators/live}">All Calculators</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='sip')}">SIP</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='stepup')}">Step-up SIP</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='swp')}">SWP</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='lumpsum')}">Lumpsum</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='ppf')}">PPF</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='nps')}">NPS</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='emi')}">Loan EMI</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='fire')}">FIRE</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='corpus')}">Retirement Corpus</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='goal')}">Goal Planning</a>
+                <a class="nav-sublink" th:href="@{/calculators/live(type='tax')}">Tax Regime Comparison</a>
             </div>
         </div>
 

@@ -253,6 +253,51 @@ public final class CalculatorMath {
         return new PpfResult(money(balance), yearEnd);
     }
 
+    // ── Lumpsum ──────────────────────────────────────────────────────────────
+
+    public record LumpsumResult(BigDecimal investedAmount, BigDecimal estimatedReturns, BigDecimal maturityValue) {}
+
+    /** One-time investment compounded annually at a fixed rate (Calculators design handoff). */
+    public static LumpsumResult lumpsum(BigDecimal amount, BigDecimal annualReturnPercent, int years) {
+        double fv = amount.doubleValue() * Math.pow(1 + annualReturnPercent.doubleValue() / 100.0, years);
+        BigDecimal maturity = money(fv);
+        BigDecimal invested = amount.setScale(2, RoundingMode.HALF_UP);
+        return new LumpsumResult(invested, maturity.subtract(invested), maturity);
+    }
+
+    // ── Retirement Corpus Projection ────────────────────────────────────────
+
+    public record RetirementCorpusResult(BigDecimal growthOfExisting, BigDecimal growthOfContributions,
+                                          BigDecimal totalProjectedCorpus) {}
+
+    /** Existing corpus grown at a fixed rate, plus ongoing monthly contributions (SIP-style),
+        combined to a total projected corpus at retirement. */
+    public static RetirementCorpusResult retirementCorpus(BigDecimal currentCorpus, BigDecimal monthlyContribution,
+                                                            BigDecimal annualReturnPercent, int years) {
+        double r = annualReturnPercent.doubleValue() / 100.0;
+        double i = r / 12.0;
+        double fvCurrent = currentCorpus.doubleValue() * Math.pow(1 + r, years);
+        int n = years * 12;
+        double balance = 0, monthly = monthlyContribution.doubleValue();
+        for (int m = 1; m <= n; m++) balance = (balance + monthly) * (1 + i);
+        BigDecimal existing = money(fvCurrent);
+        BigDecimal contributions = money(balance);
+        return new RetirementCorpusResult(existing, contributions, existing.add(contributions));
+    }
+
+    // ── Goal Planning (reverse-SIP) ──────────────────────────────────────────
+
+    public record GoalPlanResult(BigDecimal targetAmount, BigDecimal requiredMonthlySip) {}
+
+    /** Monthly SIP needed to reach a target corpus within a time horizon (reverse-SIP). */
+    public static GoalPlanResult goalPlan(BigDecimal targetAmount, int years, BigDecimal annualReturnPercent) {
+        double i = annualReturnPercent.doubleValue() / 100.0 / 12.0;
+        int n = years * 12;
+        double factor = i == 0 ? n : (Math.pow(1 + i, n) - 1) / i * (1 + i);
+        double monthly = targetAmount.doubleValue() / factor;
+        return new GoalPlanResult(targetAmount.setScale(2, RoundingMode.HALF_UP), money(monthly));
+    }
+
     // ── CAGR ─────────────────────────────────────────────────────────────────
 
     public record CagrResult(BigDecimal cagrPercent) {}
