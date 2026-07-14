@@ -87,6 +87,65 @@ public class FamilyController {
             vaultInfo.put(member.getId(), info);
         }
         model.addAttribute("vaultInfo", vaultInfo);
+
+        // Family design handoff (Family.dc.html): consolidated net worth hero, member card grid
+        // with real permission-respecting visible net worth, and a None/Summary/Detailed/Full
+        // permission matrix. String[] familyColors mirrors the dashboard's family-snapshot palette.
+        String[] avatarColors = {"#0e7490", "#7c4dea", "#1fa15c", "#d6900a", "#e0405e", "#3b6fe0"};
+        BigDecimal consolidatedTotal = aggregation.aggregate(user).netWorth;
+        List<Map<String, Object>> memberCards = new ArrayList<>();
+        int idx = 0;
+        for (User m : members) {
+            Map<String, Object> card = new LinkedHashMap<>();
+            card.put("id", m.getId());
+            String name = m.getFullName();
+            card.put("name", name);
+            card.put("initial", name == null || name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase());
+            card.put("role", m.getId().equals(user.getId()) ? "You"
+                    : (m.getFamilyRelationship() == null || m.getFamilyRelationship().isBlank() ? "Member" : m.getFamilyRelationship()));
+            card.put("avatarBg", avatarColors[idx % avatarColors.length]);
+            if (m.getId().equals(user.getId())) {
+                card.put("netWorth", consolidatedTotal);
+                card.put("permission", "You");
+                card.put("permBg", "var(--badge-blue-bg)");
+                card.put("permColor", "var(--badge-blue-fg)");
+            } else {
+                FamilyPermission.Level level = permissions.effectiveLevel(m.getId(), user.getId());
+                boolean visible = level == FamilyPermission.Level.SUMMARY_ONLY || level == FamilyPermission.Level.FULL_ACCESS;
+                card.put("netWorth", visible ? aggregation.aggregate(m).netWorth : null);
+                card.put("permission", switch (level) {
+                    case FULL_ACCESS -> "Full access";
+                    case CONTACTS_ONLY -> "Detailed";
+                    case SUMMARY_ONLY -> "Summary only";
+                    case NO_ACCESS -> "Not shared";
+                });
+                boolean good = level == FamilyPermission.Level.FULL_ACCESS || level == FamilyPermission.Level.SUMMARY_ONLY;
+                card.put("permBg", good ? "var(--badge-green-bg)" : "var(--warning-bg)");
+                card.put("permColor", good ? "var(--badge-green-fg)" : "var(--accent)");
+                if (visible) consolidatedTotal = consolidatedTotal.add((BigDecimal) card.get("netWorth"));
+            }
+            memberCards.add(card);
+            idx++;
+        }
+        model.addAttribute("memberCards", memberCards);
+        model.addAttribute("consolidatedTotal", consolidatedTotal);
+
+        // Permission matrix: for each other member, what THEY have shared with ME, across the
+        // 4 real access levels (None/Summary/Detailed/Full).
+        List<Map<String, Object>> permMatrix = new ArrayList<>();
+        for (User m : members) {
+            if (m.getId().equals(user.getId())) continue;
+            FamilyPermission.Level level = permissions.effectiveLevel(m.getId(), user.getId());
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("name", m.getFullName());
+            row.put("none", level == FamilyPermission.Level.NO_ACCESS);
+            row.put("summary", level == FamilyPermission.Level.SUMMARY_ONLY);
+            row.put("detailed", level == FamilyPermission.Level.CONTACTS_ONLY);
+            row.put("full", level == FamilyPermission.Level.FULL_ACCESS);
+            permMatrix.add(row);
+        }
+        model.addAttribute("permMatrix", permMatrix);
+
         return "family/home";
     }
 

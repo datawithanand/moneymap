@@ -8,7 +8,7 @@
     <nav th:replace="~{fragments/layout :: sidebar('calc-index')}"></nav>
 
     <!-- Calculator list -->
-    <div style="width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;overflow-y:auto">
+    <div style="width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:92px 14px 20px;overflow-y:auto">
         <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:18px;padding:6px 10px 16px">Calculators</div>
         <button type="button" class="calc-list-item" data-key="sip" onclick="selectCalc('sip')" style="display:block;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit">
             <div style="font-size:13.5px;font-weight:700">SIP Calculator</div>
@@ -56,12 +56,10 @@
         </button>
     </div>
 
-    <main class="content" style="max-width:none;margin:0;padding:0">
-        <div class="app-topbar" style="position:static">
-            <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;margin-right:auto" id="activeCalcName">Calculator</div>
-        </div>
+    <main class="content" style="max-width:none">
+        <h1 id="activeCalcName" style="margin-bottom:20px">Calculator</h1>
 
-        <div style="padding:28px;display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:24px;align-items:start">
+        <div style="display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:24px;align-items:start">
 
             <!-- Inputs -->
             <div class="card" style="margin-bottom:0;display:flex;flex-direction:column;gap:18px">
