@@ -61,12 +61,16 @@ public class AssetController {
     public String list(@PathVariable String modulePath,
                        @RequestParam(required = false) String tag,
                        @RequestParam(required = false) String loanType,
+                       @RequestParam(required = false) String catClass,
                        HttpServletRequest request, Model model) {
         ModuleDef<?> def = moduleAny(modulePath);
         User user = user(request);
         List<Map<String, Object>> rows = assetService.rows(def, user.getId(), tag, user);
         if (loanType != null && !loanType.isBlank()) {
             rows = rows.stream().filter(r -> loanType.equals(r.get("loanType"))).toList();
+        }
+        if ("mutual-funds".equals(modulePath)) {
+            return mutualFundsPage(rows, user, tag, catClass, model);
         }
         model.addAttribute("module", def);
         model.addAttribute("rows", rows);
@@ -77,6 +81,51 @@ public class AssetController {
         model.addAttribute("tag", tag);
         model.addAttribute("loanType", loanType);
         return "assets/list";
+    }
+
+    private static final List<String> EQUITY_CATS = List.of("LARGE_CAP", "MID_CAP", "SMALL_CAP", "FLEXI_CAP",
+            "MULTI_CAP", "INDEX", "SECTORAL_THEMATIC", "INTERNATIONAL", "FUND_OF_FUNDS");
+    private static final List<String> DEBT_CATS = List.of("DEBT_LIQUID", "DEBT_SHORT_DURATION",
+            "DEBT_MEDIUM_DURATION", "DEBT_LONG_DURATION");
+    private static final List<String> HYBRID_CATS = List.of("HYBRID_AGGRESSIVE", "HYBRID_CONSERVATIVE", "HYBRID_BALANCED");
+
+    private String catClassOf(String category) {
+        if (category == null) return "other";
+        if ("ELSS".equals(category)) return "elss";
+        if (EQUITY_CATS.contains(category)) return "equity";
+        if (DEBT_CATS.contains(category)) return "debt";
+        if (HYBRID_CATS.contains(category)) return "hybrid";
+        return "other";
+    }
+
+    /** MutualFunds.dc.html drill-down: a KPI strip + a fixed 5-column Fund/Category/Invested/Current/Gain-Loss table. */
+    private String mutualFundsPage(List<Map<String, Object>> rows, User user, String tag, String catClass, Model model) {
+        java.math.BigDecimal invested = java.math.BigDecimal.ZERO;
+        java.math.BigDecimal current = java.math.BigDecimal.ZERO;
+        for (Map<String, Object> row : rows) {
+            invested = invested.add(nz(row.get("invested")));
+            current = current.add(nz(row.get("currentValue")));
+            row.put("catClass", catClassOf((String) row.get("category")));
+        }
+        java.math.BigDecimal gainLoss = current.subtract(invested);
+        java.math.BigDecimal returnPct = invested.signum() == 0 ? java.math.BigDecimal.ZERO
+                : gainLoss.multiply(java.math.BigDecimal.valueOf(100))
+                        .divide(invested, 1, java.math.RoundingMode.HALF_UP);
+        List<Map<String, Object>> filtered = catClass == null || catClass.isBlank() || "all".equals(catClass)
+                ? rows : rows.stream().filter(r -> catClass.equals(r.get("catClass"))).toList();
+        model.addAttribute("invested", invested);
+        model.addAttribute("currentValue", current);
+        model.addAttribute("gainLoss", gainLoss);
+        model.addAttribute("returnPct", returnPct);
+        model.addAttribute("rows", filtered);
+        model.addAttribute("catClass", catClass == null || catClass.isBlank() ? "all" : catClass);
+        model.addAttribute("household", householdMembers.findByOwnerId(user.getId()));
+        model.addAttribute("tag", tag);
+        return "assets/mutual-funds";
+    }
+
+    private java.math.BigDecimal nz(Object v) {
+        return v instanceof java.math.BigDecimal b ? b : java.math.BigDecimal.ZERO;
     }
 
     @GetMapping("/new")

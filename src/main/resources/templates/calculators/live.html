@@ -195,6 +195,8 @@ function renderInputs(type) {
 function selectCalc(key) {
     ACTIVE_TYPE = key;
     document.getElementById('activeCalcName').textContent = CALC_NAMES[key];
+    var topbarName = document.getElementById('topbarCalcName');
+    if (topbarName) topbarName.textContent = CALC_NAMES[key];
     document.querySelectorAll('.calc-list-item').forEach(function (btn) {
         var active = btn.getAttribute('data-key') === key;
         btn.style.background = active ? 'var(--primary-soft)' : 'var(--surface)';

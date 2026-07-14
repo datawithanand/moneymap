@@ -40,12 +40,21 @@ public class LiveCalculatorController {
 
     private User user(HttpServletRequest request) { return (User) request.getAttribute("currentUser"); }
 
+    private static final Map<String, String> CALC_NAMES = Map.ofEntries(
+            Map.entry("sip", "SIP Calculator"), Map.entry("stepup", "Step-up SIP Calculator"),
+            Map.entry("swp", "SWP Calculator"), Map.entry("lumpsum", "Lumpsum Calculator"),
+            Map.entry("ppf", "PPF Calculator"), Map.entry("nps", "NPS Calculator"),
+            Map.entry("emi", "Loan EMI Calculator"), Map.entry("fire", "FIRE Calculator"),
+            Map.entry("corpus", "Retirement Corpus Calculator"), Map.entry("goal", "Goal Planning Calculator"),
+            Map.entry("tax", "Tax Regime Comparison"));
+
     @GetMapping("/calculators/live")
     public String page(@RequestParam(required = false, defaultValue = "sip") String type,
                         HttpServletRequest request, Model model) {
         User owner = user(request);
         BigDecimal netWorth = owner == null ? BigDecimal.ZERO : aggregation.aggregate(owner).netWorth;
         model.addAttribute("activeType", type);
+        model.addAttribute("calcName", CALC_NAMES.getOrDefault(type, "Calculators"));
         model.addAttribute("defaultCorpus", netWorth.max(BigDecimal.ZERO));
         return "calculators/live";
     }

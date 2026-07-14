@@ -138,6 +138,28 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
 
+    <!-- Left-side topbar title: a bold page title on most pages, a muted breadcrumb on the
+         asset/liability category pages and Export — mirrors each mockup's own 64px topbar text. -->
+    <div class="topbar-title" th:switch="${active}">
+        <span th:case="'dashboard'" class="topbar-title-bold"
+              th:text="(${#dates.createNow().getHours() < 12} ? 'Good morning, ' : (${#dates.createNow().getHours() < 17} ? 'Good afternoon, ' : 'Good evening, ')) + (${currentUser} != null ? ${currentUser.fullName} : '')"></span>
+        <span th:case="'assets-cash-banking'" class="topbar-title-breadcrumb">Assets &amp; Liabilities / Cash &amp; Banking</span>
+        <span th:case="'assets-investments'" class="topbar-title-breadcrumb">Assets &amp; Liabilities / Investments</span>
+        <span th:case="'assets-retirement'" class="topbar-title-breadcrumb">Assets &amp; Liabilities / Retirement</span>
+        <span th:case="'assets-insurance'" class="topbar-title-breadcrumb">Assets &amp; Liabilities / Insurance</span>
+        <span th:case="'assets-real-estate'" class="topbar-title-breadcrumb">Assets &amp; Liabilities / Real Estate &amp; Physical</span>
+        <span th:case="'assets-loans'" class="topbar-title-breadcrumb">Assets &amp; Liabilities / Loans &amp; Credit Cards</span>
+        <span th:case="'calc-index'" id="topbarCalcName" class="topbar-title-bold" th:text="${calcName} ?: 'Calculators'"></span>
+        <span th:case="'family'" class="topbar-title-bold">Family &amp; Vault</span>
+        <span th:case="'settings'" class="topbar-title-bold">Settings</span>
+        <span th:case="'export'" class="topbar-title-breadcrumb">Settings / Data &amp; Export</span>
+        <th:block th:case="*">
+            <span th:if="${#strings.startsWith(active, 'admin-')}" class="topbar-title-bold">Admin</span>
+            <span th:if="${active == 'trend' or active == 'allocation' or active == 'tax' or active == 'reminders' or active == 'loans-dashboard' or active == 'insurance-dashboard' or active == 'goals-dashboard' or active == 'retirement-dashboard' or active == 'retirement-buckets' or active == 'health-score' or active == 'nifty-valuation'}"
+                  class="topbar-title-bold">Analytics</span>
+        </th:block>
+    </div>
+
     <div class="topbar-utility">
         <a class="topbar-icon-btn" th:href="@{/notifications}" title="Notifications">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
