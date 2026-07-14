@@ -22,8 +22,13 @@ public class GlobalSettings {
     private String smtpPasswordEncrypted;        // reversible AES — deliberate exception, Section 01B
     private String smtpFromAddress;
     private User.CurrencyPreference defaultCurrency = User.CurrencyPreference.INR;
-    private User.Theme defaultTheme = User.Theme.GREEN;
+    private User.Theme defaultTheme = User.Theme.LIGHT;
     private Instant lastBackupMarkedAt;
+    private Instant fundMasterLastSyncedAt;
+    private Integer fundMasterSchemeCount;
+    private java.math.BigDecimal niftyPe;             // admin-entered current Nifty 50 trailing PE
+    private java.math.BigDecimal niftyHistoricalAvgPe = new java.math.BigDecimal("22");   // ~20yr long-run average
+    private Instant niftyPeUpdatedAt;
     private Instant updatedAt;
 
     public String getInstanceName() { return instanceName; }
@@ -54,6 +59,16 @@ public class GlobalSettings {
     public void setDefaultTheme(User.Theme defaultTheme) { this.defaultTheme = defaultTheme; }
     public Instant getLastBackupMarkedAt() { return lastBackupMarkedAt; }
     public void setLastBackupMarkedAt(Instant lastBackupMarkedAt) { this.lastBackupMarkedAt = lastBackupMarkedAt; }
+    public Instant getFundMasterLastSyncedAt() { return fundMasterLastSyncedAt; }
+    public void setFundMasterLastSyncedAt(Instant fundMasterLastSyncedAt) { this.fundMasterLastSyncedAt = fundMasterLastSyncedAt; }
+    public Integer getFundMasterSchemeCount() { return fundMasterSchemeCount; }
+    public void setFundMasterSchemeCount(Integer fundMasterSchemeCount) { this.fundMasterSchemeCount = fundMasterSchemeCount; }
+    public java.math.BigDecimal getNiftyPe() { return niftyPe; }
+    public void setNiftyPe(java.math.BigDecimal niftyPe) { this.niftyPe = niftyPe; }
+    public java.math.BigDecimal getNiftyHistoricalAvgPe() { return niftyHistoricalAvgPe; }
+    public void setNiftyHistoricalAvgPe(java.math.BigDecimal niftyHistoricalAvgPe) { this.niftyHistoricalAvgPe = niftyHistoricalAvgPe; }
+    public Instant getNiftyPeUpdatedAt() { return niftyPeUpdatedAt; }
+    public void setNiftyPeUpdatedAt(Instant niftyPeUpdatedAt) { this.niftyPeUpdatedAt = niftyPeUpdatedAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

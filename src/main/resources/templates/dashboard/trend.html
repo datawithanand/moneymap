@@ -11,19 +11,58 @@
 
         <div class="card">
             <p>Live net worth today: <strong class="figure" th:text="${fmt.money(live.netWorth, currentUser)}"></strong></p>
+            <p style="display:flex;gap:24px;flex-wrap:wrap">
+                <span th:if="${momGrowthPercent != null}">
+                    Month-over-month: <strong th:text="${(momGrowthPercent.signum() >= 0 ? '+' : '') + momGrowthPercent + '%'}"></strong>
+                </span>
+                <span th:if="${yoyGrowthPercent != null}">
+                    Year-over-year: <strong th:text="${(yoyGrowthPercent.signum() >= 0 ? '+' : '') + yoyGrowthPercent + '%'}"></strong>
+                </span>
+            </p>
             <form class="inline" th:action="@{/dashboard/snapshot}" method="post">
                 <input type="hidden" name="_csrf" th:value="${csrf}">
                 <button type="submit" class="btn-sm">Take Snapshot Now</button>
             </form>
             <p class="hint">Snapshots are manual — MoneyMap keeps no automatic historical ledger,
-                consistent with its manual-entry principle.</p>
+                consistent with its manual-entry principle. Growth % needs at least two snapshots
+                roughly a month (or a year) apart.</p>
         </div>
 
-        <div class="card" th:if="${chartPoints != null}">
+        <div class="card" th:if="${snapshots.size() >= 2}">
             <h2>Trend</h2>
-            <svg viewBox="0 0 700 200" style="width:100%;max-width:700px">
-                <polyline th:attr="points=${chartPoints}" fill="none" stroke="var(--primary)" stroke-width="2.5"/>
-            </svg>
+            <canvas id="trendChart" height="90"></canvas>
+            <p class="hint">Net Worth, Assets, and Liabilities share one axis — the same currency
+                unit, so their relative size is directly comparable. Hover any point for its exact value.</p>
+        </div>
+
+        <div class="card" th:if="${bestPerformers != null and !bestPerformers.isEmpty()}">
+            <h2>Best &amp; Worst Performing Investments</h2>
+            <p class="hint">Gain % since purchase, across Mutual Funds and Stocks &amp; ETFs — the only
+                modules with both an invested amount and a live current value to compare.</p>
+            <div style="display:flex;gap:24px;flex-wrap:wrap">
+                <table class="data" style="flex:1;min-width:260px">
+                    <thead><tr><th colspan="2" style="color:var(--primary)">Best Performers</th></tr></thead>
+                    <tbody>
+                    <tr th:each="p : ${bestPerformers}">
+                        <td><a th:href="@{'/assets/' + ${p['modulePath']}}" th:text="${p['name']}"></a>
+                            <span class="hint" style="display:block" th:text="${p['moduleName']}"></span></td>
+                        <td class="mono" th:text="${(p['gainPercent'].signum() >= 0 ? '+' : '') + p['gainPercent']} + '%'"
+                            th:classappend="${p['gainPercent'].signum() < 0 ? 'field-error' : ''}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <table class="data" style="flex:1;min-width:260px">
+                    <thead><tr><th colspan="2" style="color:var(--danger)">Worst Performers</th></tr></thead>
+                    <tbody>
+                    <tr th:each="p : ${worstPerformers}">
+                        <td><a th:href="@{'/assets/' + ${p['modulePath']}}" th:text="${p['name']}"></a>
+                            <span class="hint" style="display:block" th:text="${p['moduleName']}"></span></td>
+                        <td class="mono" th:text="${(p['gainPercent'].signum() >= 0 ? '+' : '') + p['gainPercent']} + '%'"
+                            th:classappend="${p['gainPercent'].signum() < 0 ? 'field-error' : ''}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="card">
@@ -47,5 +86,58 @@
         </div>
     </main>
 </div>
+<script th:if="${snapshots.size() >= 2}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${snapshots.size() >= 2}" th:inline="javascript">
+/*<![CDATA[*/
+(function () {
+    var isDark = document.body.classList.contains('theme-dark');
+    // Fixed categorical palette, same slots as the main dashboard: blue = Net Worth, aqua/green =
+    // Assets, red = Liabilities — independent of the site's accent theme (see dataviz skill).
+    var netWorthColor = isDark ? '#3987e5' : '#2a78d6';
+    var assetsColor = isDark ? '#199e70' : '#1baf7a';
+    var liabilitiesColor = isDark ? '#e66767' : '#e34948';
+
+    var labels = /*[[${trendChartLabels}]]*/ [];
+    var netWorth = /*[[${trendChartNetWorth}]]*/ [];
+    var assets = /*[[${trendChartAssets}]]*/ [];
+    var liabilities = /*[[${trendChartLiabilities}]]*/ [];
+    var netWorthFmt = /*[[${trendChartNetWorthFmt}]]*/ [];
+    var assetsFmt = /*[[${trendChartAssetsFmt}]]*/ [];
+    var liabilitiesFmt = /*[[${trendChartLiabilitiesFmt}]]*/ [];
+    var formatted = [netWorthFmt, assetsFmt, liabilitiesFmt];
+
+    var canvas = document.getElementById('trendChart');
+    if (!canvas) return;
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Net Worth', data: netWorth, borderColor: netWorthColor, backgroundColor: netWorthColor + '22',
+                  fill: true, tension: 0.3, pointRadius: 2, borderWidth: 3 },
+                { label: 'Assets', data: assets, borderColor: assetsColor, backgroundColor: assetsColor + '00',
+                  fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+                { label: 'Liabilities', data: liabilities, borderColor: liabilitiesColor, backgroundColor: liabilitiesColor + '00',
+                  fill: false, tension: 0.3, pointRadius: 2, borderWidth: 2 }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) { return ctx.dataset.label + ': ' + formatted[ctx.datasetIndex][ctx.dataIndex]; }
+                    }
+                }
+            },
+            scales: {
+                y: { ticks: { callback: function (value) { return value.toLocaleString(); } } }
+            }
+        }
+    });
+})();
+/*]]>*/
+</script>
 </body>
 </html>

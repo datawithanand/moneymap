@@ -1,0 +1,16 @@
+TC_ID,Category,Priority,Field/Scenario,Preconditions,Test Steps,Test Data,Expected Result
+FIRE-001,Positive,High,Happy path,Logged in,Submit valid FIRE inputs,"annualExpense=600000, swrPercent=4, currentCorpus=0, monthlyInvestment=50000, expectedReturnPercent=10",corpusRequired = exactly 1.5 crore; yearsToFire computed
+FIRE-002,Positive,Medium,Pre-fill from real net worth,User has asset records with known net worth,GET /calculators/fire,none,currentCorpus field pre-filled with PortfolioAggregationService net worth
+FIRE-003,Boundary,High,swrPercent = 0 (division by zero),Logged in,Submit swrPercent=0,"annualExpense=600000, swrPercent=0",Server should reject or return a finite/error result, NOT Infinity/NaN rendered to user
+FIRE-004,Boundary,High,swrPercent negative,Logged in,Submit swrPercent=-4,"annualExpense=600000, swrPercent=-4",Should be rejected (negative rate is nonsensical) - currently NO server-side validation exists
+FIRE-005,Negative,High,annualExpense negative,Logged in,Submit annualExpense=-600000,"annualExpense=-600000, swrPercent=4",Should be rejected - currently NO server-side negativity check
+FIRE-006,Boundary,Medium,currentCorpus already exceeds target,Logged in,Submit currentCorpus > corpusRequired,"annualExpense=100000, swrPercent=4, currentCorpus=50000000",yearsToFire = 0 or 1 (already there), shortfall = 0
+FIRE-007,Boundary,Medium,Never reaches FIRE within 100y cap,Logged in,Submit tiny monthlyInvestment/return vs huge expense,"annualExpense=100000000, swrPercent=1, currentCorpus=0, monthlyInvestment=0, expectedReturnPercent=0",yearsToFire = null / "Not reached" message shown, no infinite loop/hang
+FIRE-008,Negative,High,Missing required field,Logged in,Omit monthlyInvestment,"annualExpense=600000, swrPercent=4, currentCorpus=0, expectedReturnPercent=10",400 Bad Request (missing @RequestParam) - confirm graceful error page, not raw stack trace
+FIRE-009,Negative,High,Non-numeric field (hacker),Logged in,Submit annualExpense=abc,"annualExpense=abc",400 Bad Request handled gracefully - confirm no raw exception/stack trace leaked to client
+FIRE-010,Security,High,XSS payload in numeric field,Logged in,Submit annualExpense=<script>alert(1)</script>,"annualExpense=<script>alert(1)</script>",Rejected as invalid number (400), not reflected unescaped
+FIRE-011,Boundary,Medium,Extremely large numbers (overflow/DoS),Logged in,Submit huge annualExpense,"annualExpense=1e300, swrPercent=4",No crash; result may show Infinity - verify page doesn't 500
+FIRE-012,Security,Medium,CSRF token missing,Logged in,POST without _csrf,valid data minus _csrf,403 Forbidden
+FIRE-013,Security,High,Unauthenticated access,Logged out,GET and POST /calculators/fire,none,Redirect to /login
+FIRE-014,EndUser,Low,Decimal inputs,Logged in,Submit fractional values,"annualExpense=650000.50, swrPercent=3.5, monthlyInvestment=45000.75",Computes without rounding errors beyond 2 decimals
+FIRE-015,EndUser,Medium,Zero monthly investment (relying on corpus growth only),Logged in,Submit monthlyInvestment=0,"annualExpense=600000, swrPercent=4, currentCorpus=1000000, monthlyInvestment=0, expectedReturnPercent=8",Still computes a yearsToFire from compounding alone

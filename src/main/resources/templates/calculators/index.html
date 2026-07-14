@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Calculators')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-index')}"></nav>
+    <main class="content">
+        <h1>Calculators</h1>
+        <p class="hint">Standalone projection tools. Nothing here is saved — inputs are calculated
+            on demand and results are not persisted.</p>
+
+        <div class="card">
+            <h2>FIRE</h2>
+            <p>Find your Financial Independence corpus target and how many years of investing it
+                will take to get there.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/fire}">Open</a>
+        </div>
+        <div class="card">
+            <h2>SIP</h2>
+            <p>Project a monthly SIP's future value, with an optional yearly step-up and an
+                inflation-adjusted view.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/sip}">Open</a>
+        </div>
+        <div class="card">
+            <h2>SWP</h2>
+            <p>See how long a corpus lasts under a fixed monthly withdrawal, or whether the
+                withdrawal is sustainable indefinitely.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/swp}">Open</a>
+        </div>
+        <div class="card">
+            <h2>NPS Projector</h2>
+            <p>Project your NPS corpus at retirement and the mandatory annuity / lump-sum split.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/nps}">Open</a>
+        </div>
+        <div class="card">
+            <h2>Fixed Deposit</h2>
+            <p>Solve forward (principal → maturity value) or in reverse (target maturity →
+                required principal), with quarterly compounding.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/fd}">Open</a>
+        </div>
+        <div class="card">
+            <h2>Loan / EMI</h2>
+            <p>EMI, full amortization schedule, and a prepayment simulator (reduce EMI vs. reduce
+                tenure).</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/loan}">Open</a>
+        </div>
+        <div class="card">
+            <h2>PPF Projector</h2>
+            <p>Project PPF growth over a chosen tenure with annual compounding.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/ppf}">Open</a>
+        </div>
+        <div class="card">
+            <h2>Tax Regime Comparison</h2>
+            <p>Compare Old vs. New regime tax on your income for a financial year.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/tax-regime}">Open</a>
+        </div>
+        <div class="card">
+            <h2>CAGR</h2>
+            <p>Compute the compound annual growth rate between a start and end value.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/cagr}">Open</a>
+        </div>
+        <div class="card">
+            <h2>Direct vs Regular MF</h2>
+            <p>See what the expense-ratio gap between a fund's Direct and Regular plans actually costs.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/direct-vs-regular}">Open</a>
+        </div>
+        <div class="card">
+            <h2>Debt Fund vs FD</h2>
+            <p>Post-tax comparison between a debt mutual fund and a fixed deposit under current tax law.</p>
+            <a class="btn btn-secondary" th:href="@{/calculators/debt-fund-vs-fd}">Open</a>
+        </div>
+    </main>
+</div>
+</body>
+</html>

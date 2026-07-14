@@ -1,15 +1,18 @@
 package com.moneymap.web;
 
+import com.moneymap.model.FundMaster;
 import com.moneymap.model.User;
 import com.moneymap.model.asset.OwnedRecord;
 import com.moneymap.module.*;
 import com.moneymap.repository.HouseholdMemberRepository;
+import com.moneymap.service.FundMasterService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,12 +27,14 @@ public class AssetController {
     private final ModuleRegistry registry;
     private final AssetService assetService;
     private final HouseholdMemberRepository householdMembers;
+    private final FundMasterService fundMasterService;
 
     public AssetController(ModuleRegistry registry, AssetService assetService,
-                           HouseholdMemberRepository householdMembers) {
+                           HouseholdMemberRepository householdMembers, FundMasterService fundMasterService) {
         this.registry = registry;
         this.assetService = assetService;
         this.householdMembers = householdMembers;
+        this.fundMasterService = fundMasterService;
     }
 
     private User user(HttpServletRequest request) {
@@ -55,24 +60,32 @@ public class AssetController {
     @GetMapping
     public String list(@PathVariable String modulePath,
                        @RequestParam(required = false) String tag,
+                       @RequestParam(required = false) String loanType,
                        HttpServletRequest request, Model model) {
         ModuleDef<?> def = moduleAny(modulePath);
         User user = user(request);
+        List<Map<String, Object>> rows = assetService.rows(def, user.getId(), tag, user);
+        if (loanType != null && !loanType.isBlank()) {
+            rows = rows.stream().filter(r -> loanType.equals(r.get("loanType"))).toList();
+        }
         model.addAttribute("module", def);
-        model.addAttribute("rows", assetService.rows(def, user.getId(), tag, user));
+        model.addAttribute("rows", rows);
         model.addAttribute("labels", def.listColumns.stream()
                 .collect(java.util.stream.Collectors.toMap(c -> c, c -> assetService.labelFor(def, c),
                         (a, b) -> a, java.util.LinkedHashMap::new)));
         model.addAttribute("household", householdMembers.findByOwnerId(user.getId()));
         model.addAttribute("tag", tag);
+        model.addAttribute("loanType", loanType);
         return "assets/list";
     }
 
     @GetMapping("/new")
-    public String createForm(@PathVariable String modulePath, HttpServletRequest request, Model model) {
+    public String createForm(@PathVariable String modulePath, @RequestParam(required = false) String loanType,
+                             HttpServletRequest request, Model model) {
         ModuleDef<?> def = module(modulePath);
         model.addAttribute("module", def);
-        model.addAttribute("values", Map.of());
+        model.addAttribute("values", loanType != null && !loanType.isBlank()
+                ? Map.of("loanType", loanType) : Map.of());
         model.addAttribute("household", householdMembers.findByOwnerId(user(request).getId()));
         return "assets/form";
     }
@@ -139,5 +152,49 @@ public class AssetController {
                 .ifPresent(r -> def.repo.deleteById(id));
         ra.addFlashAttribute("success", "Record deleted.");
         return "redirect:/assets/" + modulePath;
+    }
+
+    // ── Fund picker (Mutual Funds only) — reads the cached FundMaster list ──────
+
+    private void requireMutualFunds(String modulePath) {
+        if (!"mutual-funds".equals(modulePath)) throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.NOT_FOUND);
+    }
+
+    /** Local-cache typeahead — no external call, so it's safe to hit on every keystroke. */
+    @GetMapping("/fund-search")
+    @ResponseBody
+    public List<Map<String, Object>> fundSearch(@PathVariable String modulePath,
+                                                @RequestParam(required = false) String q,
+                                                @RequestParam(required = false) String category) {
+        requireMutualFunds(modulePath);
+        return fundMasterService.search(q, category, 20).stream()
+                .map(this::fundMasterToJson)
+                .toList();
+    }
+
+    /** Live single-scheme lookup — fetches (and caches) latest NAV/category for the chosen fund. */
+    @GetMapping("/fund-detail/{schemeCode}")
+    @ResponseBody
+    public Map<String, Object> fundDetail(@PathVariable String modulePath, @PathVariable int schemeCode) {
+        requireMutualFunds(modulePath);
+        try {
+            return fundMasterService.fetchAndCacheDetail(schemeCode)
+                    .map(this::fundMasterToJson)
+                    .orElseGet(() -> Map.of("error", "Could not fetch this fund's details right now."));
+        } catch (IllegalStateException e) {
+            return Map.of("error", "Could not reach the fund data service right now — try again in a moment.");
+        }
+    }
+
+    private Map<String, Object> fundMasterToJson(FundMaster fm) {
+        Map<String, Object> json = new java.util.LinkedHashMap<>();
+        json.put("schemeCode", fm.getSchemeCode());
+        json.put("schemeName", fm.getSchemeName() == null ? "" : fm.getSchemeName());
+        json.put("fundHouse", fm.getFundHouse() == null ? "" : fm.getFundHouse());
+        json.put("categoryBucket", fm.getCategoryBucket() == null ? "" : fm.getCategoryBucket());
+        json.put("latestNav", fm.getLatestNav() == null ? "" : fm.getLatestNav().toPlainString());
+        json.put("navAsOfDate", fm.getNavAsOfDate() == null ? "" : fm.getNavAsOfDate().toString());
+        return json;
     }
 }

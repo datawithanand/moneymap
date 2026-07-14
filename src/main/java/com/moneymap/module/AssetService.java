@@ -57,6 +57,7 @@ public class AssetService {
         for (String c : List.of("familyMemberTag", "nominee", "customerCareNumber", "customerCareEmail", "portalUrl", "branchAddress")) {
             values.put(c, bw.getPropertyValue(c));
         }
+        values.put("labels", String.join(", ", record.getLabels()));
         return values;
     }
 
@@ -83,6 +84,7 @@ public class AssetService {
             case "inflationAdjustedSip" -> "Required SIP (inflation-adjusted)";
             case "grossMonthly" -> "Gross Monthly";
             case "maturityDate" -> "Maturity Date";
+            case "xirr" -> "XIRR";
             default -> humanize(col);
         };
     }

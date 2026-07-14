@@ -21,6 +21,7 @@ public class MutualFund extends OwnedRecord {
     private LocalDate elssLockInExpiryDate;
     private BigDecimal equityAllocationPercent;
     private String currency;
+    private Integer schemeCode;   // links to FundMaster; set by the fund-picker autofill, not user-typed
 
     public String getFolioNumber() { return folioNumber; }
     public void setFolioNumber(String folioNumber) { this.folioNumber = folioNumber; }
@@ -54,4 +55,6 @@ public class MutualFund extends OwnedRecord {
     public void setEquityAllocationPercent(BigDecimal equityAllocationPercent) { this.equityAllocationPercent = equityAllocationPercent; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
+    public Integer getSchemeCode() { return schemeCode; }
+    public void setSchemeCode(Integer schemeCode) { this.schemeCode = schemeCode; }
 }

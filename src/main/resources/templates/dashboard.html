@@ -21,45 +21,268 @@
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
         <!-- Hero: total net worth + delta (§25) -->
-        <div class="card">
-            <h2>Total Net Worth</h2>
-            <p class="hero-networth" th:text="${fmt.money(summary.netWorth, user)}">₹ —</p>
-            <p th:if="${delta != null}" class="hint">
-                <span th:text="${delta.signum() >= 0 ? '▲ ' : '▼ '} + ${fmt.money(delta, user)}"></span>
-                since your last snapshot (<span th:text="${fmt.date(lastSnapshot.createdAt)}"></span>)
-            </p>
-            <!-- Asset vs Liability bar -->
-            <div class="al-bar" th:if="${summary.totalAssets.signum() > 0 or summary.totalLiabilities.signum() > 0}">
-                <div th:style="'background:var(--primary);flex:' + ${summary.totalAssets}"></div>
-                <div th:style="'background:var(--danger);flex:' + ${summary.totalLiabilities}"></div>
+        <div class="card hero-card">
+            <div class="hero-main">
+                <h2>Total Net Worth</h2>
+                <p class="hero-networth" th:text="${fmt.money(summary.netWorth, user)}">₹ —</p>
+                <p th:if="${delta != null}" class="hint">
+                    <span th:class="${delta.signum() >= 0 ? 'trend-up' : 'trend-down'}"
+                          th:text="${delta.signum() >= 0 ? '▲ ' : '▼ '} + ${fmt.money(delta, user)}"></span>
+                    since your last snapshot (<span th:text="${fmt.date(lastSnapshot.createdAt)}"></span>)
+                </p>
+                <!-- Asset vs Liability bar -->
+                <div class="al-bar" th:if="${summary.totalAssets.signum() > 0 or summary.totalLiabilities.signum() > 0}">
+                    <div th:style="'background:var(--primary);flex:' + ${summary.totalAssets}"></div>
+                    <div th:style="'background:var(--danger);flex:' + ${summary.totalLiabilities}"></div>
+                </div>
+                <div class="legend">
+                    <span style="color:var(--primary)" th:text="'Assets ' + ${fmt.money(summary.totalAssets, user)}"></span>
+                    <span style="color:var(--danger)" th:text="'Liabilities ' + ${fmt.money(summary.totalLiabilities, user)}"></span>
+                </div>
             </div>
-            <div class="legend">
-                <span style="color:var(--primary)" th:text="'Assets ' + ${fmt.money(summary.totalAssets, user)}"></span>
-                <span style="color:var(--danger)" th:text="'Liabilities ' + ${fmt.money(summary.totalLiabilities, user)}"></span>
+            <div class="hero-chart" th:if="${trendValues != null and trendValues.size() >= 2}">
+                <canvas id="netWorthMiniChart" height="130"></canvas>
+                <a class="chart-link" th:href="@{/dashboard/trend}">Full trend →</a>
             </div>
         </div>
 
-        <!-- 3-bucket breakdown + allocation donut -->
+        <!-- This Month at a Glance -->
+        <div class="glance-grid">
+            <div class="card glance-card">
+                <span class="glance-icon" style="background:var(--badge-amber-bg);color:var(--badge-amber-fg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </span>
+                <div>
+                    <p class="glance-title">Upcoming Reminders</p>
+                    <p class="glance-figure" th:text="${upcomingReminderCount} + (${upcomingReminderCount == 1} ? ' due' : ' due')"></p>
+                    <div class="glance-sub" th:if="${nextReminder != null}" th:text="${nextReminder.description()}"></div>
+                    <div class="glance-sub" th:if="${nextReminder == null}">Nothing due in the next 30 days</div>
+                </div>
+            </div>
+            <div class="card glance-card">
+                <span class="glance-icon" style="background:var(--badge-green-bg);color:var(--badge-green-fg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </span>
+                <div>
+                    <p class="glance-title">Financial Health Score</p>
+                    <p class="glance-figure" th:if="${quickHealthScore != null}" th:text="${quickHealthScore} + ' / 100'"></p>
+                    <p class="glance-figure" th:if="${quickHealthScore == null}">—</p>
+                    <div class="glance-sub" th:if="${quickHealthScore == null}">
+                        <a th:href="@{/dashboard/health-score}">Set up your health score →</a></div>
+                    <div class="glance-sub" th:if="${quickHealthScore != null}">
+                        <a th:href="@{/dashboard/health-score}">View breakdown →</a></div>
+                </div>
+            </div>
+            <div class="card glance-card">
+                <span class="glance-icon" style="background:var(--badge-blue-bg);color:var(--badge-blue-fg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </span>
+                <div>
+                    <p class="glance-title">Tax Regime</p>
+                    <p class="glance-figure" th:if="${taxRegimeGlance != null}"
+                       th:text="${#strings.capitalize(#strings.toLowerCase(taxRegimeGlance.betterRegime()))} + ' saves ' + ${fmt.money(taxRegimeGlance.savings(), user)}"></p>
+                    <p class="glance-figure" th:if="${taxRegimeGlance == null}">—</p>
+                    <div class="glance-sub" th:if="${taxRegimeGlance == null}">
+                        <a th:href="@{/dashboard/tax}">Add a salary profile →</a></div>
+                    <div class="glance-sub" th:if="${taxRegimeGlance != null}">
+                        <a th:href="@{/dashboard/tax}">View tax planning →</a></div>
+                </div>
+            </div>
+            <div class="card glance-card">
+                <span class="glance-icon" style="background:var(--badge-pink-bg);color:var(--badge-pink-fg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v3"/></svg>
+                </span>
+                <div>
+                    <p class="glance-title">Total Monthly EMI</p>
+                    <p class="glance-figure" th:text="${fmt.money(totalMonthlyEmi, user)}"></p>
+                    <div class="glance-sub"><a th:href="@{/dashboard/loans}">View loan overview →</a></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming reminders (FD/RD/govt scheme maturity, insurance premium/renewal, card payment, SIP due) -->
+        <div class="card" th:if="${!reminders.isEmpty()}">
+            <h2>Upcoming Reminders</h2>
+            <table class="data">
+                <thead><tr><th>Due</th><th>Item</th><th>In</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${reminders}">
+                    <td th:text="${r.dueDate()}"></td>
+                    <td><a th:href="@{'/assets/' + ${r.modulePath()} + '/' + ${r.recordId()} + '/edit'}" th:text="${r.description()}"></a></td>
+                    <td th:text="${r.daysUntil() < 0 ? 'Overdue ' + (-r.daysUntil()) + 'd' : (r.daysUntil() == 0 ? 'Today' : r.daysUntil() + 'd')}"></td>
+                </tr>
+                </tbody>
+            </table>
+            <p><a th:href="@{/dashboard/reminders}">View all reminders →</a></p>
+        </div>
+
+        <!-- 3-bucket breakdown + allocation donut. Each bucket card shows a composition chart
+             (which modules make up this total) instead of a bare number — e.g. a Retirement
+             total that's 100% PPF and 0% EPF/NPS is a real, useful signal. -->
         <div class="bucket-grid">
-            <div class="card">
-                <h3>Cash</h3>
+            <div class="card bucket-card">
+                <div class="stat-top">
+                    <h3>Cash</h3>
+                    <span class="stat-badge" style="background:var(--badge-blue-bg);color:var(--badge-blue-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+                    </span>
+                </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).CASH), user)}"></p>
+                <!-- Two/multi-way liquid split reads faster as a bar than a single-purpose donut -->
+                <div class="split-bar-wrap" th:if="${!cashBreakdown.isEmpty()}">
+                    <div th:each="b : ${cashBreakdown}"
+                         th:style="'width:' + ${b['percent']} + '%;background:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"></div>
+                </div>
+                <p class="hint" th:if="${cashBreakdown.isEmpty()}">No cash accounts added yet.</p>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${cashBreakdown}" th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
+                </div>
             </div>
-            <div class="card">
-                <h3>Retirement</h3>
+            <div class="card bucket-card">
+                <div class="stat-top">
+                    <h3>Retirement</h3>
+                    <span class="stat-badge" style="background:var(--badge-violet-bg);color:var(--badge-violet-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4-3 8-7 8-12a8 8 0 1 0-16 0c0 5 4 9 8 12Z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </span>
+                </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).RETIREMENT), user)}"></p>
+                <!-- A growth story matters more for retirement than a single-slice donut -->
+                <div class="growth-chart" th:if="${!retirementBreakdown.isEmpty() and retirementSpark.size() >= 2}">
+                    <canvas id="retirementGrowth"></canvas>
+                </div>
+                <div class="bucket-chart-wrap" th:if="${!retirementBreakdown.isEmpty() and retirementSpark.size() < 2}">
+                    <canvas id="retirementChart" width="90" height="90"></canvas>
+                </div>
+                <p class="hint" th:if="${retirementBreakdown.isEmpty()}">No retirement accounts added yet.</p>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${retirementBreakdown}" th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
+                </div>
             </div>
-            <div class="card">
-                <h3>Investments</h3>
+            <div class="card bucket-card">
+                <div class="stat-top">
+                    <h3>Investments</h3>
+                    <span class="stat-badge" style="background:var(--badge-green-bg);color:var(--badge-green-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                    </span>
+                </div>
                 <p class="figure" th:text="${fmt.money(summary.bucket(T(com.moneymap.module.Buckets.Bucket).INVESTMENTS), user)}"></p>
+                <div class="stat-body">
+                    <div class="bucket-chart-wrap" th:if="${!investmentsBreakdown.isEmpty()}">
+                        <canvas id="investmentsChart" width="90" height="90"></canvas>
+                    </div>
+                    <span class="perf-badge" th:if="${investmentsDeltaPercent != null}"
+                          th:classappend="${investmentsDeltaPercent.signum() >= 0 ? 'up' : 'down'}"
+                          th:text="${(investmentsDeltaPercent.signum() >= 0 ? '▲ ' : '▼ ') + investmentsDeltaPercent.abs() + '% since last snapshot'}"></span>
+                </div>
+                <p class="hint" th:if="${investmentsBreakdown.isEmpty()}">No investments added yet.</p>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${investmentsBreakdown}" th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${fmt.money(b['total'], user)}"></span>
+                </div>
             </div>
-            <div class="card">
-                <h3>Allocation</h3>
-                <div class="donut" th:style="'width:130px;height:130px;border-radius:50%;background:' + ${donutGradient}"></div>
-                <div class="legend" style="margin-top:8px">
+            <div class="card bucket-card">
+                <div class="stat-top">
+                    <h3>Allocation</h3>
+                    <span class="stat-badge" style="background:var(--badge-pink-bg);color:var(--badge-pink-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9h-9Z"/></svg>
+                    </span>
+                </div>
+                <!-- Target-vs-actual ring when a target mix is set, else the actual mix alone -->
+                <div class="target-ring-wrap" th:if="${hasAllocationTarget}">
+                    <canvas id="allocTargetRing" width="84" height="84"></canvas>
+                    <canvas id="allocationChart" class="actual-ring" width="64" height="64"></canvas>
+                </div>
+                <div class="allocation-chart-wrap" th:unless="${hasAllocationTarget}">
+                    <canvas id="allocationChart" width="130" height="130"></canvas>
+                </div>
+                <div class="legend legend-compact">
                     <span th:each="a : ${allocationClasses}" th:if="${a['percent'].signum() > 0}"
-                          th:style="'color:' + ${a['color']}"
+                          th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${a['colorDark']} : ${a['color']})"
                           th:text="${a['name']} + ' ' + ${a['percent']} + '%'"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick links into the domain dashboards — one visualization per domain -->
+        <div class="quick-grid">
+            <a class="card quick-card" th:href="@{/dashboard/loans}">
+                <div class="quick-top"><span class="quick-title">Loans &amp; Debt</span>
+                    <span class="stat-badge quick-badge" style="background:var(--badge-amber-bg);color:var(--badge-amber-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+                    </span>
+                </div>
+                <p class="quick-figure" th:text="${fmt.money(loansQuick.totalOutstanding(), user)} + ' outstanding'"></p>
+                <div class="payoff-segments" th:if="${!loansQuick.topLoans().isEmpty()}">
+                    <div th:each="l : ${loansQuick.topLoans()}">
+                        <div class="payoff-seg-track"><div class="payoff-seg-fill" th:style="'width:' + ${l.payoffPercent()} + '%'"></div></div>
+                        <div class="payoff-seg-label"><span th:text="${l.lenderName()}"></span><span th:text="${l.payoffPercent()} + '%'"></span></div>
+                    </div>
+                </div>
+                <span class="quick-sub" th:if="${loansQuick.topLoans().isEmpty()}"
+                      th:text="${loansQuick.activeLoanCount()} + ' active loan' + (${loansQuick.activeLoanCount() == 1} ? '' : 's')"></span>
+            </a>
+            <a class="card quick-card" th:href="@{/dashboard/insurance}">
+                <div class="quick-top"><span class="quick-title">Insurance Coverage</span>
+                    <span class="stat-badge quick-badge" style="background:var(--badge-green-bg);color:var(--badge-green-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+                    </span>
+                </div>
+                <p class="quick-figure" th:text="${fmt.money(insuranceQuick.totalCover(), user)} + ' covered'"></p>
+                <div class="mini-gauge-row" th:if="${insuranceQuick.coveragePercent() != null}">
+                    <canvas id="insQuickGauge" width="84" height="50"></canvas>
+                    <div><div class="mini-gauge-figure" th:text="${insuranceQuick.coveragePercent()} + '%'"></div><div class="mini-gauge-label">of recommended cover</div></div>
+                </div>
+                <span class="quick-sub" th:if="${insuranceQuick.coveragePercent() == null}">Add a salary profile to see coverage %</span>
+            </a>
+            <a class="card quick-card" th:href="@{/assets/goals}">
+                <div class="quick-top"><span class="quick-title">Goals</span>
+                    <span class="stat-badge quick-badge" style="background:var(--badge-violet-bg);color:var(--badge-violet-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+                    </span>
+                </div>
+                <p class="quick-figure" th:text="${goalsQuick.onTrackGoals()} + ' of ' + ${goalsQuick.totalGoals()} + ' on track'"></p>
+                <div class="goal-dots" th:if="${!goalsQuick.dots().isEmpty()}">
+                    <div class="goal-dot" th:each="d : ${goalsQuick.dots()}">
+                        <span th:style="'background:' + ${d.color()}"></span><span th:text="${d.goalName()}"></span>
+                    </div>
+                </div>
+                <span class="quick-sub" th:if="${goalsQuick.dots().isEmpty()}">Add a goal to see status here</span>
+            </a>
+            <a class="card quick-card" th:href="@{/dashboard/retirement}">
+                <div class="quick-top"><span class="quick-title">Retirement</span>
+                    <span class="stat-badge quick-badge" style="background:var(--badge-blue-bg);color:var(--badge-blue-fg)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4-3 8-7 8-12a8 8 0 1 0-16 0c0 5 4 9 8 12Z"/></svg>
+                    </span>
+                </div>
+                <div class="mini-ring-row" th:if="${retirementQuick.readinessPercent() != null}">
+                    <div class="mini-ring-wrap"><canvas id="retireQuickRing"></canvas><div class="mini-ring-label" th:text="${retirementQuick.readinessPercent()} + '%'"></div></div>
+                    <div><p class="quick-figure" style="margin:0" th:text="${fmt.money(retirementQuick.currentCorpus(), user)}"></p>
+                        <span class="quick-sub" th:text="'of ' + ${fmt.money(retirementQuick.corpusRequired(), user)} + ' target'"></span></div>
+                </div>
+                <p class="quick-figure" th:if="${retirementQuick.readinessPercent() == null}" th:text="${fmt.money(retirementQuick.currentCorpus(), user)} + ' corpus'"></p>
+                <span class="quick-sub" th:if="${retirementQuick.readinessPercent() == null}">Set up your health score to see readiness %</span>
+            </a>
+        </div>
+
+        <!-- Family snapshot — only when there's more than the default "Self" entry -->
+        <div class="card" th:if="${familyRows != null}">
+            <h2>Family Snapshot</h2>
+            <div class="family-layout">
+                <div class="family-donut-wrap">
+                    <canvas id="familyDonut" width="140" height="140"></canvas>
+                    <div class="family-donut-total"><b th:text="${fmt.money(householdTotal, user)}"></b><span>Household total</span></div>
+                </div>
+                <div class="family-list">
+                    <div class="family-item" th:each="f : ${familyRows}">
+                        <span class="family-avatar" th:style="'background:' + ${f['color']}" th:text="${f['initial']}"></span>
+                        <div class="family-item-body">
+                            <div class="family-item-top"><b th:text="${f['label']}"></b><span class="val" th:text="${fmt.money(f['netWorth'], user)}"></span></div>
+                            <div class="family-item-bar-wrap"><div class="family-item-bar" th:style="'width:' + ${f['barPercent']} + '%;background:' + ${f['color']}"></div></div>
+                            <div class="family-item-share" th:text="${f['barPercent']} + '% of household net worth'"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -77,7 +300,7 @@
                     <td><a class="btn btn-sm btn-secondary" th:href="@{'/assets/' + ${ms.path}}">Open</a></td>
                 </tr>
                 <tr th:if="${summary.moduleSummaries.isEmpty()}">
-                    <td colspan="4" class="muted">Add your first asset from the sidebar to light up this dashboard.</td>
+                    <td colspan="4" class="muted">Add your first asset from the top menu to light up this dashboard.</td>
                 </tr>
                 </tbody>
             </table>
@@ -101,6 +324,23 @@
             <p><a th:href="@{/assets/goals}">View all goals →</a></p>
         </div>
 
+        <!-- Recent activity: closest honest equivalent to "recent transactions" — MoneyMap tracks
+             net worth, not a separate income/expense ledger, so this shows recently added/edited records. -->
+        <div class="card" th:if="${recentActivity != null and !recentActivity.isEmpty()}">
+            <h2>Recent Activity</h2>
+            <table class="data">
+                <thead><tr><th>Module</th><th>Record</th><th>Action</th><th>When</th></tr></thead>
+                <tbody>
+                <tr th:each="a : ${recentActivity}">
+                    <td><a th:href="@{'/assets/' + ${a['modulePath']}}" th:text="${a['moduleName']}"></a></td>
+                    <td th:text="${a['label']}"></td>
+                    <td th:text="${a['isNew'] ? 'Added' : 'Updated'}"></td>
+                    <td th:text="${fmt.dateTime(a['when'])}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- Quick actions -->
         <p>
             <form class="inline" th:action="@{/dashboard/snapshot}" method="post">
@@ -112,5 +352,159 @@
     </main>
 </div>
 
+<script th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:src="@{/js/donut-chart.js}"></script>
+<script th:inline="javascript">
+/*<![CDATA[*/
+(function () {
+    var style = getComputedStyle(document.body);
+    var primary = style.getPropertyValue('--primary').trim() || '#4a6741';
+    var border = style.getPropertyValue('--border').trim() || '#ddd7c8';
+    // The categorical chart palette is fixed and theme-independent (identity colors, not the
+    // site's single accent), but still needs a dark-surface variant for the Midnight theme.
+    var isDark = document.body.classList.contains('theme-dark');
+    function seriesColor(row) { return isDark ? row.colorDark : row.color; }
+
+    var trendLabels = /*[[${trendLabels}]]*/ [];
+    var trendValues = /*[[${trendValues}]]*/ [];
+    var miniCanvas = document.getElementById('netWorthMiniChart');
+    if (miniCanvas && trendValues.length >= 2) {
+        new Chart(miniCanvas, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    data: trendValues,
+                    borderColor: primary,
+                    backgroundColor: primary + '22',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 0,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { intersect: false, mode: 'index' }
+                },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    }
+
+    // Retirement: full-width growth area chart instead of a near-empty single-slice donut
+    var retirementSpark = /*[[${retirementSpark}]]*/ [];
+    var retirementGrowthCanvas = document.getElementById('retirementGrowth');
+    if (retirementGrowthCanvas && retirementSpark.length >= 2) {
+        new Chart(retirementGrowthCanvas, {
+            type: 'line',
+            data: { labels: retirementSpark.map(function () { return ''; }),
+                datasets: [{ data: retirementSpark, borderColor: '#7c4dea', backgroundColor: 'rgba(124,77,234,.1)',
+                    fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2.5 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { display: false } } }
+        });
+    }
+
+    /** Renders a small composition doughnut. tooltipLabels, if given, overrides the raw value in tooltips
+        (used for bucket breakdowns so the tooltip shows formatted money instead of a raw number). cutout
+        defaults to 68% but can be overridden for nested-ring layouts (e.g. the allocation target ring). */
+    function renderDonut(canvasId, labels, values, colors, tooltipLabels, cutout) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }]
+            },
+            options: {
+                responsive: false,
+                cutout: cutout || '68%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: tooltipLabels ? {
+                            label: function (ctx) { return labels[ctx.dataIndex] + ': ' + tooltipLabels[ctx.dataIndex]; }
+                        } : undefined
+                    }
+                }
+            }
+        });
+    }
+
+    var allocationLabels = [];
+    var allocationValues = [];
+    var allocationColors = [];
+    // Target-ring arrays are built in lockstep with every category (not just the ones the user
+    // actually holds), so values/colors never drift out of alignment with each other.
+    var targetLabels = [];
+    var targetValues = [];
+    var targetColors = [];
+    var allocationClasses = /*[[${allocationClasses}]]*/ [];
+    allocationClasses.forEach(function (a) {
+        if (a.percent > 0) {
+            allocationLabels.push(a.name);
+            allocationValues.push(a.percent);
+            allocationColors.push(seriesColor(a));
+        }
+        if (a.targetPercent) {
+            targetLabels.push(a.name);
+            targetValues.push(a.targetPercent);
+            targetColors.push(seriesColor(a) + '55');
+        }
+    });
+    if (allocationValues.length === 0) {
+        allocationLabels = ['No data yet'];
+        allocationValues = [1];
+        allocationColors = [border];
+    }
+    var hasTargetRing = document.getElementById('allocTargetRing') != null;
+    renderDonut('allocationChart', allocationLabels, allocationValues, allocationColors, null, hasTargetRing ? '74%' : '68%');
+    if (hasTargetRing && targetValues.length > 0) {
+        renderDonut('allocTargetRing', targetLabels, targetValues, targetColors, null, '88%');
+    }
+
+    // Family snapshot composition donut
+    var familyCanvas = document.getElementById('familyDonut');
+    if (familyCanvas) {
+        var familyRows = /*[[${familyRows}]]*/ [];
+        var familyValues = [], familyColors = [];
+        familyRows.forEach(function (f) {
+            if (f.barPercent > 0) { familyValues.push(f.netWorth); familyColors.push(f.color); }
+        });
+        if (familyValues.length > 0) renderDonut('familyDonut', [], familyValues, familyColors, null, '62%');
+    }
+
+    // Quick-link mini visuals
+    var insCoveragePercent = /*[[${insuranceQuick.coveragePercent()}]]*/ null;
+    if (insCoveragePercent != null) renderGauge('insQuickGauge', insCoveragePercent, insCoveragePercent < 50 ? '#e0405e' : '#d6900a');
+
+    var retireReadinessPercent = /*[[${retirementQuick.readinessPercent()}]]*/ null;
+    if (retireReadinessPercent != null) {
+        new Chart(document.getElementById('retireQuickRing'), {
+            type: 'doughnut',
+            data: { datasets: [{ data: [retireReadinessPercent, 100 - retireReadinessPercent], backgroundColor: [primary, border], borderWidth: 0 }] },
+            options: { responsive: false, cutout: '72%', plugins: { legend: { display: false } }, events: [] }
+        });
+    }
+
+    function renderBucketDonut(canvasId, breakdown) {
+        if (!breakdown || breakdown.length === 0) return;
+        var labels = breakdown.map(function (b) { return b.name; });
+        var values = breakdown.map(function (b) { return b.total; });
+        var colors = breakdown.map(seriesColor);
+        var tooltipLabels = breakdown.map(function (b) { return b.formattedTotal; });
+        renderDonut(canvasId, labels, values, colors, tooltipLabels);
+    }
+    renderBucketDonut('cashChart', /*[[${cashBreakdown}]]*/ []);
+    renderBucketDonut('retirementChart', /*[[${retirementBreakdown}]]*/ []);
+    renderBucketDonut('investmentsChart', /*[[${investmentsBreakdown}]]*/ []);
+})();
+/*]]>*/
+</script>
 </body>
 </html>

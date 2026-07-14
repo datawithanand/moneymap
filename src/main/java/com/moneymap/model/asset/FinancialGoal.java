@@ -11,6 +11,9 @@ public class FinancialGoal extends OwnedRecord {
     private LocalDate targetDate;
     private BigDecimal expectedAnnualReturnPercent;
     private BigDecimal expectedAnnualInflationPercent;
+    private BigDecimal sipStepUpPercent;         // optional annual SIP increase %, freefincal-style
+    private boolean recurring;                   // e.g. an annual vacation goal rather than a one-off
+    private Integer recurrenceIntervalYears;     // required when recurring = true
 
     public String getGoalName() { return goalName; }
     public void setGoalName(String goalName) { this.goalName = goalName; }
@@ -24,4 +27,10 @@ public class FinancialGoal extends OwnedRecord {
     public void setExpectedAnnualReturnPercent(BigDecimal expectedAnnualReturnPercent) { this.expectedAnnualReturnPercent = expectedAnnualReturnPercent; }
     public BigDecimal getExpectedAnnualInflationPercent() { return expectedAnnualInflationPercent; }
     public void setExpectedAnnualInflationPercent(BigDecimal expectedAnnualInflationPercent) { this.expectedAnnualInflationPercent = expectedAnnualInflationPercent; }
+    public BigDecimal getSipStepUpPercent() { return sipStepUpPercent; }
+    public void setSipStepUpPercent(BigDecimal sipStepUpPercent) { this.sipStepUpPercent = sipStepUpPercent; }
+    public boolean isRecurring() { return recurring; }
+    public void setRecurring(boolean recurring) { this.recurring = recurring; }
+    public Integer getRecurrenceIntervalYears() { return recurrenceIntervalYears; }
+    public void setRecurrenceIntervalYears(Integer recurrenceIntervalYears) { this.recurrenceIntervalYears = recurrenceIntervalYears; }
 }

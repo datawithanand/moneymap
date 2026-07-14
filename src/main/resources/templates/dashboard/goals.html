@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Goals')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('goals-dashboard')}"></nav>
+    <main class="content">
+        <h1>Goals</h1>
+        <p class="hint">MoneyMap doesn't link specific investments to a goal, so this can't show
+            a "% funded" progress bar without guessing — instead it shows the required SIP and
+            countdown for each goal, computed from your target amount and timeline.</p>
+
+        <div class="card">
+            <table class="data">
+                <thead><tr><th>Goal</th><th>Type</th><th>Target (today's ₹)</th><th>Target Date</th>
+                    <th>Days Remaining</th><th>SIP (nominal)</th><th>SIP (inflation-adjusted)</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${rows}">
+                    <td>
+                        <a th:href="@{'/assets/goals/' + ${r['goal'].id} + '/edit'}" th:text="${r['goal'].goalName}"></a>
+                        <span th:if="${r['goal'].recurring}" class="hint" style="display:block"
+                              th:text="'Repeats every ' + ${r['goal'].recurrenceIntervalYears} + ' yr(s)'"></span>
+                    </td>
+                    <td th:text="${#strings.replace(r['goal'].goalType, '_', ' ')}"></td>
+                    <td class="mono" th:text="${fmt.money(r['goal'].targetAmountToday, currentUser)}"></td>
+                    <td th:text="${r['goal'].targetDate}"></td>
+                    <td class="mono" th:text="${r['daysRemaining'] != null ? r['daysRemaining'] : '—'}"
+                        th:class="${r['daysRemaining'] != null and r['daysRemaining'] < 0 ? 'field-error' : ''}"></td>
+                    <td class="mono">
+                        <span th:text="${fmt.money(r['nominalSip'], currentUser)}"></span>
+                        <span th:if="${r['goal'].sipStepUpPercent != null and r['goal'].sipStepUpPercent.signum() > 0}"
+                              class="hint" style="display:block"
+                              th:text="'starting, +' + ${r['goal'].sipStepUpPercent} + '%/yr'"></span>
+                    </td>
+                    <td class="mono" th:text="${fmt.money(r['inflationAdjustedSip'], currentUser)}"></td>
+                </tr>
+                <tr th:if="${rows.isEmpty()}"><td colspan="7" class="muted">No goals yet.</td></tr>
+                </tbody>
+            </table>
+            <p class="hint">Step-up SIPs show the starting monthly amount — increase it by the stated % each
+                year. Recurring goals fund the next occurrence only; continue investing for future ones.</p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

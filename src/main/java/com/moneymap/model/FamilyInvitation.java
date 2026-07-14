@@ -13,6 +13,7 @@ public class FamilyInvitation {
     private String inviteeUserId;    // set at send time if resolvable, or later via email match (§1.2)
     private String inviteeEmail;
     private String inviteeUsername;
+    private String relationship;   // e.g. Spouse, Father — as labeled by the inviter, applied to the invitee on accept
     private Status status = Status.PENDING;
     private Instant expiresAt;
     private Instant createdAt;
@@ -30,6 +31,8 @@ public class FamilyInvitation {
     public void setInviteeEmail(String inviteeEmail) { this.inviteeEmail = inviteeEmail; }
     public String getInviteeUsername() { return inviteeUsername; }
     public void setInviteeUsername(String inviteeUsername) { this.inviteeUsername = inviteeUsername; }
+    public String getRelationship() { return relationship; }
+    public void setRelationship(String relationship) { this.relationship = relationship; }
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
     public Instant getExpiresAt() { return expiresAt; }

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Retirement Readiness')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('retirement-dashboard')}"></nav>
+    <main class="content">
+        <h1>Retirement Readiness</h1>
+        <p class="hint">Same FIRE math as the Calculators section, but pre-filled with your real
+            retirement-bucket corpus (PF + PPF + NPS + Gratuity + Government Schemes) instead of
+            your whole net worth — a running check rather than a one-off calculation.</p>
+
+        <div class="card">
+            <form th:action="@{/dashboard/retirement}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="annualExpense">Annual Expense (post-retirement)</label>
+                <input type="number" step="any" min="0" id="annualExpense" name="annualExpense"
+                       th:value="${annualExpense}" required>
+
+                <label for="swrPercent">Safe Withdrawal Rate %</label>
+                <input type="number" step="any" min="0.1" id="swrPercent" name="swrPercent"
+                       th:value="${swrPercent} ?: 4" required>
+
+                <label for="currentCorpus">Current Retirement Corpus</label>
+                <input type="number" step="any" min="0" id="currentCorpus" name="currentCorpus"
+                       th:value="${currentCorpus}" required>
+                <div class="hint">Pre-filled from your PF/PPF/NPS/Gratuity/Government Schemes total.</div>
+
+                <label for="monthlyInvestment">Monthly Retirement Investment</label>
+                <input type="number" step="any" min="0" id="monthlyInvestment" name="monthlyInvestment"
+                       th:value="${monthlyInvestment}" required>
+
+                <label for="expectedReturnPercent">Expected Annual Return %</label>
+                <input type="number" step="any" min="0" id="expectedReturnPercent" name="expectedReturnPercent"
+                       th:value="${expectedReturnPercent}" required>
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${error != null}">
+            <p class="field-error" th:text="${error}"></p>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result</h2>
+            <div class="gauge-inline" th:if="${readinessPercent != null}">
+                <canvas id="readyGauge" width="110" height="66"></canvas>
+                <div>
+                    <div class="gauge-inline-figure" th:text="${readinessPercent} + '%'"></div>
+                    <div class="gauge-inline-label" th:text="${fmt.money(result.currentCorpus(), currentUser)} + ' of ' + ${fmt.money(result.corpusRequired(), currentUser)} + ' corpus required'"></div>
+                </div>
+            </div>
+            <table class="data" style="margin-top:16px">
+                <tbody>
+                <tr><td>Corpus required</td><td class="mono" th:text="${fmt.money(result.corpusRequired(), currentUser)}"></td></tr>
+                <tr><td>Current retirement corpus</td><td class="mono" th:text="${fmt.money(result.currentCorpus(), currentUser)}"></td></tr>
+                <tr><td>Shortfall</td><td class="mono" th:text="${fmt.money(result.shortfall(), currentUser)}"></td></tr>
+                <tr>
+                    <td>Years to target</td>
+                    <td class="mono" th:text="${result.yearsToFire() != null ? result.yearsToFire() : 'Not reached within 100 years at this rate'}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+<script th:if="${readinessPercent != null}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${readinessPercent != null}" th:src="@{/js/donut-chart.js}"></script>
+<script th:if="${readinessPercent != null}" th:inline="javascript">
+/*<![CDATA[*/
+renderGauge('readyGauge', /*[[${readinessPercent}]]*/ 0, '#4338ca');
+/*]]>*/
+</script>
+</body>
+</html>

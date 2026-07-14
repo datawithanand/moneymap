@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('PPF Projector')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-ppf')}"></nav>
+    <main class="content">
+        <h1>PPF Projector</h1>
+        <p class="hint">Projects PPF growth with annual compounding. Actual government crediting
+            (monthly, on the lowest balance between the 5th and month-end) may differ slightly —
+            treat this as an approximation, consistent with the PPF module's own valuation.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/ppf}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="openingBalance">Opening Balance</label>
+                <input type="number" step="any" min="0" id="openingBalance" name="openingBalance"
+                       th:value="${openingBalance}">
+                <div class="hint" th:if="${prefilled == true}">Pre-filled from your PPF account on file.</div>
+
+                <label for="annualContribution">Annual Contribution</label>
+                <input type="number" step="any" min="0" max="150000" id="annualContribution" name="annualContribution"
+                       th:value="${annualContribution}" required>
+                <div class="hint">Statutory limit is ₹1,50,000/year.</div>
+
+                <label for="annualRatePercent">Annual Interest Rate %</label>
+                <input type="number" step="any" min="0" id="annualRatePercent" name="annualRatePercent"
+                       th:value="${annualRatePercent}" required>
+
+                <label for="years">Tenure (years)</label>
+                <input type="number" step="1" min="1" id="years" name="years" th:value="${years} ?: 15" required>
+                <div class="hint">PPF has a statutory 15-year lock-in, extendable in blocks of 5 years.</div>
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${error != null}">
+            <p class="field-error" th:text="${error}"></p>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result</h2>
+            <p class="figure" th:text="${fmt.money(result.maturityValue(), currentUser)}"></p>
+            <details>
+                <summary>Year-by-year balances</summary>
+                <table class="data">
+                    <thead><tr><th>Year</th><th>Year-end Balance</th></tr></thead>
+                    <tbody>
+                    <tr th:each="bal, iter : ${result.yearEndBalances()}">
+                        <td th:text="${iter.index + 1}"></td>
+                        <td class="mono" th:text="${fmt.money(bal, currentUser)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </details>
+        </div>
+    </main>
+</div>
+</body>
+</html>

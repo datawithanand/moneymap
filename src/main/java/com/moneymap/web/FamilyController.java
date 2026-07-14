@@ -47,12 +47,16 @@ public class FamilyController {
 
     private User user(HttpServletRequest r) { return (User) r.getAttribute("currentUser"); }
 
+    private static final List<String> RELATIONSHIP_OPTIONS = List.of(
+            "Self", "Spouse", "Father", "Mother", "Son", "Daughter", "Brother", "Sister", "Guardian", "Other");
+
     // ── Family home ──────────────────────────────────────────────────────────
 
     @GetMapping
     public String home(HttpServletRequest request, Model model) {
         User user = user(request);
         model.addAttribute("myInvitations", familyService.pendingInvitationsFor(user));
+        model.addAttribute("relationshipOptions", RELATIONSHIP_OPTIONS);
         if (user.getFamilyGroupId() == null) {
             return "family/create";
         }
@@ -100,10 +104,30 @@ public class FamilyController {
     }
 
     @PostMapping("/invite")
-    public String invite(@RequestParam String identifier, HttpServletRequest request, RedirectAttributes ra) {
-        String error = familyService.invite(user(request), identifier);
-        ra.addFlashAttribute(error == null ? "success" : "error",
-                error == null ? "Invitation sent. It expires in 14 days." : error);
+    public String invite(@RequestParam String identifier, @RequestParam(required = false) String relationship,
+                         HttpServletRequest request, RedirectAttributes ra) {
+        var result = familyService.invite(user(request), identifier, relationship);
+        if (result.error() != null) {
+            ra.addFlashAttribute("error", result.error());
+        } else if (!result.emailAttempted()) {
+            ra.addFlashAttribute("success", "Invitation created (expires in 14 days). "
+                    + "No email was sent — SMTP is not configured on this instance (Admin > Settings). "
+                    + "If they already have a MoneyMap account, they'll see it waiting under Family when they log in.");
+        } else if (result.emailSent()) {
+            ra.addFlashAttribute("success", "Invitation sent by email. It expires in 14 days.");
+        } else {
+            ra.addFlashAttribute("success", "Invitation created (expires in 14 days), but the email could not be "
+                    + "delivered — check the SMTP settings under Admin > Settings. "
+                    + "If they already have a MoneyMap account, they'll see it waiting under Family when they log in.");
+        }
+        return "redirect:/family";
+    }
+
+    @PostMapping("/members/{id}/relationship")
+    public String editRelationship(@PathVariable String id, @RequestParam String relationship,
+                                   HttpServletRequest request, RedirectAttributes ra) {
+        String error = familyService.editRelationship(user(request), id, relationship);
+        if (error != null) ra.addFlashAttribute("error", error);
         return "redirect:/family";
     }
 

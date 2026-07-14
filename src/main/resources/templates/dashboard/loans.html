@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Loan / Debt Overview')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('loans-dashboard')}"></nav>
+    <main class="content">
+        <h1>Loan / Debt Overview</h1>
+
+        <div class="bucket-grid">
+            <div class="card">
+                <h3>Total Outstanding</h3>
+                <p class="figure" th:text="${fmt.money(totalOutstanding, currentUser)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!outstandingBreakdown.isEmpty()}">
+                    <canvas id="outstandingChart" width="110" height="110"></canvas>
+                </div>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${outstandingBreakdown}"
+                          th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${b['formattedTotal']}"></span>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Total Monthly EMI</h3>
+                <p class="figure" th:text="${fmt.money(totalMonthlyEmi, currentUser)}"></p>
+                <p class="hint">Excludes credit cards (no fixed EMI).</p>
+            </div>
+            <div class="card">
+                <h3>EMI / Income</h3>
+                <div class="gauge-inline" th:if="${emiBarPercent != null}">
+                    <canvas id="emiGauge" width="110" height="66"></canvas>
+                    <div>
+                        <div class="gauge-inline-figure" th:text="${emiToIncomePercent} + '%'"></div>
+                        <div class="gauge-inline-label">of monthly income</div>
+                    </div>
+                </div>
+                <div class="gauge-zones" th:if="${emiBarPercent != null}">Healthy · Stretched · High risk</div>
+                <p class="figure" th:if="${emiBarPercent == null}" th:text="${emiToIncomePercent != null ? emiToIncomePercent + '%' : '—'}"></p>
+                <p class="hint" th:if="${emiToIncomePercent == null}">Add a salary profile to see this ratio.</p>
+                <p class="hint" th:if="${highDebtBurden}">
+                    Above 40% is generally considered a high debt burden.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Active Loans</h2>
+            <table class="data">
+                <thead><tr><th>Lender</th><th>Type</th><th>Outstanding</th><th>EMI</th><th>Interest %</th><th>Months Remaining</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${rows}">
+                    <td><a th:href="@{'/assets/loans/' + ${r['loan'].id} + '/edit'}" th:text="${r['loan'].lenderName}"></a></td>
+                    <td th:text="${#strings.replace(r['loan'].loanType, '_', ' ')}"></td>
+                    <td class="mono" th:text="${fmt.money(r['loan'].outstandingBalance, currentUser)}"></td>
+                    <td class="mono" th:text="${r['loan'].emiAmount != null ? fmt.money(r['loan'].emiAmount, currentUser) : '—'}"></td>
+                    <td class="mono" th:text="${r['loan'].interestRate != null ? r['loan'].interestRate + '%' : '—'}"></td>
+                    <td class="mono" th:text="${r['monthsRemaining'] != null ? r['monthsRemaining'] : '—'}"></td>
+                </tr>
+                <tr th:if="${rows.isEmpty()}"><td colspan="6" class="muted">No active loans.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+<script th:if="${!outstandingBreakdown.isEmpty() or emiBarPercent != null}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${!outstandingBreakdown.isEmpty() or emiBarPercent != null}" th:src="@{/js/donut-chart.js}"></script>
+<script th:if="${!outstandingBreakdown.isEmpty() or emiBarPercent != null}" th:inline="javascript">
+/*<![CDATA[*/
+renderNamedDonut('outstandingChart', /*[[${outstandingBreakdown}]]*/ []);
+var emiPercent = /*[[${emiBarPercent}]]*/ null;
+var highDebtBurden = /*[[${highDebtBurden}]]*/ false;
+if (emiPercent != null) {
+    renderGauge('emiGauge', emiPercent, highDebtBurden ? '#e0405e' : '#d6900a');
+}
+/*]]>*/
+</script>
+</body>
+</html>

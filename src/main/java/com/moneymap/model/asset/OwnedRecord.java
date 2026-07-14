@@ -1,6 +1,8 @@
 package com.moneymap.model.asset;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Common fields present on every financial record (Section 00 §6.1 / Section 17 §0).
@@ -16,6 +18,7 @@ public abstract class OwnedRecord {
     private String customerCareEmail;
     private String portalUrl;
     private String branchAddress;
+    private List<String> labels = new ArrayList<>();   // free-form user tags, independent of familyMemberTag
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -35,6 +38,8 @@ public abstract class OwnedRecord {
     public void setPortalUrl(String portalUrl) { this.portalUrl = portalUrl; }
     public String getBranchAddress() { return branchAddress; }
     public void setBranchAddress(String branchAddress) { this.branchAddress = branchAddress; }
+    public List<String> getLabels() { return labels; }
+    public void setLabels(List<String> labels) { this.labels = labels == null ? new ArrayList<>() : labels; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

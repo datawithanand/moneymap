@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Fund Master List')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-fund-master')}"></nav>
+    <main class="content">
+        <h1>Fund Master List</h1>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+        <div class="card">
+            <table class="data">
+                <tr><td>Cached schemes</td><td class="mono" th:text="${schemeCount}"></td></tr>
+                <tr><td>Category-enriched schemes</td><td class="mono" th:text="${enrichedCount}"></td></tr>
+                <tr><td>Last synced</td>
+                    <td class="mono" th:text="${lastSyncedAt != null ? fmt.dateTime(lastSyncedAt) : 'Never'}"></td></tr>
+            </table>
+            <form th:action="@{/admin/fund-master/sync}" method="post" style="margin-top:12px">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <button type="submit" class="btn-sm btn-secondary">Fetch latest list</button>
+            </form>
+            <p class="hint">Pulls the current scheme name/code list from the free public
+                <code>api.mfapi.in</code> API — no personal data is sent, only fund names are
+                fetched. Category and fund house are enriched automatically the first time a user
+                searches for and selects that fund on the Mutual Funds form, so a full sync may
+                initially show most schemes as "Uncategorized".</p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

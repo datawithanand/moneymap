@@ -33,16 +33,10 @@
         <form th:action="@{/setup/step2}" method="post">
             <input type="hidden" name="_csrf" th:value="${csrf}">
             <div class="theme-swatches">
-                <label class="swatch"><input type="radio" name="theme" value="GREEN" checked>
-                    <div class="chip" style="background:#4a6741"></div>Green</label>
-                <label class="swatch"><input type="radio" name="theme" value="SLATE_BLUE">
-                    <div class="chip" style="background:#3b5372"></div>Slate Blue</label>
-                <label class="swatch"><input type="radio" name="theme" value="MAROON">
-                    <div class="chip" style="background:#6e2f34"></div>Maroon</label>
-                <label class="swatch"><input type="radio" name="theme" value="FOREST_COPPER">
-                    <div class="chip" style="background:linear-gradient(90deg,#2f4a3c 60%,#b46a3c)"></div>Forest &amp; Copper</label>
-                <label class="swatch"><input type="radio" name="theme" value="MIDNIGHT">
-                    <div class="chip" style="background:#171a21"></div>Midnight</label>
+                <label class="swatch"><input type="radio" name="theme" value="LIGHT" checked>
+                    <div class="chip" style="background:#ffffff;border:1px solid #d3d3e0"></div>Light</label>
+                <label class="swatch"><input type="radio" name="theme" value="DARK">
+                    <div class="chip" style="background:#101018"></div>Dark</label>
             </div>
             <p>
                 <button type="submit">Continue</button>

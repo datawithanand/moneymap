@@ -197,12 +197,17 @@ public class ModuleRegistry {
                         num("equityAllocationPercent", "Equity Allocation % (hybrid funds)", false)
                                 .withVisibleIf("category=HYBRID_AGGRESSIVE|HYBRID_CONSERVATIVE|HYBRID_BALANCED"),
                         select("currency", "Currency", true, "INR", "USD")),
-                List.of("fundName", "category", "folioNumber", "unitsHeld", "invested", "currentValue", "gainLoss"),
+                List.of("fundName", "category", "folioNumber", "unitsHeld", "invested", "currentValue", "gainLoss", "xirr"),
                 (r, u) -> convert(mfCurrentValue(r), r.getCurrency(), u),
                 ModuleRegistry::mfAllocation,
                 Map.of("invested", (r, u) -> mfInvested(r),
                         "currentValue", (r, u) -> mfCurrentValue(r),
-                        "gainLoss", (r, u) -> mfCurrentValue(r).subtract(mfInvested(r))),
+                        "gainLoss", (r, u) -> mfCurrentValue(r).subtract(mfInvested(r)),
+                        "xirr", (r, u) -> {
+                            BigDecimal x = mfXirr(r, db.mutualFundTransactions.findWhere(
+                                    t -> r.getId().equals(t.getMutualFundId())));
+                            return x == null ? "—" : x + "%";
+                        }),
                 true));
 
         add(new ModuleDef<>("stocks", "Stocks & ETFs", "06 §12", db.equityHoldings, EquityHolding.class,
@@ -468,7 +473,11 @@ public class ModuleRegistry {
                         num("targetAmountToday", "Target Amount (today's money)", true),
                         date("targetDate", "Target Date", true),
                         num("expectedAnnualReturnPercent", "Expected Annual Return %", true),
-                        num("expectedAnnualInflationPercent", "Expected Annual Inflation %", true)),
+                        num("expectedAnnualInflationPercent", "Expected Annual Inflation %", true),
+                        num("sipStepUpPercent", "Annual SIP Step-Up %", false,
+                                "Optional — increases the required SIP each year instead of a flat monthly amount"),
+                        check("recurring", "Recurring goal (e.g. an annual holiday)"),
+                        num("recurrenceIntervalYears", "Repeats Every (years)", false).withVisibleIf("recurring=true")),
                 List.of("goalName", "goalType", "targetAmountToday", "targetDate", "nominalSip", "inflationAdjustedSip"),
                 null, null,
                 Map.of("nominalSip", (r, u) -> goalSips(r)[0],

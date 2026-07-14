@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('SWP Calculator')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('calc-swp')}"></nav>
+    <main class="content">
+        <h1>SWP Calculator</h1>
+        <p class="hint">Systematic Withdrawal Plan: see how long a corpus lasts under a fixed
+            monthly withdrawal, or whether it's sustainable indefinitely.</p>
+
+        <div class="card">
+            <form th:action="@{/calculators/swp}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="corpus">Starting Corpus</label>
+                <input type="number" step="any" min="0" id="corpus" name="corpus" th:value="${corpus}" required>
+
+                <label for="monthlyWithdrawal">Monthly Withdrawal</label>
+                <input type="number" step="any" min="0" id="monthlyWithdrawal" name="monthlyWithdrawal"
+                       th:value="${monthlyWithdrawal}" required>
+
+                <label for="annualReturnPercent">Expected Annual Return %</label>
+                <input type="number" step="any" min="0" id="annualReturnPercent" name="annualReturnPercent"
+                       th:value="${annualReturnPercent}" required>
+
+                <button type="submit" style="margin-top:14px">Calculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${error != null}">
+            <p class="field-error" th:text="${error}"></p>
+        </div>
+
+        <div class="card" th:if="${result != null}">
+            <h2>Result</h2>
+            <div th:if="${result.perpetual()}">
+                <p class="figure">Sustainable indefinitely</p>
+                <p class="hint">Your withdrawal is at or below what the corpus's returns generate each month
+                    — the corpus does not deplete.</p>
+            </div>
+            <table class="data" th:unless="${result.perpetual()}">
+                <tbody>
+                <tr><td>Months until depletion</td><td class="mono" th:text="${result.monthsUntilDepletion()}"></td></tr>
+                <tr><td>Years until depletion</td>
+                    <td class="mono" th:text="${#numbers.formatDecimal(result.monthsUntilDepletion() / 12.0, 1, 1)}"></td></tr>
+                <tr><td>Total withdrawn</td><td class="mono" th:text="${fmt.money(result.totalWithdrawn(), currentUser)}"></td></tr>
+                <tr><td>Final corpus</td><td class="mono" th:text="${fmt.money(result.finalCorpus(), currentUser)}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

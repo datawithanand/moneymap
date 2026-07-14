@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Insurance Coverage')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('insurance-dashboard')}"></nav>
+    <main class="content">
+        <h1>Insurance Coverage</h1>
+
+        <div class="bucket-grid">
+            <div class="card">
+                <h3>Total Term Cover</h3>
+                <p class="figure" th:text="${fmt.money(totalTermCover, currentUser)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!termCoverBreakdown.isEmpty()}">
+                    <canvas id="termCoverChart" width="110" height="110"></canvas>
+                </div>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${termCoverBreakdown}"
+                          th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${b['formattedTotal']}"></span>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Total Health Cover</h3>
+                <p class="figure" th:text="${fmt.money(totalHealthCover, currentUser)}"></p>
+                <div class="bucket-chart-wrap" th:if="${!healthCoverBreakdown.isEmpty()}">
+                    <canvas id="healthCoverChart" width="110" height="110"></canvas>
+                </div>
+                <div class="legend legend-compact">
+                    <span th:each="b : ${healthCoverBreakdown}"
+                          th:style="'color:' + (${currentUser.theme.name() == 'DARK'} ? ${b['colorDark']} : ${b['color']})"
+                          th:text="${b['name']} + ' ' + ${b['formattedTotal']}"></span>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Recommended Term Cover</h3>
+                <p class="figure" th:text="${fmt.money(recommendedTermCover, currentUser)}"></p>
+                <p class="hint">Rule of thumb: ~12x annual income, estimated from your salary profiles.</p>
+            </div>
+        </div>
+
+        <div class="card" th:if="${coveragePercent != null}">
+            <div class="gauge-inline">
+                <canvas id="coverGauge" width="110" height="66"></canvas>
+                <div>
+                    <h2 style="margin-bottom:2px">Coverage Progress</h2>
+                    <div class="gauge-inline-figure" th:text="${coveragePercent} + '%'"></div>
+                    <div class="gauge-inline-label" th:text="${fmt.money(totalTermCover, currentUser)} + ' covered of ' + ${fmt.money(recommendedTermCover, currentUser)} + ' recommended'"></div>
+                    <div class="gap-note" th:if="${termCoverageGap.signum() > 0}"
+                         th:text="'⚠ ' + ${fmt.money(termCoverageGap, currentUser)} + ' coverage gap'"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Term Insurance Policies</h2>
+            <table class="data">
+                <thead><tr><th>Insurer</th><th>Sum Assured</th><th>Premium</th><th>Next Premium Due</th></tr></thead>
+                <tbody>
+                <tr th:each="p : ${termPolicies}">
+                    <td><a th:href="@{'/assets/term-insurance/' + ${p.id} + '/edit'}" th:text="${p.insurerName}"></a></td>
+                    <td class="mono" th:text="${fmt.money(p.sumAssured, currentUser)}"></td>
+                    <td class="mono" th:text="${fmt.money(p.premiumAmount, currentUser)}"></td>
+                    <td th:text="${p.nextPremiumDueDate}"></td>
+                </tr>
+                <tr th:if="${termPolicies.isEmpty()}"><td colspan="4" class="muted">No term insurance policies yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Health Insurance Policies</h2>
+            <table class="data">
+                <thead><tr><th>Insurer</th><th>Sum Insured</th><th>Type</th><th>Next Renewal</th></tr></thead>
+                <tbody>
+                <tr th:each="p : ${healthPolicies}">
+                    <td><a th:href="@{'/assets/health-insurance/' + ${p.id} + '/edit'}" th:text="${p.insurerName}"></a></td>
+                    <td class="mono" th:text="${fmt.money(p.sumInsured, currentUser)}"></td>
+                    <td th:text="${#strings.replace(p.policyType, '_', ' ')}"></td>
+                    <td th:text="${p.nextRenewalDate}"></td>
+                </tr>
+                <tr th:if="${healthPolicies.isEmpty()}"><td colspan="4" class="muted">No health insurance policies yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+<script th:if="${!termCoverBreakdown.isEmpty() or !healthCoverBreakdown.isEmpty() or coveragePercent != null}" th:src="@{/js/vendor/chart.min.js}"></script>
+<script th:if="${!termCoverBreakdown.isEmpty() or !healthCoverBreakdown.isEmpty() or coveragePercent != null}" th:src="@{/js/donut-chart.js}"></script>
+<script th:if="${!termCoverBreakdown.isEmpty() or !healthCoverBreakdown.isEmpty() or coveragePercent != null}" th:inline="javascript">
+/*<![CDATA[*/
+renderNamedDonut('termCoverChart', /*[[${termCoverBreakdown}]]*/ []);
+renderNamedDonut('healthCoverChart', /*[[${healthCoverBreakdown}]]*/ []);
+var coveragePercent = /*[[${coveragePercent}]]*/ null;
+if (coveragePercent != null) {
+    renderGauge('coverGauge', coveragePercent, coveragePercent < 50 ? '#e0405e' : '#d6900a');
+}
+/*]]>*/
+</script>
+</body>
+</html>

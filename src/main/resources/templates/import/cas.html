@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Import CAS Statement')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('export')}"></nav>
+    <main class="content">
+        <h1>Import from CAS Statement</h1>
+        <p class="hint">Upload your CAMS/KFintech Consolidated Account Statement (CAS) PDF to
+            bulk-import your mutual fund holdings. Request your own CAS PDF directly from
+            <a href="https://www.camsonline.com" target="_blank" rel="noopener">camsonline.com</a> or
+            <a href="https://mfsonline.kfintech.com" target="_blank" rel="noopener">kfintech.com</a> —
+            MoneyMap never contacts them on your behalf. The file and password are used only to
+            extract the text in-memory for this one request; nothing is written to disk, and
+            nothing is sent anywhere else. You'll review every detected holding before anything
+            is saved.</p>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="card">
+            <form th:action="@{/import/cas/preview}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+
+                <label for="casFile">CAS PDF</label>
+                <input type="file" id="casFile" name="file" accept="application/pdf" required>
+
+                <label for="casPassword">PDF Password (if protected)</label>
+                <input type="password" id="casPassword" name="password" autocomplete="off">
+                <div class="hint">CAS PDFs are usually protected with your PAN (uppercase) and
+                    date of birth (DDMMYYYY), or similar — check the email that delivered it.</div>
+
+                <button type="submit" style="margin-top:14px">Parse Statement</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <p class="hint">This parser targets the commonly-observed CAS layout, which isn't
+                officially standardized — extraction accuracy is best-effort. The next screen lets
+                you edit or exclude any row before saving, so nothing incorrect gets imported
+                silently.</p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

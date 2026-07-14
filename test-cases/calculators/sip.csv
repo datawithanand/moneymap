@@ -1,0 +1,16 @@
+TC_ID,Category,Priority,Field/Scenario,Preconditions,Test Steps,Test Data,Expected Result
+SIP-001,Positive,High,Happy path flat SIP,Logged in,Submit valid inputs no stepup,"monthlyAmount=10000, annualReturnPercent=12, years=10, stepUpPercent=0",FV ~ 23,23,391; totalInvested = 12,00,000
+SIP-002,Positive,High,Step-up SIP,Logged in,Submit with 10% yearly stepup,"monthlyAmount=10000, annualReturnPercent=12, years=10, stepUpPercent=10",FV materially higher than flat SIP; totalInvested higher too
+SIP-003,Positive,Medium,Inflation-adjusted toggle,Logged in,Enable inflationAdjust checkbox,"monthlyAmount=10000, annualReturnPercent=12, years=10, inflationAdjust=true, inflationPercent=6",futureValueInflationAdjusted shown, lower than nominal
+SIP-004,Boundary,High,years = 0,Logged in,Submit years=0,"monthlyAmount=10000, annualReturnPercent=12, years=0",Loop runs 0 times -> FV=0, totalInvested=0; should NOT error
+SIP-005,Negative,High,years negative,Logged in,Submit years=-5,"monthlyAmount=10000, annualReturnPercent=12, years=-5",Should be rejected - currently NO server-side validation; loop with negative range likely just doesn't execute (silent wrong answer, not error)
+SIP-006,Negative,High,monthlyAmount negative,Logged in,Submit monthlyAmount=-10000,"monthlyAmount=-10000, annualReturnPercent=12, years=5",Should be rejected - currently accepted, produces a negative "future value"
+SIP-007,Boundary,Medium,annualReturnPercent = 0,Logged in,Submit 0% return,"monthlyAmount=10000, annualReturnPercent=0, years=10",FV = totalInvested exactly (no growth), no division-by-zero
+SIP-008,Boundary,High,stepUpPercent >= 100 (contribution compounds explosively),Logged in,Submit stepUpPercent=200,"monthlyAmount=1000, annualReturnPercent=10, years=20, stepUpPercent=200",No cap on step-up; verify no overflow/crash, flag as unrealistic-input risk
+SIP-009,Negative,Medium,stepUpPercent negative (declining SIP),Logged in,Submit stepUpPercent=-50,"monthlyAmount=10000, annualReturnPercent=12, years=10, stepUpPercent=-50",Contribution shrinks each year toward 0 then negative? verify contribution doesn't go negative
+SIP-010,Negative,High,Missing required field,Logged in,Omit years,"monthlyAmount=10000, annualReturnPercent=12",400 Bad Request, graceful error
+SIP-011,Security,High,XSS in numeric field,Logged in,Submit monthlyAmount=<img src=x onerror=alert(1)>,"monthlyAmount=<img src=x onerror=alert(1)>",Rejected as invalid number, not reflected unescaped
+SIP-012,Boundary,Medium,Huge tenure (DoS check),Logged in,Submit years=100000,"monthlyAmount=1000, annualReturnPercent=12, years=100000",Loop = years*12 = 1.2M iterations; verify response time reasonable, no hang/OOM
+SIP-013,Security,Medium,CSRF token missing,Logged in,POST without _csrf,valid data minus _csrf,403 Forbidden
+SIP-014,Security,High,Unauthenticated access,Logged out,GET and POST /calculators/sip,none,Redirect to /login
+SIP-015,EndUser,Low,Inflation checkbox unchecked but inflationPercent filled,Logged in,Leave checkbox off but fill inflationPercent,"monthlyAmount=5000, annualReturnPercent=10, years=5, inflationPercent=6, inflationAdjust=false",Only nominal FV shown, inflation-adjusted field absent

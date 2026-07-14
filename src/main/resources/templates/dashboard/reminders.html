@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Upcoming Reminders')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('reminders')}"></nav>
+    <main class="content">
+        <h1>Upcoming Reminders</h1>
+        <p class="hint">FD/RD/government scheme maturity, insurance premium and renewal dates,
+            credit card payment due dates, and active SIP dates — everything already tracked
+            across your modules, in one timeline. Overdue items are shown first.</p>
+
+        <div class="card">
+            <table class="data">
+                <thead><tr><th>Due Date</th><th>Item</th><th>Type</th><th>Status</th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${reminders}">
+                    <td th:text="${r.dueDate()}"></td>
+                    <td><a th:href="@{'/assets/' + ${r.modulePath()} + '/' + ${r.recordId()} + '/edit'}" th:text="${r.description()}"></a></td>
+                    <td th:text="${#strings.replace(r.kind(), '_', ' ')}"></td>
+                    <td th:text="${r.daysUntil() < 0 ? 'Overdue by ' + (-r.daysUntil()) + ' day(s)' : (r.daysUntil() == 0 ? 'Today' : 'In ' + r.daysUntil() + ' day(s)')}"
+                        th:class="${r.daysUntil() < 0 ? 'field-error' : ''}"></td>
+                </tr>
+                <tr th:if="${reminders.isEmpty()}"><td colspan="4" class="muted">Nothing due in the next year.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,5 +1,7 @@
 package com.moneymap.module;
 
+import com.moneymap.calculator.CalculatorMath;
+import com.moneymap.model.MutualFundTransaction;
 import com.moneymap.model.User;
 import com.moneymap.model.asset.*;
 
@@ -8,6 +10,7 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 /**
  * Record valuation math (computed fields per Sections 05–10). All values are returned in the
@@ -90,6 +93,28 @@ public final class Valuation {
         return nz(mf.getUnitsHeld()).multiply(nz(mf.getAverageNavPerUnit()), MC).setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Money-weighted return (XIRR) for a Mutual Fund from its logged BUY/SELL transactions plus
+     * its current holding value as a final "as of today" cash inflow (Section 12: XIRR). Returns
+     * null when there are fewer than 2 dated cash flows to solve against — the caller falls back
+     * to showing "—" rather than a misleading figure.
+     */
+    public static BigDecimal mfXirr(MutualFund mf, List<MutualFundTransaction> transactions) {
+        if (transactions == null || transactions.isEmpty()) return null;
+        List<CalculatorMath.CashFlow> flows = new java.util.ArrayList<>();
+        for (MutualFundTransaction t : transactions) {
+            if (t.getDate() == null || t.getAmount() == null) continue;
+            double signedAmount = t.getType() == MutualFundTransaction.Type.BUY
+                    ? -t.getAmount().doubleValue() : t.getAmount().doubleValue();
+            flows.add(new CalculatorMath.CashFlow(t.getDate(), signedAmount));
+        }
+        BigDecimal currentValue = mfCurrentValue(mf);
+        if (currentValue.signum() > 0) {
+            flows.add(new CalculatorMath.CashFlow(LocalDate.now(), currentValue.doubleValue()));
+        }
+        return CalculatorMath.xirr(flows);
+    }
+
     public static BigDecimal equityValue(EquityHolding e) {
         return nz(e.getQuantity()).multiply(nz(e.getCurrentPrice()), MC).setScale(2, RoundingMode.HALF_UP);
     }
@@ -133,7 +158,12 @@ public final class Valuation {
         return qty.multiply(nz(g.getPurchasePricePerGramOrUnit()), MC).setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** Dual SIP calculation (Section 11 §22): nominal target and inflation-adjusted target. */
+    /**
+     * Dual SIP calculation (Section 11 §22): nominal target and inflation-adjusted target.
+     * When the goal has a sipStepUpPercent set, solves for the starting SIP of a step-up
+     * SIP (increased by that % every 12 months) via binary search instead of the flat-SIP
+     * closed form — freefincal-style step-up planning.
+     */
     public static BigDecimal[] goalSips(FinancialGoal goal) {
         if (goal.getTargetDate() == null || goal.getTargetAmountToday() == null)
             return new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO};
@@ -142,11 +172,38 @@ public final class Valuation {
         double target = goal.getTargetAmountToday().doubleValue();
         double inflated = target * Math.pow(1 + nz(goal.getExpectedAnnualInflationPercent()).doubleValue() / 100.0,
                 months / 12.0);
-        double factor = i == 0 ? months : (Math.pow(1 + i, months) - 1) / i * (1 + i);
+        double stepUp = goal.getSipStepUpPercent() == null ? 0.0 : goal.getSipStepUpPercent().doubleValue() / 100.0;
+        if (stepUp <= 0) {
+            double factor = i == 0 ? months : (Math.pow(1 + i, months) - 1) / i * (1 + i);
+            return new BigDecimal[]{
+                    BigDecimal.valueOf(target / factor).setScale(0, RoundingMode.HALF_UP),
+                    BigDecimal.valueOf(inflated / factor).setScale(0, RoundingMode.HALF_UP)
+            };
+        }
         return new BigDecimal[]{
-                BigDecimal.valueOf(target / factor).setScale(0, RoundingMode.HALF_UP),
-                BigDecimal.valueOf(inflated / factor).setScale(0, RoundingMode.HALF_UP)
+                BigDecimal.valueOf(stepUpSip(target, months, i, stepUp)).setScale(0, RoundingMode.HALF_UP),
+                BigDecimal.valueOf(stepUpSip(inflated, months, i, stepUp)).setScale(0, RoundingMode.HALF_UP)
         };
+    }
+
+    /** Binary-searches the starting monthly SIP of a step-up SIP that reaches futureValue by `months`. */
+    private static double stepUpSip(double futureValue, long months, double monthlyRate, double annualStepUp) {
+        double lo = 0, hi = Math.max(futureValue, 1.0);
+        for (int iter = 0; iter < 80; iter++) {
+            double mid = (lo + hi) / 2;
+            if (stepUpFutureValue(mid, months, monthlyRate, annualStepUp) < futureValue) lo = mid; else hi = mid;
+        }
+        return (lo + hi) / 2;
+    }
+
+    /** Accumulates a monthly SIP that grows by annualStepUp every 12 months, compounding at monthlyRate. */
+    private static double stepUpFutureValue(double startingSip, long months, double monthlyRate, double annualStepUp) {
+        double balance = 0, sip = startingSip;
+        for (long m = 1; m <= months; m++) {
+            balance = balance * (1 + monthlyRate) + sip;
+            if (m % 12 == 0) sip *= (1 + annualStepUp);
+        }
+        return balance;
     }
 
     private static LocalDate nzDate(LocalDate d) { return d == null ? LocalDate.MAX : d; }

@@ -12,6 +12,7 @@ import com.moneymap.repository.UserRepository;
 import com.moneymap.service.AuditService;
 import com.moneymap.service.CryptoService;
 import com.moneymap.service.EmailService;
+import com.moneymap.service.FundMasterService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -42,10 +43,12 @@ public class AdminExtraController {
     private final CryptoService crypto;
     private final EmailService email;
     private final AuditService audit;
+    private final FundMasterService fundMasterService;
 
     public AdminExtraController(Db db, UserRepository users, GlobalSettingsRepository globalSettings,
                                 LoginAttemptRepository loginAttempts, JsonCollectionStore store,
-                                CryptoService crypto, EmailService email, AuditService audit) {
+                                CryptoService crypto, EmailService email, AuditService audit,
+                                FundMasterService fundMasterService) {
         this.db = db;
         this.users = users;
         this.globalSettings = globalSettings;
@@ -54,6 +57,7 @@ public class AdminExtraController {
         this.crypto = crypto;
         this.email = email;
         this.audit = audit;
+        this.fundMasterService = fundMasterService;
     }
 
     private User admin(HttpServletRequest r) { return (User) r.getAttribute("currentUser"); }
@@ -182,5 +186,56 @@ public class AdminExtraController {
         db.taxSlabSets.save(set);
         ra.addFlashAttribute("success", "Tax slab set saved.");
         return "redirect:/admin/tax-slabs";
+    }
+
+    // ── Fund Master cache (Mutual Funds fund-picker) ─────────────────────────
+
+    @GetMapping("/fund-master")
+    public String fundMaster(Model model) {
+        GlobalSettings s = globalSettings.get();
+        model.addAttribute("schemeCount", db.fundMaster.findAll().size());
+        model.addAttribute("enrichedCount", db.fundMaster.findWhere(fm -> fm.getCategoryBucket() != null).size());
+        model.addAttribute("lastSyncedAt", s.getFundMasterLastSyncedAt());
+        return "admin/fund-master";
+    }
+
+    @PostMapping("/fund-master/sync")
+    public String syncFundMaster(HttpServletRequest request, RedirectAttributes ra) {
+        try {
+            int count = fundMasterService.syncSchemeList();
+            audit.log(admin(request), AuditLogEntry.ActionType.SETTINGS_CHANGED, null,
+                    "Fund master list synced (" + count + " schemes)");
+            ra.addFlashAttribute("success", "Synced " + count + " schemes from api.mfapi.in.");
+        } catch (IllegalStateException e) {
+            ra.addFlashAttribute("error", "Sync failed: " + e.getMessage());
+        }
+        return "redirect:/admin/fund-master";
+    }
+
+    // ── Nifty valuation input (Section 12: Nifty Valuation Tool) ────────────
+    // No reliable free unauthenticated NSE/Nifty PE API exists, so — mirroring the existing
+    // admin-entered gold-rate pattern — the admin enters the current Nifty 50 trailing PE by
+    // hand (e.g. from NSE's own published factsheet) and the app just does the banding math.
+
+    @PostMapping("/settings/nifty-pe")
+    public String saveNiftyPe(@RequestParam BigDecimal niftyPe,
+                              @RequestParam(required = false) BigDecimal niftyHistoricalAvgPe,
+                              HttpServletRequest request, RedirectAttributes ra) {
+        if (niftyPe.signum() <= 0 || niftyPe.compareTo(BigDecimal.valueOf(200)) > 0) {
+            ra.addFlashAttribute("error", "Enter a realistic Nifty PE (0-200).");
+            return "redirect:/admin/settings";
+        }
+        globalSettings.update(s -> {
+            s.setNiftyPe(niftyPe);
+            if (niftyHistoricalAvgPe != null && niftyHistoricalAvgPe.signum() > 0) {
+                s.setNiftyHistoricalAvgPe(niftyHistoricalAvgPe);
+            }
+            s.setNiftyPeUpdatedAt(Instant.now());
+            return s;
+        });
+        audit.log(admin(request), AuditLogEntry.ActionType.SETTINGS_CHANGED, null,
+                "Nifty PE updated to " + niftyPe);
+        ra.addFlashAttribute("success", "Nifty PE saved.");
+        return "redirect:/admin/settings";
     }
 }

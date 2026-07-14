@@ -59,11 +59,8 @@
 
                 <label for="theme">Theme</label>
                 <select id="theme" name="theme">
-                    <option value="GREEN" th:selected="${user.theme.name() == 'GREEN'}">Green</option>
-                    <option value="SLATE_BLUE" th:selected="${user.theme.name() == 'SLATE_BLUE'}">Slate Blue</option>
-                    <option value="MAROON" th:selected="${user.theme.name() == 'MAROON'}">Maroon</option>
-                    <option value="FOREST_COPPER" th:selected="${user.theme.name() == 'FOREST_COPPER'}">Forest &amp; Copper</option>
-                    <option value="MIDNIGHT" th:selected="${user.theme.name() == 'MIDNIGHT'}">Midnight</option>
+                    <option value="LIGHT" th:selected="${user.theme.name() == 'LIGHT'}">Light</option>
+                    <option value="DARK" th:selected="${user.theme.name() == 'DARK'}">Dark</option>
                 </select>
                 <p><button type="submit">Save Preferences</button></p>
             </form>

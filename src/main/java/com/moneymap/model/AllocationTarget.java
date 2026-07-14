@@ -13,6 +13,7 @@ public class AllocationTarget {
     private BigDecimal realEstateTargetPercent;
     private BigDecimal cashTargetPercent;
     private BigDecimal alternativeTargetPercent;
+    private Integer age;   // optional — drives the glide-path equity suggestion (Section 12 §27)
     private Instant updatedAt;
 
     public String getId() { return id; }
@@ -31,6 +32,8 @@ public class AllocationTarget {
     public void setCashTargetPercent(BigDecimal v) { this.cashTargetPercent = v; }
     public BigDecimal getAlternativeTargetPercent() { return alternativeTargetPercent; }
     public void setAlternativeTargetPercent(BigDecimal v) { this.alternativeTargetPercent = v; }
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

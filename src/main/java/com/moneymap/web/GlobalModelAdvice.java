@@ -103,11 +103,11 @@ public class GlobalModelAdvice {
         return user instanceof User u ? u : null;
     }
 
-    /** Lowercase-hyphen theme class for the body tag, e.g. THEME GREEN → "theme-green". */
+    /** Lowercase-hyphen theme class for the body tag, e.g. THEME LIGHT → "theme-light". */
     @ModelAttribute("themeClass")
     public String themeClass(HttpServletRequest request) {
         Object user = request.getAttribute("currentUser");
-        User.Theme theme = user instanceof User u ? u.getTheme() : User.Theme.GREEN;
+        User.Theme theme = user instanceof User u ? u.getTheme() : User.Theme.LIGHT;
         return "theme-" + theme.name().toLowerCase().replace('_', '-');
     }
 }

@@ -22,6 +22,9 @@ public class Db {
     public final EntityRepository<TaxSlabSet> taxSlabSets;
     public final EntityRepository<NetWorthSnapshot> netWorthSnapshots;
     public final EntityRepository<AllocationTarget> allocationTargets;
+    public final EntityRepository<FundMaster> fundMaster;
+    public final EntityRepository<FinancialHealthInputs> financialHealthInputs;
+    public final EntityRepository<MutualFundTransaction> mutualFundTransactions;
 
     // Cash & banking (Section 05)
     public final EntityRepository<SavingsAccount> savingsAccounts;
@@ -72,6 +75,9 @@ public class Db {
         taxSlabSets = new JsonEntityRepository<>(store, "tax_slab_sets", TaxSlabSet.class);
         netWorthSnapshots = new JsonEntityRepository<>(store, "net_worth_snapshots", NetWorthSnapshot.class);
         allocationTargets = new JsonEntityRepository<>(store, "allocation_targets", AllocationTarget.class);
+        fundMaster = new JsonEntityRepository<>(store, "fund_master", FundMaster.class);
+        financialHealthInputs = new JsonEntityRepository<>(store, "financial_health_inputs", FinancialHealthInputs.class);
+        mutualFundTransactions = new JsonEntityRepository<>(store, "mutual_fund_transactions", MutualFundTransaction.class);
         savingsAccounts = new JsonEntityRepository<>(store, "savings_accounts", SavingsAccount.class);
         cashInHand = new JsonEntityRepository<>(store, "cash_in_hand", CashInHand.class);
         fixedDeposits = new JsonEntityRepository<>(store, "fixed_deposits", FixedDeposit.class);

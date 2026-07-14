@@ -1,0 +1,14 @@
+TC_ID,Category,Priority,Field/Scenario,Preconditions,Test Steps,Test Data,Expected Result
+FD-001,Positive,High,Forward mode happy path,Logged in,Submit mode=FORWARD,"mode=FORWARD, principal=100000, annualRatePercent=7, years=5",maturityValue ~ 1,41,478; totalInterest ~ 41,478
+FD-002,Positive,High,Reverse mode round-trip,Logged in,Submit mode=REVERSE using forward's maturity as target,"mode=REVERSE, targetMaturityValue=141477.82, annualRatePercent=7, years=5",requiredPrincipal rounds back to ~1,00,000
+FD-003,Negative,High,Forward missing principal,Logged in,Submit mode=FORWARD without principal,"mode=FORWARD, annualRatePercent=7, years=5",Should be rejected (principal is null) - verify NullPointerException is NOT thrown / handled as 400/500 gracefully
+FD-004,Negative,High,Reverse missing targetMaturityValue,Logged in,Submit mode=REVERSE without target,"mode=REVERSE, annualRatePercent=7, years=5",Should be rejected - verify no NullPointerException/raw stack trace exposed
+FD-005,Boundary,High,years = 0,Logged in,Submit years=0,"mode=FORWARD, principal=100000, annualRatePercent=7, years=0",maturityValue = principal exactly (no compounding); no crash
+FD-006,Negative,High,principal negative,Logged in,Submit negative principal,"mode=FORWARD, principal=-100000, annualRatePercent=7, years=5",Should be rejected - currently accepted, produces negative maturity value
+FD-007,Negative,Medium,annualRatePercent negative,Logged in,Submit negative rate,"mode=FORWARD, principal=100000, annualRatePercent=-5, years=5",Should be rejected - currently accepted; maturity value would be LESS than principal (a "negative interest" FD, nonsensical)
+FD-008,Boundary,Medium,years negative,Logged in,Submit negative years,"mode=FORWARD, principal=100000, annualRatePercent=7, years=-5",Should be rejected - currently accepted; Math.pow with negative exponent still computes (produces a value less than principal), silently wrong rather than erroring
+FD-009,Security,High,XSS in numeric field,Logged in,Submit principal=<script>alert(1)</script>,"mode=FORWARD, principal=<script>alert(1)</script>",Rejected as invalid number
+FD-010,Security,Medium,CSRF token missing,Logged in,POST without _csrf,valid data minus _csrf,403 Forbidden
+FD-011,Security,High,Unauthenticated access,Logged out,GET and POST /calculators/fd,none,Redirect to /login
+FD-012,Negative,Medium,Invalid mode value (hacker),Logged in,Submit mode=DELETE_ALL or arbitrary string,"mode=DELETE_ALL, principal=100000, annualRatePercent=7, years=5",Falls back to FORWARD branch harmlessly (controller checks equals REVERSE else forward) - confirm no unintended behavior
+FD-013,EndUser,Low,Fractional years,Logged in,Submit years=2.5,"mode=FORWARD, principal=200000, annualRatePercent=6.5, years=2.5",Computes with fractional year compounding correctly

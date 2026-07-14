@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Financial Health Score')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('health-score')}"></nav>
+    <main class="content">
+        <h1>Financial Health Score</h1>
+        <p class="hint">A composite 0-100 score across the fundamentals: emergency fund coverage, term
+            insurance adequacy, debt burden, and savings rate — computed from data already in MoneyMap
+            plus two inputs it doesn't otherwise track (your monthly expense and savings).</p>
+
+        <div class="card">
+            <form th:action="@{/dashboard/health-score}" method="post">
+                <input type="hidden" name="_csrf" th:value="${csrf}">
+                <label for="monthlyExpense">Monthly Household Expense</label>
+                <input type="number" step="any" min="0" id="monthlyExpense" name="monthlyExpense"
+                       th:value="${inputs != null ? inputs.monthlyExpense : ''}" required>
+
+                <label for="monthlySavings">Monthly Savings (optional)</label>
+                <input type="number" step="any" min="0" id="monthlySavings" name="monthlySavings"
+                       th:value="${inputs != null ? inputs.monthlySavings : ''}">
+                <div class="hint">Leave blank to skip the savings-rate component of the score.</div>
+
+                <button type="submit" style="margin-top:14px">Update &amp; Recalculate</button>
+            </form>
+        </div>
+
+        <div class="card" th:if="${overallScore != null}">
+            <h2>Overall Score</h2>
+            <p class="figure" th:text="${overallScore} + ' / 100'"></p>
+            <div class="bar-track"><div class="bar-fill" th:classappend="${overallScore < 50 ? 'bar-danger' : ''}"
+                                          th:style="'width:' + ${overallScore} + '%'"></div></div>
+        </div>
+
+        <div class="bucket-grid" th:if="${overallScore != null}">
+            <div class="card">
+                <h3>Emergency Fund</h3>
+                <p class="figure" th:text="${emergencyMonths} + ' months'"></p>
+                <div class="bar-track"><div class="bar-fill" th:classappend="${emergencyScore < 50 ? 'bar-danger' : ''}"
+                                              th:style="'width:' + ${emergencyScore} + '%'"></div></div>
+                <p class="hint">Target: 6 months of expenses in cash/liquid assets.</p>
+            </div>
+            <div class="card">
+                <h3>Insurance Adequacy</h3>
+                <p class="figure" th:text="${insuranceScore != null ? insuranceScore + ' / 100' : '—'}"></p>
+                <div class="bar-track" th:if="${insuranceScore != null}"><div class="bar-fill" th:classappend="${insuranceScore < 50 ? 'bar-danger' : ''}"
+                                              th:style="'width:' + ${insuranceScore} + '%'"></div></div>
+                <p class="hint" th:if="${insuranceScore == null}">Add a salary profile to score this.</p>
+            </div>
+            <div class="card">
+                <h3>Debt Burden</h3>
+                <p class="figure" th:text="${debtScore != null ? debtScore + ' / 100' : '—'}"></p>
+                <div class="bar-track" th:if="${debtScore != null}"><div class="bar-fill" th:classappend="${debtScore < 50 ? 'bar-danger' : ''}"
+                                              th:style="'width:' + ${debtScore} + '%'"></div></div>
+                <p class="hint" th:if="${debtScore == null}">Add a salary profile to score this.</p>
+            </div>
+            <div class="card">
+                <h3>Savings Rate</h3>
+                <p class="figure" th:text="${savingsScore != null ? savingsScore + ' / 100' : '—'}"></p>
+                <div class="bar-track" th:if="${savingsScore != null}"><div class="bar-fill" th:classappend="${savingsScore < 50 ? 'bar-danger' : ''}"
+                                              th:style="'width:' + ${savingsScore} + '%'"></div></div>
+                <p class="hint" th:if="${savingsScore == null}">Enter your monthly savings above to score this.</p>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

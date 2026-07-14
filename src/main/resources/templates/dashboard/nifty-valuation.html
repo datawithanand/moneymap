@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Nifty Valuation')}"></head>
+<body th:class="${themeClass}">
+<div th:replace="~{fragments/layout :: adminViewBanner}"></div>
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('nifty-valuation')}"></nav>
+    <main class="content">
+        <h1>Nifty Valuation</h1>
+        <p class="hint">A simple PE-band heuristic (freefincal-style): compares the current Nifty 50
+            trailing PE to its long-run average. Purely informational — not investment advice, and not
+            a signal to time the market.</p>
+
+        <div class="card" th:if="${niftyPe == null}">
+            <p class="muted">No Nifty PE has been entered yet. Ask your administrator to set it under
+                Admin &gt; Settings.</p>
+        </div>
+
+        <div class="card" th:if="${niftyPe != null}">
+            <div class="bucket-grid">
+                <div class="card">
+                    <h3>Current Nifty 50 PE</h3>
+                    <p class="figure" th:text="${niftyPe}"></p>
+                </div>
+                <div class="card">
+                    <h3>Long-Run Average PE</h3>
+                    <p class="figure" th:text="${niftyHistoricalAvgPe}"></p>
+                </div>
+                <div class="card">
+                    <h3>Current / Average</h3>
+                    <p class="figure" th:text="${niftyRatioPercent} + '%'"></p>
+                </div>
+            </div>
+
+            <div class="card" th:if="${niftyZone != null}">
+                <h2>Valuation Zone</h2>
+                <p class="figure" th:switch="${niftyZone}">
+                    <span th:case="'UNDERVALUED'" style="color:var(--primary)">Undervalued</span>
+                    <span th:case="'FAIRLY_VALUED'">Fairly Valued</span>
+                    <span th:case="'OVERVALUED'" style="color:var(--danger)">Overvalued</span>
+                    <span th:case="'HIGHLY_OVERVALUED'" style="color:var(--danger)">Highly Overvalued</span>
+                </p>
+                <p class="hint" th:switch="${niftyZone}">
+                    <span th:case="'UNDERVALUED'">PE is more than 15% below its long-run average — markets have
+                        historically offered better long-term entry points around these levels.</span>
+                    <span th:case="'FAIRLY_VALUED'">PE is within about 10% of its long-run average — broadly
+                        in line with historical norms.</span>
+                    <span th:case="'OVERVALUED'">PE is 10-30% above its long-run average — some caution on
+                        fresh large lump-sum equity allocations may be warranted.</span>
+                    <span th:case="'HIGHLY_OVERVALUED'">PE is more than 30% above its long-run average —
+                        historically a period of below-average forward returns.</span>
+                </p>
+            </div>
+            <p class="hint" th:if="${niftyPeUpdatedAt != null}"
+               th:text="'PE last updated by admin: ' + ${fmt.dateTime(niftyPeUpdatedAt)}"></p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

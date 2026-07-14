@@ -130,6 +130,52 @@ public class AdminService {
         return temp;
     }
 
+    /**
+     * Admin-created account (Section 01 §6.1): generates a temporary password (returned once,
+     * same one-time-reveal pattern as resetPassword) and forces a change on first login. Bypasses
+     * the instance's registration mode (open/invite-only) entirely, since the admin is themselves
+     * the authorization — unlike self-registration, no invite token is involved.
+     */
+    public Map<String, String> createUser(User admin, String fullName, String username, String email,
+                                           User.Role role, StringBuilder createdUserId, StringBuilder tempPasswordOut) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        if (!Validators.validFullName(fullName)) {
+            errors.put("fullName", "2–100 characters; letters, spaces, periods, hyphens and apostrophes only.");
+        }
+        if (!Validators.validUsername(username)) {
+            errors.put("username", "3–30 characters; letters, digits, underscore and period only.");
+        } else if (users.findByUsernameIgnoreCase(username).isPresent()) {
+            errors.put("username", "This username is already taken.");
+        }
+        if (!Validators.validEmail(email)) {
+            errors.put("email", "Please enter a valid email address.");
+        } else if (users.findByEmailIgnoreCase(email).isPresent()) {
+            errors.put("email", "This email is already registered.");
+        }
+        if (!errors.isEmpty()) return errors;
+
+        String temp = generateTemporaryPassword();
+        GlobalSettings settings = globalSettings.get();
+        User user = new User();
+        user.setFullName(fullName.trim());
+        user.setUsername(username);
+        user.setEmail(email.trim());
+        user.setPasswordHash(encoder.encode(temp));
+        user.setRole(role == null ? User.Role.REGULAR : role);
+        user.setStatus(User.Status.ACTIVE);
+        user.setMustChangePassword(true);
+        user.setOnboardingCompleted(false);
+        user.setCurrencyPreference(settings.getDefaultCurrency());
+        user.setTheme(settings.getDefaultTheme());
+        User saved = users.save(user);
+        userService.seedSelfHouseholdMember(saved.getId());
+        audit.log(admin, AuditLogEntry.ActionType.SETTINGS_CHANGED, saved,
+                "Admin created user account '" + saved.getUsername() + "'");
+        createdUserId.append(saved.getId());
+        tempPasswordOut.append(temp);
+        return errors;
+    }
+
     private String generateTemporaryPassword() {
         StringBuilder sb = new StringBuilder(12);
         String all = LOWER + UPPER + DIGITS + SPECIALS;

@@ -7,18 +7,22 @@
     <nav th:replace="~{fragments/layout :: sidebar(${'assets-' + module.path})}"></nav>
     <main class="content">
         <h1 th:text="${module.displayName}">Module</h1>
+        <p class="hint" th:if="${loanType != null and !loanType.isEmpty()}">
+            Filtered to <strong th:text="${#strings.replace(loanType, '_', ' ')}"></strong> —
+            <a th:href="@{'/assets/' + ${module.path}}">show all loan types</a>.</p>
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
         <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
                 <form method="get" th:action="@{'/assets/' + ${module.path}}">
+                    <input type="hidden" name="loanType" th:value="${loanType}">
                     <select name="tag" onchange="this.form.submit()">
                         <option value="">All family members</option>
                         <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"
                                 th:selected="${tag == m.label}"></option>
                     </select>
                 </form>
-                <a class="btn" th:href="@{'/assets/' + ${module.path} + '/new'}"
+                <a class="btn" th:href="@{'/assets/' + ${module.path} + '/new'(loanType=${loanType})}"
                    th:text="'Add ' + ${module.displayName}">Add</a>
             </div>
 
@@ -34,6 +38,8 @@
                     <td th:each="entry : ${labels}" class="mono"
                         th:text="${fmt.cell(row[entry.key], currentUser)}"></td>
                     <td style="white-space:nowrap;text-align:right">
+                        <a th:if="${module.path == 'mutual-funds'}" class="btn btn-sm btn-secondary"
+                           th:href="@{'/assets/mutual-funds/' + ${row['id']} + '/transactions'}">Transactions</a>
                         <a class="btn btn-sm btn-secondary"
                            th:href="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/edit'}">Edit</a>
                         <form class="inline" th:action="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/delete'}"
