@@ -77,7 +77,7 @@ public class CategoryController {
         String note = "iWISH / Flexi RD accounts aren't shown in this table (they use a deposit-ledger form) — "
                 + "manage them on the dedicated <a href=\"/assets/flexi-rds\">Flexi RD page</a>.";
         return renderCategory(request, model, "cash-banking", "Cash & Banking",
-                "Savings, cash in hand, fixed and recurring deposits.", tabs, tab, kpis, "rd", note,
+                "Savings, cash in hand, fixed and recurring deposits.", tabs, tab, kpis, "savings", note,
                 key -> cashBankingRows(user, key));
     }
 
