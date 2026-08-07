@@ -5,168 +5,279 @@
 
 <div class="shell">
     <nav th:replace="~{fragments/layout :: sidebar('settings')}"></nav>
-    <main class="content">
-        <h1>Settings</h1>
+    <main class="content" style="max-width:none">
+        <h1 style="margin-bottom:20px">Settings</h1>
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
-        <!-- Profile (§5.1) -->
-        <div class="card">
-            <h2>Profile</h2>
-            <form th:action="@{/settings/profile}" method="post" enctype="multipart/form-data">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <label>Username</label>
-                <input type="text" th:value="${user.username}" disabled>
-                <div class="hint">Usernames cannot be changed.</div>
-                <label for="fullName">Full Name</label>
-                <input type="text" id="fullName" name="fullName" th:value="${user.fullName}" required>
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" th:value="${user.email}" required>
-                <label for="photo">Profile Photo (JPEG/PNG/WebP, up to 5 MB)</label>
-                <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
-                <p th:if="${user.profilePhotoPath != null}">
-                    <label style="display:inline;font-weight:400">
-                        <input type="checkbox" name="removePhoto" value="1"> Remove current photo
-                    </label>
-                </p>
-                <p><button type="submit">Save Profile</button></p>
-            </form>
-        </div>
+        <div style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px">
 
-        <!-- Regional preferences & theme (§5.2, §5.3) -->
-        <div class="card">
-            <h2>Regional Preferences &amp; Theme</h2>
-            <form th:action="@{/settings/preferences}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <label for="currency">Currency</label>
-                <select id="currency" name="currency">
-                    <option value="INR" th:selected="${user.currencyPreference.name() == 'INR'}">₹ INR</option>
-                    <option value="USD" th:selected="${user.currencyPreference.name() == 'USD'}">$ USD</option>
-                </select>
-                <div class="hint">Changes the display symbol only — values are never converted.</div>
+            <!-- Left vertical tab list -->
+            <div style="display:flex;flex-direction:column;gap:2px">
+                <button type="button" class="settings-tab active" data-panel="profile" onclick="selectSettingsTab('profile')">Profile</button>
+                <button type="button" class="settings-tab" data-panel="security" onclick="selectSettingsTab('security')">Security</button>
+                <button type="button" class="settings-tab" data-panel="appearance" onclick="selectSettingsTab('appearance')">Appearance</button>
+                <button type="button" class="settings-tab" data-panel="notifications" onclick="selectSettingsTab('notifications')">Notifications</button>
+                <button type="button" class="settings-tab" data-panel="data" onclick="selectSettingsTab('data')">Data &amp; Export</button>
+                <button type="button" class="settings-tab" data-panel="more" onclick="selectSettingsTab('more')">More</button>
+            </div>
 
-                <label for="dateFormat">Date Format</label>
-                <select id="dateFormat" name="dateFormat">
-                    <option th:selected="${user.dateFormat == 'DD/MM/YYYY'}">DD/MM/YYYY</option>
-                    <option th:selected="${user.dateFormat == 'MM/DD/YYYY'}">MM/DD/YYYY</option>
-                    <option th:selected="${user.dateFormat == 'YYYY-MM-DD'}">YYYY-MM-DD</option>
-                </select>
+            <div style="max-width:640px;display:flex;flex-direction:column;gap:20px">
 
-                <label for="numberFormat">Number Format</label>
-                <select id="numberFormat" name="numberFormat">
-                    <option value="INDIAN" th:selected="${user.numberFormat.name() == 'INDIAN'}">Indian — e.g. 12,34,567.89</option>
-                    <option value="INTERNATIONAL" th:selected="${user.numberFormat.name() == 'INTERNATIONAL'}">International — e.g. 1,234,567.89</option>
-                </select>
-
-                <label for="theme">Theme</label>
-                <select id="theme" name="theme">
-                    <option value="LIGHT" th:selected="${user.theme.name() == 'LIGHT'}">Light</option>
-                    <option value="DARK" th:selected="${user.theme.name() == 'DARK'}">Dark</option>
-                </select>
-                <p><button type="submit">Save Preferences</button></p>
-            </form>
-        </div>
-
-        <!-- Rates (Section 01B) -->
-        <div class="card">
-            <h2>Rates</h2>
-            <p class="hint">Manual values used only for valuation and display — never fetched automatically.</p>
-            <form th:action="@{/settings/rates}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <label for="goldRate24k">24K Gold Rate (per gram)</label>
-                <input type="number" step="0.01" min="0.01" id="goldRate24k" name="goldRate24k" th:value="${user.goldRate24kPerGram}" required>
-                <label for="goldRate22k">22K Gold Rate (per gram)</label>
-                <input type="number" step="0.01" min="0.01" id="goldRate22k" name="goldRate22k" th:value="${user.goldRate22kPerGram}" required>
-                <label for="usdInrRate">USD / INR Exchange Rate</label>
-                <input type="number" step="0.0001" min="0.0001" id="usdInrRate" name="usdInrRate" th:value="${user.usdInrExchangeRate}" required>
-                <p><button type="submit">Save Rates</button></p>
-            </form>
-        </div>
-
-        <!-- Household members (Section 05 / 17 §1.7) -->
-        <div class="card">
-            <h2>Household Members</h2>
-            <p class="hint">Labels used to tag and filter assets within your own account —
-                they carry no login or sharing permission of any kind.</p>
-            <table class="data">
-                <tr th:each="m : ${household}">
-                    <td th:text="${m.label}">Self</td>
-                    <td style="text-align:right">
-                        <form class="inline" th:if="${!m.defaultEntry}" th:action="@{/settings/household/delete}" method="post">
+                <!-- Profile -->
+                <div id="settings-panel-profile" class="settings-panel">
+                    <div class="card">
+                        <h2>Profile</h2>
+                        <form th:action="@{/settings/profile}" method="post" enctype="multipart/form-data">
                             <input type="hidden" name="_csrf" th:value="${csrf}">
-                            <input type="hidden" name="id" th:value="${m.id}">
-                            <button type="submit" class="btn-sm btn-secondary">Remove</button>
+                            <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+                                <div class="avatar" style="width:56px;height:56px;font-size:22px" th:text="${#strings.substring(user.fullName,0,1)}"></div>
+                                <label for="photo" class="btn-secondary btn-sm" style="cursor:pointer">Change photo</label>
+                                <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" style="display:none">
+                            </div>
+                            <p th:if="${user.profilePhotoPath != null}">
+                                <label style="display:inline;font-weight:400">
+                                    <input type="checkbox" name="removePhoto" value="1"> Remove current photo
+                                </label>
+                            </p>
+                            <div class="form-grid">
+                                <div>
+                                    <label>Username</label>
+                                    <input type="text" th:value="${user.username}" disabled>
+                                    <div class="hint">Usernames cannot be changed.</div>
+                                </div>
+                                <div>
+                                    <label for="fullName">Full name</label>
+                                    <input type="text" id="fullName" name="fullName" th:value="${user.fullName}" required>
+                                </div>
+                                <div>
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" name="email" th:value="${user.email}" required>
+                                </div>
+                            </div>
+                            <p><button type="submit">Save changes</button></p>
                         </form>
-                        <span class="hint" th:if="${m.defaultEntry}">Default</span>
-                    </td>
-                </tr>
-            </table>
-            <form th:action="@{/settings/household/add}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <label for="label">Add member</label>
-                <input type="text" id="label" name="label" placeholder="e.g. Rohan (Son)" required>
-                <p><button type="submit" class="btn-sm">Add</button></p>
-            </form>
-        </div>
+                    </div>
+                </div>
 
-        <!-- Notifications (§5.4) -->
-        <div class="card">
-            <h2>Notifications</h2>
-            <form th:action="@{/settings/notifications}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <p><label style="display:inline;font-weight:400">
-                    <input type="checkbox" name="notifyInApp" value="1" th:checked="${user.notifyInApp}">
-                    In-App Notifications
-                </label></p>
-                <p><label style="display:inline;font-weight:400" th:classappend="${!instanceSettings.smtpEnabled} ? 'muted'">
-                    <input type="checkbox" name="notifyEmail" value="1" th:checked="${user.notifyEmail}"
-                           th:disabled="${!instanceSettings.smtpEnabled}">
-                    Email Notifications
-                </label></p>
-                <p class="hint" th:if="${!instanceSettings.smtpEnabled}">Email notifications require your
-                    administrator to configure an outbound mail server for this instance.</p>
-                <p class="hint">Security-critical alerts (like emergency access requests) always
-                    produce an in-app notification regardless of these toggles.</p>
-                <p><button type="submit">Save Notification Preferences</button></p>
-            </form>
-        </div>
+                <!-- Security -->
+                <div id="settings-panel-security" class="settings-panel" style="display:none">
+                    <div class="card">
+                        <h2>Password &amp; security</h2>
+                        <form th:action="@{/settings/password}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <label for="currentPassword">Current password</label>
+                            <input type="password" id="currentPassword" name="currentPassword" required>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="newPassword">New password</label>
+                                    <input type="password" id="newPassword" name="newPassword" required>
+                                    <div class="strength-meter" data-strength-for="newPassword"
+                                         th:attr="data-user-terms=${user.username + ',' + user.email}"><div></div></div>
+                                    <div class="strength-label" data-strength-label-for="newPassword"></div>
+                                    <div class="hint" th:text="${passwordRule}"></div>
+                                </div>
+                                <div>
+                                    <label for="confirmPassword">Confirm password</label>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                                </div>
+                            </div>
+                            <p><button type="submit">Update password</button></p>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <div style="display:flex;align-items:center;justify-content:space-between">
+                            <div>
+                                <div style="font-size:14.5px;font-weight:700">Two-factor authentication</div>
+                                <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Coming soon — not yet available in this version of MoneyMap.</div>
+                            </div>
+                            <label class="toggle-switch" title="Not yet available" style="opacity:.5;cursor:not-allowed">
+                                <input type="checkbox" disabled>
+                                <span class="toggle-track"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- Change password (§4.1) -->
-        <div class="card">
-            <h2>Change Password</h2>
-            <form th:action="@{/settings/password}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <label for="currentPassword">Current Password</label>
-                <input type="password" id="currentPassword" name="currentPassword" required>
-                <label for="newPassword">New Password</label>
-                <input type="password" id="newPassword" name="newPassword" required>
-                <div class="strength-meter" data-strength-for="newPassword"
-                     th:attr="data-user-terms=${user.username + ',' + user.email}"><div></div></div>
-                <div class="strength-label" data-strength-label-for="newPassword"></div>
-                <div class="hint" th:text="${passwordRule}"></div>
-                <label for="confirmPassword">Confirm New Password</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" required>
-                <p><button type="submit">Change Password</button></p>
-            </form>
-        </div>
+                <!-- Appearance -->
+                <div id="settings-panel-appearance" class="settings-panel" style="display:none">
+                    <div class="card">
+                        <h2>Appearance</h2>
+                        <form th:action="@{/settings/preferences}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <div style="display:flex;gap:14px;margin:14px 0">
+                                <label class="theme-choice-card" th:classappend="${user.theme.name() == 'LIGHT'} ? 'selected'">
+                                    <input type="radio" name="theme" value="LIGHT" th:checked="${user.theme.name() == 'LIGHT'}" style="display:none" onchange="markThemeCard(this)">
+                                    <div style="width:100%;height:60px;background:oklch(97% 0.005 90);border:1px solid var(--border);border-radius:8px;margin-bottom:10px"></div>
+                                    <div style="font-size:13.5px;font-weight:700;text-align:center">Light</div>
+                                </label>
+                                <label class="theme-choice-card" th:classappend="${user.theme.name() == 'DARK'} ? 'selected'">
+                                    <input type="radio" name="theme" value="DARK" th:checked="${user.theme.name() == 'DARK'}" style="display:none" onchange="markThemeCard(this)">
+                                    <div style="width:100%;height:60px;background:var(--ink);border-radius:8px;margin-bottom:10px"></div>
+                                    <div style="font-size:13.5px;font-weight:700;text-align:center">Dark</div>
+                                </label>
+                            </div>
+                            <div class="form-grid">
+                                <div>
+                                    <label for="currency">Currency format</label>
+                                    <select id="currency" name="currency">
+                                        <option value="INR" th:selected="${user.currencyPreference.name() == 'INR'}">₹ Indian Rupee (Lakh/Crore)</option>
+                                        <option value="USD" th:selected="${user.currencyPreference.name() == 'USD'}">$ US Dollar</option>
+                                    </select>
+                                    <div class="hint">Changes the display symbol only — values are never converted.</div>
+                                </div>
+                                <div>
+                                    <label for="numberFormat">Number format</label>
+                                    <select id="numberFormat" name="numberFormat">
+                                        <option value="INDIAN" th:selected="${user.numberFormat.name() == 'INDIAN'}">Indian — e.g. 12,34,567.89</option>
+                                        <option value="INTERNATIONAL" th:selected="${user.numberFormat.name() == 'INTERNATIONAL'}">International — e.g. 1,234,567.89</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="dateFormat">Date format</label>
+                                    <select id="dateFormat" name="dateFormat">
+                                        <option th:selected="${user.dateFormat == 'DD/MM/YYYY'}">DD/MM/YYYY</option>
+                                        <option th:selected="${user.dateFormat == 'MM/DD/YYYY'}">MM/DD/YYYY</option>
+                                        <option th:selected="${user.dateFormat == 'YYYY-MM-DD'}">YYYY-MM-DD</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p><button type="submit">Save appearance</button></p>
+                        </form>
+                    </div>
+                </div>
 
-        <!-- Danger zone (§5.5) -->
-        <div class="card danger-zone">
-            <h2>Delete My Account</h2>
-            <p>Your account and all its data will be permanently deleted in 30 days. Until then,
-                an administrator can restore it if you change your mind — you will not be able to
-                log in during this period to undo it yourself.</p>
-            <form th:action="@{/settings/delete-account}" method="post">
-                <input type="hidden" name="_csrf" th:value="${csrf}">
-                <label for="confirmUsername">Type your username to confirm</label>
-                <input type="text" id="confirmUsername" name="confirmUsername" required>
-                <label for="deletePassword">Current Password</label>
-                <input type="password" id="deletePassword" name="currentPassword" required>
-                <p><button type="submit" class="btn-danger">Delete My Account</button></p>
-            </form>
+                <!-- Notifications -->
+                <div id="settings-panel-notifications" class="settings-panel" style="display:none">
+                    <div class="card">
+                        <h2>Notification preferences</h2>
+                        <form th:action="@{/settings/notifications}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--border)">
+                                <div>
+                                    <div style="font-size:14px;font-weight:600">In-app notifications</div>
+                                    <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px">Reminders, family activity, and security alerts shown inside MoneyMap</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="notifyInApp" value="1" th:checked="${user.notifyInApp}">
+                                    <span class="toggle-track"></span>
+                                </label>
+                            </div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--border)">
+                                <div>
+                                    <div style="font-size:14px;font-weight:600">Email notifications</div>
+                                    <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px"
+                                         th:text="${instanceSettings.smtpEnabled} ? 'Same events, sent to your email address' : 'Requires your administrator to configure an outbound mail server'"></div>
+                                </div>
+                                <label class="toggle-switch" th:classappend="${!instanceSettings.smtpEnabled} ? 'disabled-toggle'">
+                                    <input type="checkbox" name="notifyEmail" value="1" th:checked="${user.notifyEmail}" th:disabled="${!instanceSettings.smtpEnabled}">
+                                    <span class="toggle-track"></span>
+                                </label>
+                            </div>
+                            <p class="hint" style="margin-top:12px">Security-critical alerts (like emergency access requests) always
+                                produce an in-app notification regardless of these toggles.</p>
+                            <p><button type="submit">Save notification preferences</button></p>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Data & Export -->
+                <div id="settings-panel-data" class="settings-panel" style="display:none">
+                    <div class="card">
+                        <h2>Data &amp; export</h2>
+                        <p>Export or import your MoneyMap data, or manage retention.</p>
+                        <a class="btn" th:href="@{/export}">Go to Export / Import</a>
+                    </div>
+                </div>
+
+                <!-- More: real settings the design handoff doesn't cover (gold/exchange rates,
+                     household member tags, account deletion) — kept in the same tabbed pattern
+                     rather than dropped, since they're genuinely necessary functionality. -->
+                <div id="settings-panel-more" class="settings-panel" style="display:none">
+                    <div class="card">
+                        <h2>Rates</h2>
+                        <p class="hint">Manual values used only for valuation and display — never fetched automatically.</p>
+                        <form th:action="@{/settings/rates}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <div class="form-grid">
+                                <div><label for="goldRate24k">24K gold rate (per gram)</label>
+                                    <input type="number" step="0.01" min="0.01" id="goldRate24k" name="goldRate24k" th:value="${user.goldRate24kPerGram}" required></div>
+                                <div><label for="goldRate22k">22K gold rate (per gram)</label>
+                                    <input type="number" step="0.01" min="0.01" id="goldRate22k" name="goldRate22k" th:value="${user.goldRate22kPerGram}" required></div>
+                                <div><label for="usdInrRate">USD / INR exchange rate</label>
+                                    <input type="number" step="0.0001" min="0.0001" id="usdInrRate" name="usdInrRate" th:value="${user.usdInrExchangeRate}" required></div>
+                            </div>
+                            <p><button type="submit">Save rates</button></p>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <h2>Household members</h2>
+                        <p class="hint">Labels used to tag and filter assets within your own account — they carry no login or sharing permission of any kind.</p>
+                        <table class="data">
+                            <tr th:each="m : ${household}">
+                                <td th:text="${m.label}">Self</td>
+                                <td style="text-align:right">
+                                    <form class="inline" th:if="${!m.defaultEntry}" th:action="@{/settings/household/delete}" method="post">
+                                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                                        <input type="hidden" name="id" th:value="${m.id}">
+                                        <button type="submit" class="btn-sm btn-secondary">Remove</button>
+                                    </form>
+                                    <span class="hint" th:if="${m.defaultEntry}">Default</span>
+                                </td>
+                            </tr>
+                        </table>
+                        <form th:action="@{/settings/household/add}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <label for="label">Add member</label>
+                            <input type="text" id="label" name="label" placeholder="e.g. Rohan (Son)" required>
+                            <p><button type="submit" class="btn-sm">Add</button></p>
+                        </form>
+                    </div>
+                    <div class="card danger-zone">
+                        <h2>Delete my account</h2>
+                        <p>Your account and all its data will be permanently deleted in 30 days. Until then,
+                            an administrator can restore it if you change your mind — you will not be able to
+                            log in during this period to undo it yourself.</p>
+                        <form th:action="@{/settings/delete-account}" method="post">
+                            <input type="hidden" name="_csrf" th:value="${csrf}">
+                            <label for="confirmUsername">Type your username to confirm</label>
+                            <input type="text" id="confirmUsername" name="confirmUsername" required>
+                            <label for="deletePassword">Current password</label>
+                            <input type="password" id="deletePassword" name="currentPassword" required>
+                            <p><button type="submit" class="btn-danger">Delete my account</button></p>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </main>
 </div>
 
+<style>
+    .settings-tab { text-align:left; padding:11px 14px; border-radius:9px; border:none; background:transparent;
+        color:var(--text); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .settings-tab:hover { background:var(--surface-alt); }
+    .settings-tab.active { background:var(--primary-soft); color:var(--primary-strong); font-weight:700; }
+    .theme-choice-card { flex:1; border-radius:12px; border:2px solid var(--border); background:var(--surface);
+        padding:16px; cursor:pointer; }
+    .theme-choice-card.selected { border-color:var(--primary); }
+    .disabled-toggle { opacity:.5; }
+</style>
 <script th:src="@{/js/password-strength.js}"></script>
+<script>
+    function selectSettingsTab(key) {
+        document.querySelectorAll('.settings-panel').forEach(function (p) { p.style.display = p.id === 'settings-panel-' + key ? '' : 'none'; });
+        document.querySelectorAll('.settings-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-panel') === key); });
+    }
+    function markThemeCard(input) {
+        input.closest('div[style*="display:flex;gap:14px"]').querySelectorAll('.theme-choice-card').forEach(function (c) {
+            c.classList.remove('selected');
+        });
+        input.closest('.theme-choice-card').classList.add('selected');
+    }
+    document.getElementById('photo').addEventListener('change', function () {
+        if (this.files.length) this.previousElementSibling.textContent = this.files[0].name;
+    });
+</script>
 </body>
 </html>

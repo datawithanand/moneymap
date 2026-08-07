@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${instanceSettings.instanceName} + ' — Every rupee, accounted for.'">MoneyMap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <style>
+        body { margin: 0; background: var(--page-bg); font-family: 'Inter', sans-serif; }
+        .lp a { color: var(--primary); text-decoration: none; }
+        .lp a:hover { color: var(--primary-strong); }
+        .lp a.btn, .lp a.btn:hover { color: #fff; }
+        .lp a.btn.btn-secondary, .lp a.btn.btn-secondary:hover { color: var(--text); }
+        .lp h1, .lp h2, .lp .lp-brand-wordmark { font-family: 'Manrope', sans-serif; }
+        .lp-nav { position: sticky; top: 0; z-index: 10; background: color-mix(in oklab, var(--page-bg) 90%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+        .lp-nav-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; }
+        .lp-brand { display: flex; align-items: center; gap: 10px; }
+        .lp-brand-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 16px; }
+        .lp-brand-wordmark { font-weight: 800; font-size: 19px; letter-spacing: -.01em; color: var(--text); }
+        .lp-nav-links { display: flex; align-items: center; gap: 36px; }
+        .lp-nav-links a:not(.btn) { font-size: 14.5px; font-weight: 600; color: var(--text); }
+        .lp-hero { max-width: 1200px; margin: 0 auto; padding: 96px 32px 64px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 64px; align-items: center; }
+        .lp-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--primary-soft); color: var(--primary-strong); font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 100px; margin-bottom: 24px; }
+        .lp-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--badge-green-fg); }
+        .lp-hero h1 { font-weight: 800; font-size: 56px; line-height: 1.06; letter-spacing: -.02em; margin: 0 0 24px; color: var(--text); }
+        .lp-hero p.lead { font-size: 18px; line-height: 1.6; color: var(--text-muted); max-width: 520px; margin: 0 0 36px; }
+        .lp-hero-actions { display: flex; gap: 14px; align-items: center; }
+        .lp-hero-actions .btn-lg { font-size: 15.5px; padding: 15px 26px; }
+        .lp-stats-row { display: flex; gap: 28px; margin-top: 44px; }
+        .lp-stats-row b { display: block; font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 22px; color: var(--text); }
+        .lp-stats-row span { font-size: 13px; color: var(--text-muted); }
+        .lp-hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-hero); padding: 22px; }
+        .lp-hero-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .lp-hero-card-top .lbl { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 14px; color: var(--text-muted); }
+        .lp-hero-card-top .delta { font-size: 12px; color: var(--badge-green-fg); font-weight: 700; }
+        .lp-hero-networth { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 34px; margin-bottom: 18px; color: var(--text); }
+        .lp-hero-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+        .lp-hero-tiles > div { background: var(--surface-alt); border-radius: 12px; padding: 14px; }
+        .lp-hero-tiles .tlbl { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+        .lp-hero-tiles .tval { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 18px; color: var(--text); }
+        .lp-hero-tiles .tval.danger { color: var(--danger); }
+        .lp-hero-alloc { display: flex; align-items: center; gap: 20px; padding: 14px; background: var(--surface-alt); border-radius: 12px; }
+        .lp-hero-donut { width: 84px; height: 84px; border-radius: 50%; flex-shrink: 0; position: relative; }
+        .lp-hero-donut::after { content: ""; position: absolute; inset: 14px; border-radius: 50%; background: var(--surface); }
+        .lp-hero-legend { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--text); }
+        .lp-hero-legend span.sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+        .lp-trust { background: var(--ink); padding: 56px 32px; }
+        .lp-trust-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; color: #fff; }
+        .lp-trust-inner b { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 16px; display: block; margin-bottom: 8px; }
+        .lp-trust-inner span { font-size: 14px; color: oklch(80% 0.01 260); line-height: 1.55; }
+        .lp-features { max-width: 1200px; margin: 0 auto; padding: 96px 32px; }
+        .lp-features-head { text-align: center; margin-bottom: 56px; }
+        .lp-features-eyebrow { font-size: 13px; font-weight: 700; color: var(--primary); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 12px; }
+        .lp-features-head h2 { font-weight: 800; font-size: 38px; letter-spacing: -.01em; margin: 0; color: var(--text); }
+        .lp-feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .lp-feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+        .lp-feature-icon { width: 44px; height: 44px; border-radius: 11px; background: var(--primary-soft); display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+        .lp-feature-icon svg { width: 22px; height: 22px; stroke: var(--primary); }
+        .lp-feature-card b { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 17px; display: block; margin-bottom: 8px; color: var(--text); }
+        .lp-feature-card span { font-size: 14.5px; line-height: 1.6; color: var(--text-muted); }
+        .lp-modules { background: var(--surface-alt); padding: 88px 32px; }
+        .lp-modules-inner { max-width: 1200px; margin: 0 auto; }
+        .lp-modules-inner h2 { font-weight: 800; font-size: 34px; letter-spacing: -.01em; margin: 0 0 40px; text-align: center; color: var(--text); }
+        .lp-module-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .lp-module-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+        .lp-module-card b { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 15px; display: block; margin-bottom: 6px; color: var(--text); }
+        .lp-module-card span { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+        .lp-cta { max-width: 1200px; margin: 0 auto; padding: 96px 32px; text-align: center; }
+        .lp-cta h2 { font-weight: 800; font-size: 36px; letter-spacing: -.01em; margin: 0 0 16px; color: var(--text); }
+        .lp-cta p { font-size: 16px; color: var(--text-muted); margin: 0 0 32px; }
+        .lp-footer { border-top: 1px solid var(--border); padding: 32px; }
+        .lp-footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+        .lp-footer-brand { display: flex; align-items: center; gap: 8px; }
+        .lp-footer-brand .dot { width: 22px; height: 22px; border-radius: 6px; background: var(--primary); }
+        .lp-footer-brand span { font-size: 13.5px; color: var(--text-muted); }
+        .lp-footer-links { display: flex; gap: 24px; }
+        .lp-footer-links a { font-size: 13.5px; color: var(--text-muted); }
+        @media (max-width: 860px) {
+            .lp-hero, .lp-trust-inner { grid-template-columns: 1fr; }
+            .lp-feature-grid, .lp-module-grid { grid-template-columns: 1fr 1fr; }
+            .lp-hero h1 { font-size: 34px; }
+            .lp-nav-links { gap: 16px; }
+        }
+    </style>
+</head>
+<body class="theme-light lp">
+
+<!-- Nav -->
+<div class="lp-nav">
+    <div class="lp-nav-inner">
+        <div class="lp-brand">
+            <div class="lp-brand-mark">M</div>
+            <span class="lp-brand-wordmark" th:text="${instanceSettings.instanceName}">MoneyMap</span>
+        </div>
+        <div class="lp-nav-links">
+            <a href="#features">Features</a>
+            <a href="#privacy">Privacy</a>
+            <a href="#modules">Modules</a>
+            <a th:href="@{/login}">Log in</a>
+            <a class="btn" th:if="${registrationOpen}" th:href="@{/register}">Get started free</a>
+        </div>
+    </div>
+</div>
+
+<!-- Hero -->
+<div class="lp-hero">
+    <div>
+        <div class="lp-badge"><span class="dot"></span> Self-hosted &amp; open-source</div>
+        <h1>Every rupee you own, owe, and insure — on your own server.</h1>
+        <p class="lead">One consolidated dashboard for savings, investments, retirement, insurance, loans and real estate — built for Indian families who want clarity without handing their data to the cloud.</p>
+        <div class="lp-hero-actions">
+            <a class="btn btn-lg" th:if="${registrationOpen}" th:href="@{/register}">Get started free</a>
+            <a class="btn btn-lg btn-secondary" th:unless="${registrationOpen}" th:href="@{/login}">Sign in</a>
+            <a class="btn btn-lg btn-secondary" th:if="${registrationOpen}" href="#modules">See what's inside</a>
+        </div>
+        <div class="lp-stats-row">
+            <div><b>No bank linking</b><span>You enter, you control</span></div>
+            <div><b>Docker in minutes</b><span>Runs on your hardware</span></div>
+            <div><b>Full export</b><span>JSON · Excel · PDF</span></div>
+        </div>
+    </div>
+
+    <div class="lp-hero-card">
+        <div class="lp-hero-card-top">
+            <div class="lbl">Family net worth</div>
+            <div class="delta">▲ 8.2% this year</div>
+        </div>
+        <div class="lp-hero-networth">₹4,82,10,340</div>
+        <div class="lp-hero-tiles">
+            <div><div class="tlbl">Assets</div><div class="tval">₹5,61,40,200</div></div>
+            <div><div class="tlbl">Liabilities</div><div class="tval danger">₹79,29,860</div></div>
+        </div>
+        <div class="lp-hero-alloc">
+            <div class="lp-hero-donut" style="background:conic-gradient(var(--primary) 0 38%, var(--badge-green-fg) 38% 63%, var(--accent) 63% 80%, var(--badge-violet-fg) 80% 100%)"></div>
+            <div class="lp-hero-legend">
+                <div><span class="sw" style="background:var(--primary)"></span>Equity MF · 38%</div>
+                <div><span class="sw" style="background:var(--badge-green-fg)"></span>Real Estate · 25%</div>
+                <div><span class="sw" style="background:var(--accent)"></span>Retirement · 17%</div>
+                <div><span class="sw" style="background:var(--badge-violet-fg)"></span>Other · 20%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trust strip -->
+<div class="lp-trust" id="privacy">
+    <div class="lp-trust-inner">
+        <div><b>Zero cloud dependency</b><span>All data lives on your Docker volume. Nothing leaves your server.</span></div>
+        <div><b>Family permissions</b><span>Four-level access matrix and an emergency-access workflow with audit trail.</span></div>
+        <div><b>Complete coverage</b><span>Cash, investments, retirement, insurance, loans, real estate — one model.</span></div>
+        <div><b>Take it with you</b><span>Export to JSON, Excel or PDF at any time — no lock-in.</span></div>
+    </div>
+</div>
+
+<!-- Features -->
+<div class="lp-features" id="features">
+    <div class="lp-features-head">
+        <div class="lp-features-eyebrow">Why MoneyMap</div>
+        <h2>Built like a private family office</h2>
+    </div>
+    <div class="lp-feature-grid">
+        <div class="lp-feature-card">
+            <div class="lp-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <b>Family &amp; Vault</b>
+            <span>Invite members, set directional permissions, and get a consolidated household net worth with drill-down.</span>
+        </div>
+        <div class="lp-feature-card">
+            <div class="lp-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+            <b>Deep analytics</b>
+            <span>Net worth trend, allocation drift, tax planning, retirement buckets and a financial health score.</span>
+        </div>
+        <div class="lp-feature-card">
+            <div class="lp-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div>
+            <b>11 calculators</b>
+            <span>FIRE, SIP, SWP, PPF, NPS, loan EMI and tax-regime comparisons, tuned to Indian tax rules.</span>
+        </div>
+    </div>
+</div>
+
+<!-- Modules -->
+<div class="lp-modules" id="modules">
+    <div class="lp-modules-inner">
+        <h2>Every module, one home</h2>
+        <div class="lp-module-grid">
+            <div class="lp-module-card"><b>Cash &amp; Banking</b><span>Savings, cash in hand, FDs &amp; RDs with maturity/accrual math.</span></div>
+            <div class="lp-module-card"><b>Investments</b><span>Mutual funds, stocks, ETFs, bonds, crypto, ESOPs/RSUs.</span></div>
+            <div class="lp-module-card"><b>Retirement</b><span>EPF/VPF, PPF, NPS, gratuity and government schemes.</span></div>
+            <div class="lp-module-card"><b>Insurance</b><span>Term, health, LIC/endowment/ULIP with surrender value.</span></div>
+            <div class="lp-module-card"><b>Liabilities</b><span>Home, personal, vehicle &amp; education loans, credit cards.</span></div>
+            <div class="lp-module-card"><b>Real Estate &amp; Physical</b><span>Property, gold by purity, and other physical assets.</span></div>
+            <div class="lp-module-card"><b>Goals &amp; Income</b><span>Dual SIP calculator, salary profiles, other income streams.</span></div>
+            <div class="lp-module-card"><b>Tax Planning</b><span>80C/80D/80CCD(1B) tracking against editable FY slabs.</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA -->
+<div class="lp-cta">
+    <h2>Ready to see your whole picture?</h2>
+    <p>Set up your instance in minutes. Log in with the default admin account to begin.</p>
+    <a class="btn btn-lg" th:if="${registrationOpen}" th:href="@{/register}">Get started free</a>
+    <a class="btn btn-lg" th:unless="${registrationOpen}" th:href="@{/login}">Sign in</a>
+</div>
+
+<!-- Footer -->
+<div class="lp-footer">
+    <div class="lp-footer-inner">
+        <div class="lp-footer-brand">
+            <div class="dot"></div>
+            <span th:text="'© ' + ${#dates.year(#dates.createNow())} + ' ' + ${instanceSettings.instanceName} + ' · self-hosted personal finance'">© MoneyMap</span>
+        </div>
+        <div class="lp-footer-links">
+            <a th:href="@{/login}">Log in</a>
+            <a th:if="${registrationOpen}" th:href="@{/register}">Get started</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

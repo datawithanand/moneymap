@@ -3,13 +3,18 @@
 <head th:replace="~{fragments/layout :: head('Setup')}"></head>
 <body th:class="${themeClass}">
 
-<div class="wizard-card card">
-    <div class="wizard-dots">
-        <span th:classappend="${step >= 1} ? 'on'"></span>
-        <span th:classappend="${step >= 2} ? 'on'"></span>
-        <span th:classappend="${step >= 3} ? 'on'"></span>
-        <span th:classappend="${step >= 4} ? 'on'"></span>
+<div class="wizard-page">
+<div class="wizard-wrap">
+    <div class="wizard-stepper">
+        <div class="step-circle" th:classappend="${step >= 1} ? 'on'">1</div>
+        <div class="step-connector" th:classappend="${step >= 2} ? 'on'"></div>
+        <div class="step-circle" th:classappend="${step >= 2} ? 'on'">2</div>
+        <div class="step-connector" th:classappend="${step >= 3} ? 'on'"></div>
+        <div class="step-circle" th:classappend="${step >= 3} ? 'on'">3</div>
+        <div class="step-connector" th:classappend="${step >= 4} ? 'on'"></div>
+        <div class="step-circle" th:classappend="${step >= 4} ? 'on'">4</div>
     </div>
+    <div class="wizard-card card">
     <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
     <!-- Step 1 — Currency (§1.2) -->
@@ -90,6 +95,8 @@
             </p>
         </form>
     </th:block>
+    </div>
+</div>
 </div>
 
 </body>

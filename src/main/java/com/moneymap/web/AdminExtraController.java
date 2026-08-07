@@ -62,6 +62,43 @@ public class AdminExtraController {
 
     private User admin(HttpServletRequest r) { return (User) r.getAttribute("currentUser"); }
 
+    // ── Unified Admin page (Admin design handoff) ────────────────────────────
+    // One page, pill-tabs switching 5 panels client-side — matches Admin.dc.html exactly.
+    // Pulls the same real data as the (still-functional, standalone) /admin/users,
+    // /admin/tax-slabs, /admin/fund-master, /admin/health, /admin/audit routes.
+
+    @GetMapping("/live")
+    public String live(Model model) throws IOException {
+        model.addAttribute("allUsers", users.findAll());
+
+        model.addAttribute("taxSlabSets", db.taxSlabSets.findAll());
+
+        model.addAttribute("fundMasterRows", db.fundMaster.findAll().stream().limit(200).toList());
+        GlobalSettings s = globalSettings.get();
+        model.addAttribute("fundSchemeCount", db.fundMaster.findAll().size());
+        model.addAttribute("fundLastSyncedAt", s.getFundMasterLastSyncedAt());
+
+        model.addAttribute("healthUserCount", users.count());
+        model.addAttribute("healthFailedLogins24h",
+                loginAttempts.findSince(Instant.now().minus(Duration.ofHours(24))).size());
+        long bytes = 0;
+        try (var stream = Files.walk(store.getDataDir())) {
+            bytes = stream.filter(Files::isRegularFile).mapToLong(p -> {
+                try { return Files.size(p); } catch (IOException e) { return 0; }
+            }).sum();
+        }
+        model.addAttribute("healthDataDirSize", String.format("%.1f MB", bytes / (1024.0 * 1024.0)));
+        Duration up = Duration.between(STARTED_AT, Instant.now());
+        model.addAttribute("healthUptime", up.toDays() + "d " + up.toHoursPart() + "h " + up.toMinutesPart() + "m");
+        model.addAttribute("healthLastBackupAt", s.getLastBackupMarkedAt());
+
+        model.addAttribute("auditEntries", audit.findAll().stream()
+                .sorted(java.util.Comparator.comparing(AuditLogEntry::getTimestamp).reversed())
+                .limit(100).toList());
+
+        return "admin/live";
+    }
+
     // ── System Health (Section 02) ───────────────────────────────────────────
 
     @GetMapping("/health")

@@ -218,7 +218,113 @@ public class DashboardController {
             model.addAttribute("familyRows", familyRows);
             model.addAttribute("householdTotal", householdTotal);
         }
+
+        // Hero KPI row (Cash & Design handoff): net worth delta %, insurance cover, goal progress.
+        if (!ownerSnapshots.isEmpty()) {
+            NetWorthSnapshot last = ownerSnapshots.get(ownerSnapshots.size() - 1);
+            if (last.getTotalNetWorth() != null && last.getTotalNetWorth().signum() != 0) {
+                model.addAttribute("netWorthDeltaPercent", summary.netWorth.subtract(last.getTotalNetWorth())
+                        .multiply(BigDecimal.valueOf(100)).divide(last.getTotalNetWorth(), 1, RoundingMode.HALF_UP));
+            }
+        }
+        InsuranceQuickStat insurance = insuranceQuickStat(owner.getId());
+        model.addAttribute("heroInsuranceCover", insurance.totalCover());
+        GoalsQuickStat goalsHero = goalsQuickStat(owner.getId());
+        model.addAttribute("heroGoalProgressPercent", goalsHero.totalGoals() == 0 ? null
+                : goalsHero.onTrackGoals() * 100 / goalsHero.totalGoals());
+
+        model.addAttribute("moduleCards", moduleCards(summary, owner.getId(), insurance));
+        model.addAttribute("goalProgressRows", goalProgressRows(owner, summary.netWorth));
+
         return "dashboard";
+    }
+
+    /** The 6-card module grid (Investments/Retirement/Cash/Insurance/Real Estate/Loans), matching
+        the Dashboard design handoff. Growth % where a comparable snapshot bucket exists, else an
+        honest descriptive count instead of a fabricated percentage. */
+    private List<Map<String, Object>> moduleCards(PortfolioAggregationService.PortfolioSummary summary,
+                                                    String ownerId, InsuranceQuickStat insurance) {
+        List<NetWorthSnapshot> snaps = db.netWorthSnapshots.findWhere(s -> ownerId.equals(s.getOwnerId())).stream()
+                .sorted(Comparator.comparing(NetWorthSnapshot::getSnapshotDate)).toList();
+        NetWorthSnapshot last = snaps.isEmpty() ? null : snaps.get(snaps.size() - 1);
+
+        BigDecimal realEstateTotal = summary.moduleSummaries.stream()
+                .filter(m -> m.path().equals("real-estate")).map(m -> m.total()).findFirst().orElse(BigDecimal.ZERO);
+        long realEstateCount = summary.moduleSummaries.stream()
+                .filter(m -> m.path().equals("real-estate")).map(m -> m.count()).findFirst().orElse(0);
+        LoansQuickStat loans = loansQuickStat(ownerId);
+
+        List<Map<String, Object>> cards = new ArrayList<>();
+        cards.add(moduleCard("Investments", summary.bucket(Bucket.INVESTMENTS),
+                deltaLabel(last == null ? null : last.getInvestmentsBucket(), summary.bucket(Bucket.INVESTMENTS)),
+                "mutual-funds", "var(--primary-soft)", "var(--primary)"));
+        cards.add(moduleCard("Retirement", summary.bucket(Bucket.RETIREMENT),
+                deltaLabel(last == null ? null : last.getRetirementBucket(), summary.bucket(Bucket.RETIREMENT)),
+                "ppf", "var(--badge-green-bg)", "var(--badge-green-fg)"));
+        cards.add(moduleCard("Cash & Banking", summary.bucket(Bucket.CASH),
+                deltaLabel(last == null ? null : last.getCashBucket(), summary.bucket(Bucket.CASH)),
+                "savings-accounts", "var(--badge-amber-bg)", "var(--badge-amber-fg)"));
+        cards.add(moduleCard("Insurance cover", insurance.totalCover(),
+                insurance.totalCover().signum() > 0 ? "policies active" : "no cover added yet",
+                "term-insurance", "var(--badge-violet-bg)", "var(--badge-violet-fg)"));
+        cards.add(moduleCard("Real Estate", realEstateTotal,
+                realEstateCount + (realEstateCount == 1 ? " property" : " properties"),
+                "real-estate", "var(--badge-green-bg)", "var(--badge-green-fg)"));
+        cards.add(moduleCard("Loans & Cards", summary.totalLiabilities,
+                loans.activeLoanCount() + " active loan" + (loans.activeLoanCount() == 1 ? "" : "s"),
+                "loans", "var(--pill-down-bg)", "var(--pill-down-fg)"));
+        return cards;
+    }
+
+    private Map<String, Object> moduleCard(String name, BigDecimal value, String change,
+                                            String hrefKey, String iconBg, String iconColor) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("name", name);
+        m.put("value", value);
+        m.put("change", change);
+        m.put("changeIsGrowth", change != null && change.startsWith("▲"));
+        m.put("changeIsDecline", change != null && change.startsWith("▼"));
+        m.put("hrefKey", hrefKey);
+        m.put("iconBg", iconBg);
+        m.put("iconColor", iconColor);
+        return m;
+    }
+
+    /** "▲ 12.4%" / "▼ 3.2%" vs. the last snapshot's bucket value, or null if there's no comparable
+        prior snapshot yet (module card then falls back to showing nothing rather than a fake number). */
+    private String deltaLabel(BigDecimal previous, BigDecimal current) {
+        BigDecimal prev = Valuation.nz(previous);
+        if (prev.signum() <= 0) return null;
+        BigDecimal pct = current.subtract(prev).multiply(BigDecimal.valueOf(100))
+                .divide(prev, 1, RoundingMode.HALF_UP);
+        return (pct.signum() >= 0 ? "▲ " : "▼ ") + pct.abs() + "%";
+    }
+
+    /** Goals & SIPs progress list. FinancialGoal is a reverse-SIP planning target, not a funded
+        tracker — MoneyMap doesn't earmark specific holdings to a goal. As an honest, non-fabricated
+        stand-in for "amount saved toward this goal," each goal's progress bar shows how much of its
+        target your current total net worth could already cover (capped at 100%) — real data, clearly
+        a simplifying proxy rather than a tracked balance. */
+    private List<Map<String, Object>> goalProgressRows(User owner, BigDecimal netWorth) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        db.financialGoals.findWhere(g -> owner.getId().equals(g.getOwnerId())).stream()
+                .filter(g -> g.getTargetDate() != null && g.getTargetAmountToday() != null
+                        && g.getTargetAmountToday().signum() > 0)
+                .sorted(Comparator.comparing(FinancialGoal::getTargetDate))
+                .limit(3)
+                .forEach(g -> {
+                    BigDecimal target = g.getTargetAmountToday();
+                    BigDecimal current = netWorth.max(BigDecimal.ZERO).min(target);
+                    int pct = current.multiply(BigDecimal.valueOf(100))
+                            .divide(target, 0, RoundingMode.HALF_UP).intValue();
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("name", g.getGoalName());
+                    row.put("current", current);
+                    row.put("target", target);
+                    row.put("pct", pct);
+                    rows.add(row);
+                });
+        return rows;
     }
 
     /** Compact 0-100 score for the home page glance card, mirroring the full Health Score

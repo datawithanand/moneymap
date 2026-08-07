@@ -2,6 +2,7 @@ package com.moneymap.service;
 
 import com.moneymap.model.User;
 import com.moneymap.model.asset.*;
+import com.moneymap.model.expense.RecurringRule;
 import com.moneymap.repository.Db;
 import org.springframework.stereotype.Service;
 
@@ -72,6 +73,11 @@ public class ReminderService {
                 add(items, "mutual-funds", r.getId(), r.getFundName() + " SIP due",
                         nextOccurrence(r.getSipDate(), today), today, "SIP_DUE");
             }
+        }
+        for (RecurringRule r : db.recurringRules.findWhere(x -> uid.equals(x.getOwnerId()) && x.isActive())) {
+            add(items, "recurring-rules", r.getId(),
+                    (r.getCategory() != null ? r.getCategory() : "Recurring transaction") + " due",
+                    r.getNextDueDate(), today, "RECURRING_DUE");
         }
 
         return items.stream()

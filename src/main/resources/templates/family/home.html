@@ -5,170 +5,220 @@
 <div class="shell">
     <nav th:replace="~{fragments/layout :: sidebar('family')}"></nav>
     <main class="content">
-        <h1 th:text="${group != null ? group.groupName : 'Family'}">Family</h1>
-        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
-
-        <p>
-            <a class="btn btn-secondary" th:href="@{/family/sharing}">Manage Sharing &amp; Vault</a>
-            <a class="btn btn-secondary" th:href="@{/family/dashboard}">Family Dashboard</a>
-        </p>
-
-        <!-- Emergency requests awaiting my response (§3.4) -->
-        <div class="card" th:if="${!requestsForMe.isEmpty()}" style="border-color:var(--accent)">
-            <h2>Emergency access requests awaiting your response</h2>
-            <div th:each="req : ${requestsForMe}" style="margin-bottom:14px">
-                <p><strong th:text="${usersById[req.requesterId]?.fullName ?: 'A family member'}"></strong>
-                    requested emergency access.
-                    Reason: <em th:text="${req.reason}"></em></p>
-                <p class="countdown">Auto-approval on
-                    <span th:text="${fmt.dateTime(req.denyWindowExpiresAt)}"></span> unless you respond.</p>
-                <form class="inline" th:action="@{'/family/vault/' + ${req.id} + '/approve'}" method="post">
-                    <input type="hidden" name="_csrf" th:value="${csrf}">
-                    <button type="submit" class="btn-sm">Approve Now</button>
-                </form>
-                <form class="inline" th:action="@{'/family/vault/' + ${req.id} + '/deny'}" method="post"
-                      onsubmit="return confirm('Deny this emergency access request? They will be notified, and no access will be granted.');">
-                    <input type="hidden" name="_csrf" th:value="${csrf}">
-                    <input type="text" name="note" placeholder="Optional note" style="max-width:200px">
-                    <button type="submit" class="btn-sm btn-secondary">Deny</button>
-                </form>
-            </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px">
+            <h1 style="margin:0" th:text="${group != null ? group.groupName : 'Family &amp; Vault'}">Family &amp; Vault</h1>
+            <button type="button" class="btn" onclick="document.getElementById('inviteModal').classList.add('open')">Invite member</button>
         </div>
 
-        <!-- Active grants on my data (§3.6) -->
-        <div class="card" th:if="${!myGrants.isEmpty()}">
-            <h2>Active emergency access to your data</h2>
-            <div th:each="g : ${myGrants}">
-                <p><strong th:text="${usersById[g.requesterId]?.fullName}"></strong> —
-                    <span th:text="${g.grantedPermissionLevel}"></span>, expires
-                    <span th:text="${fmt.dateTime(g.grantExpiresAt)}"></span>
-                <form class="inline" th:action="@{'/family/vault/' + ${g.id} + '/revoke'}" method="post">
-                    <input type="hidden" name="_csrf" th:value="${csrf}">
-                    <button type="submit" class="btn-sm btn-danger">Revoke Access</button>
-                </form></p>
+        <div style="display:flex;flex-direction:column;gap:20px">
+            <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+            <!-- Consolidated net worth -->
+            <div style="background:var(--ink);border-radius:18px;padding:26px 32px;color:#fff">
+                <div style="font-size:13px;color:oklch(75% 0.01 260);font-weight:600;margin-bottom:8px">Consolidated household net worth</div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:36px;letter-spacing:-.01em" th:text="${fmt.money(consolidatedTotal, currentUser)}"></div>
+                <div style="font-size:13px;color:oklch(70% 0.01 260);margin-top:6px"
+                     th:text="'Across ' + ${members.size()} + ' member' + (${members.size() == 1} ? '' : 's') + ' · visibility respects each member\'s sharing permissions'"></div>
             </div>
-        </div>
 
-        <div class="card">
-            <h2>Members</h2>
-            <table class="data">
-                <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Relationship</th><th>Vault</th><th></th></tr></thead>
-                <tbody>
-                <tr th:each="m : ${members}">
-                    <td th:text="${m.fullName}"></td>
-                    <td class="mono" th:text="${m.username}"></td>
-                    <td th:text="${group != null and group.adminUserId == m.id ? 'Family Admin' : 'Member'}"></td>
-                    <td>
-                        <form th:if="${isFamilyAdmin or m.id == currentUser.id}" class="inline"
-                              th:action="@{'/family/members/' + ${m.id} + '/relationship'}" method="post">
-                            <input type="hidden" name="_csrf" th:value="${csrf}">
-                            <select name="relationship" onchange="this.form.submit()" style="min-width:120px">
-                                <option value="" th:selected="${m.familyRelationship == null}">—</option>
-                                <option th:each="rel : ${relationshipOptions}"
-                                        th:value="${rel}" th:text="${rel}"
-                                        th:selected="${m.familyRelationship == rel}"></option>
-                            </select>
-                        </form>
-                        <span th:unless="${isFamilyAdmin or m.id == currentUser.id}"
-                              th:text="${m.familyRelationship ?: '—'}"></span>
-                    </td>
-                    <td>
-                        <th:block th:if="${m.id != currentUser.id and vaultInfo.containsKey(m.id)}">
-                            <span th:if="${vaultInfo[m.id]['grant'] != null}" class="pill pill-active"
-                                  th:text="'Access until ' + ${fmt.date(vaultInfo[m.id]['grant'].grantExpiresAt)}"></span>
-                            <span th:if="${vaultInfo[m.id]['pending'] != null}" class="pill pill-pending countdown"
-                                  th:text="'Pending — auto-approval ' + ${fmt.dateTime(vaultInfo[m.id]['pending'].denyWindowExpiresAt)}"></span>
-                            <details th:if="${vaultInfo[m.id]['designated'] == true and vaultInfo[m.id]['pending'] == null and vaultInfo[m.id]['grant'] == null}">
-                                <summary class="hint">Request Emergency Access</summary>
-                                <form th:action="@{/family/vault/request}" method="post">
-                                    <input type="hidden" name="_csrf" th:value="${csrf}">
-                                    <input type="hidden" name="ownerId" th:value="${m.id}">
-                                    <input type="text" name="reason" minlength="10" required
-                                           placeholder="Why do you need access? (min 10 chars)">
-                                    <div class="hint" th:text="${m.fullName} + ' will be notified immediately. If they don''t respond within their deny window, you will automatically be granted their pre-set access level.'"></div>
-                                    <button type="submit" class="btn-sm">Submit Request</button>
-                                </form>
-                            </details>
-                            <span th:if="${vaultInfo[m.id]['designated'] != true}" class="hint"
-                                  th:text="'Not designated as an emergency contact for ' + ${m.fullName}"></span>
-                        </th:block>
-                    </td>
-                    <td>
-                        <form th:if="${isFamilyAdmin and m.id != currentUser.id}" class="inline"
-                              th:action="@{'/family/members/' + ${m.id} + '/remove'}" method="post"
-                              onsubmit="return confirm('Remove this member from the family group? All sharing between them and other members will end immediately, and any active emergency access involving them will be revoked.');">
-                            <input type="hidden" name="_csrf" th:value="${csrf}">
-                            <button type="submit" class="btn-sm btn-secondary">Remove</button>
-                        </form>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-
-            <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
-                <h3 style="margin-top:0">Invite a Member</h3>
-                <form th:action="@{/family/invite}" method="post">
-                    <input type="hidden" name="_csrf" th:value="${csrf}">
-                    <div class="row-flex">
-                        <div><label>Username or Email</label>
-                            <input type="text" name="identifier" required placeholder="e.g. jane or jane@example.com"></div>
-                        <div><label>Relationship (optional)</label>
-                            <select name="relationship">
-                                <option value="">—</option>
-                                <option th:each="rel : ${relationshipOptions}" th:value="${rel}" th:text="${rel}"></option>
-                            </select></div>
+            <!-- Members -->
+            <div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;margin-bottom:14px">Members</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px">
+                    <div class="card" th:each="m : ${memberCards}" style="margin-bottom:0">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+                            <div style="width:42px;height:42px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;font-family:'Manrope',sans-serif"
+                                 th:style="'width:42px;height:42px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;font-family:Manrope,sans-serif;background:' + ${m.avatarBg}"
+                                 th:text="${m.initial}"></div>
+                            <div>
+                                <div style="font-size:14.5px;font-weight:700" th:text="${m.name}"></div>
+                                <div style="font-size:12px;color:var(--text-muted)" th:text="${m.role}"></div>
+                            </div>
+                        </div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Visible net worth</div>
+                        <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:18px;margin-bottom:12px"
+                             th:text="${m.netWorth != null ? fmt.money(m.netWorth, currentUser) : 'Not shared'}"></div>
+                        <div style="display:inline-block;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:100px"
+                             th:style="'display:inline-block;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:100px;background:' + ${m.permBg} + ';color:' + ${m.permColor}"
+                             th:text="${m.permission}"></div>
                     </div>
-                    <div class="hint">An invitation grants no data visibility — sharing is always a separate,
-                        later choice by each member. The invitee must already have (or create) a MoneyMap
-                        account and accept before they appear as a member.</div>
-                    <p><button type="submit" class="btn-sm">Send Invitation</button></p>
-                </form>
-                <table class="data" th:if="${!pendingInvitations.isEmpty()}">
-                    <thead><tr><th>Invitee</th><th>Status</th><th></th></tr></thead>
-                    <tbody>
-                    <tr th:each="inv : ${pendingInvitations}">
-                        <td th:text="${inv.inviteeUsername ?: inv.inviteeEmail}"></td>
-                        <td th:text="'Pending — expires ' + ${fmt.date(inv.expiresAt)}"></td>
-                        <td><form class="inline" th:action="@{'/family/invitations/' + ${inv.id} + '/cancel'}" method="post">
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px">
+
+                <!-- Permission matrix -->
+                <div class="card" style="margin-bottom:0">
+                    <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;margin-bottom:16px">Permission matrix</div>
+                    <table style="width:100%;border-collapse:collapse;font-size:13px">
+                        <thead>
+                        <tr>
+                            <th style="text-align:left;padding:8px 0;color:var(--text-muted);font-weight:700;font-size:11.5px;text-transform:uppercase">Member</th>
+                            <th style="text-align:center;padding:8px 0;color:var(--text-muted);font-weight:700;font-size:11.5px;text-transform:uppercase">None</th>
+                            <th style="text-align:center;padding:8px 0;color:var(--text-muted);font-weight:700;font-size:11.5px;text-transform:uppercase">Summary</th>
+                            <th style="text-align:center;padding:8px 0;color:var(--text-muted);font-weight:700;font-size:11.5px;text-transform:uppercase">Detailed</th>
+                            <th style="text-align:center;padding:8px 0;color:var(--text-muted);font-weight:700;font-size:11.5px;text-transform:uppercase">Full</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="p : ${permMatrix}" style="border-top:1px solid var(--border)">
+                            <td style="padding:11px 0;font-weight:600" th:text="${p.name}"></td>
+                            <td style="text-align:center" th:text="${p.none} ? '✓' : ''"></td>
+                            <td style="text-align:center" th:text="${p.summary} ? '✓' : ''"></td>
+                            <td style="text-align:center" th:text="${p.detailed} ? '✓' : ''"></td>
+                            <td style="text-align:center" th:text="${p.full} ? '✓' : ''"></td>
+                        </tr>
+                        <tr th:if="${permMatrix.isEmpty()}"><td colspan="5" class="muted" style="padding:11px 0">No other members yet.</td></tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top:14px"><a th:href="@{/family/sharing}">Manage sharing &amp; vault →</a></p>
+                </div>
+
+                <!-- Pending invites -->
+                <div class="card" style="margin-bottom:0">
+                    <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;margin-bottom:16px">Pending invitations</div>
+                    <div style="display:flex;flex-direction:column;gap:14px">
+                        <div th:each="inv : ${pendingInvitations}" style="display:flex;align-items:center;justify-content:space-between">
+                            <div>
+                                <div style="font-size:13.5px;font-weight:600" th:text="${inv.inviteeUsername ?: inv.inviteeEmail}"></div>
+                                <div style="font-size:12px;color:var(--text-muted)" th:text="'Expires ' + ${fmt.date(inv.expiresAt)}"></div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <span style="font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--warning-bg);color:var(--accent)">Pending</span>
+                                <form th:action="@{'/family/invitations/' + ${inv.id} + '/cancel'}" method="post">
+                                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                                    <button type="submit" class="btn-sm btn-secondary">Cancel</button>
+                                </form>
+                            </div>
+                        </div>
+                        <p th:if="${pendingInvitations.isEmpty()}" class="muted">No pending invitations.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real functionality the mockup doesn't cover but the app needs: emergency vault
+                 requests/grants, and account/group management — kept in the app's existing card
+                 style rather than folded into the mockup's own visual language. -->
+            <div class="card" th:if="${!requestsForMe.isEmpty()}" style="border-color:var(--accent);margin-bottom:0">
+                <h2>Emergency access requests awaiting your response</h2>
+                <div th:each="req : ${requestsForMe}" style="margin-bottom:14px">
+                    <p><strong th:text="${usersById[req.requesterId]?.fullName ?: 'A family member'}"></strong>
+                        requested emergency access. Reason: <em th:text="${req.reason}"></em></p>
+                    <p class="countdown">Auto-approval on <span th:text="${fmt.dateTime(req.denyWindowExpiresAt)}"></span> unless you respond.</p>
+                    <form class="inline" th:action="@{'/family/vault/' + ${req.id} + '/approve'}" method="post">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button type="submit" class="btn-sm">Approve Now</button>
+                    </form>
+                    <form class="inline" th:action="@{'/family/vault/' + ${req.id} + '/deny'}" method="post"
+                          onsubmit="return confirm('Deny this emergency access request?');">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <input type="text" name="note" placeholder="Optional note" style="max-width:200px">
+                        <button type="submit" class="btn-sm btn-secondary">Deny</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" th:if="${!myGrants.isEmpty()}" style="margin-bottom:0">
+                <h2>Active emergency access to your data</h2>
+                <div th:each="g : ${myGrants}">
+                    <p><strong th:text="${usersById[g.requesterId]?.fullName}"></strong> —
+                        <span th:text="${g.grantedPermissionLevel}"></span>, expires <span th:text="${fmt.dateTime(g.grantExpiresAt)}"></span>
+                        <form class="inline" th:action="@{'/family/vault/' + ${g.id} + '/revoke'}" method="post">
                             <input type="hidden" name="_csrf" th:value="${csrf}">
-                            <button type="submit" class="btn-sm btn-secondary">Cancel</button>
-                        </form></td>
+                            <button type="submit" class="btn-sm btn-danger">Revoke Access</button>
+                        </form></p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom:0">
+                <h2>Relationships &amp; account management</h2>
+                <table class="data">
+                    <thead><tr><th>Name</th><th>Relationship</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="m : ${members}">
+                        <td th:text="${m.fullName}"></td>
+                        <td>
+                            <form th:if="${isFamilyAdmin or m.id == currentUser.id}" class="inline"
+                                  th:action="@{'/family/members/' + ${m.id} + '/relationship'}" method="post">
+                                <input type="hidden" name="_csrf" th:value="${csrf}">
+                                <select name="relationship" onchange="this.form.submit()" style="min-width:120px">
+                                    <option value="" th:selected="${m.familyRelationship == null}">—</option>
+                                    <option th:each="rel : ${relationshipOptions}" th:value="${rel}" th:text="${rel}"
+                                            th:selected="${m.familyRelationship == rel}"></option>
+                                </select>
+                            </form>
+                            <span th:unless="${isFamilyAdmin or m.id == currentUser.id}" th:text="${m.familyRelationship ?: '—'}"></span>
+                        </td>
+                        <td>
+                            <form th:if="${isFamilyAdmin and m.id != currentUser.id}" class="inline"
+                                  th:action="@{'/family/members/' + ${m.id} + '/remove'}" method="post"
+                                  onsubmit="return confirm('Remove this member from the family group?');">
+                                <input type="hidden" name="_csrf" th:value="${csrf}">
+                                <button type="submit" class="btn-sm btn-secondary">Remove</button>
+                            </form>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
-        </div>
 
-        <!-- Danger zone (§1.4/§1.5) -->
-        <div class="card danger-zone">
-            <h2>Danger Zone</h2>
-            <th:block th:if="${!isFamilyAdmin}">
-                <form th:action="@{/family/leave}" method="post"
-                      onsubmit="return confirm('Leave the family group? All sharing between you and other members ends immediately.');">
-                    <input type="hidden" name="_csrf" th:value="${csrf}">
-                    <button type="submit" class="btn-danger">Leave Family Group</button>
-                </form>
-            </th:block>
-            <th:block th:if="${isFamilyAdmin}">
-                <h3>Transfer Family Admin role</h3>
-                <form th:action="@{/family/transfer-admin}" method="post">
-                    <input type="hidden" name="_csrf" th:value="${csrf}">
-                    <select name="newAdminUserId">
-                        <option th:each="m : ${members}" th:if="${m.id != currentUser.id}"
-                                th:value="${m.id}" th:text="${m.fullName}"></option>
-                    </select>
-                    <button type="submit" class="btn-sm btn-secondary">Transfer</button>
-                </form>
-                <h3>Dissolve group</h3>
-                <form th:action="@{/family/dissolve}" method="post">
-                    <input type="hidden" name="_csrf" th:value="${csrf}">
-                    <label>Type the group name to confirm</label>
-                    <input type="text" name="confirmName" required>
-                    <p><button type="submit" class="btn-danger">Dissolve Family Group</button></p>
-                </form>
-            </th:block>
+            <div class="card danger-zone" style="margin-bottom:0">
+                <h2>Danger Zone</h2>
+                <th:block th:if="${!isFamilyAdmin}">
+                    <form th:action="@{/family/leave}" method="post" onsubmit="return confirm('Leave the family group?');">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button type="submit" class="btn-danger">Leave Family Group</button>
+                    </form>
+                </th:block>
+                <th:block th:if="${isFamilyAdmin}">
+                    <h3>Transfer Family Admin role</h3>
+                    <form th:action="@{/family/transfer-admin}" method="post">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <select name="newAdminUserId">
+                            <option th:each="m : ${members}" th:if="${m.id != currentUser.id}" th:value="${m.id}" th:text="${m.fullName}"></option>
+                        </select>
+                        <button type="submit" class="btn-sm btn-secondary">Transfer</button>
+                    </form>
+                    <h3>Dissolve group</h3>
+                    <form th:action="@{/family/dissolve}" method="post">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <label>Type the group name to confirm</label>
+                        <input type="text" name="confirmName" required>
+                        <p><button type="submit" class="btn-danger">Dissolve Family Group</button></p>
+                    </form>
+                </th:block>
+            </div>
         </div>
     </main>
 </div>
+
+<!-- Invite modal: a centered overlay dialog (not a slide-over drawer), matching the Family
+     design handoff exactly — click the scrim or Cancel to close. -->
+<div id="inviteModal" class="invite-modal" onclick="this.classList.remove('open')">
+    <div class="invite-modal-card" onclick="event.stopPropagation()">
+        <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:18px;margin-bottom:18px">Invite a family member</div>
+        <form th:action="@{/family/invite}" method="post">
+            <input type="hidden" name="_csrf" th:value="${csrf}">
+            <label>Username or email</label>
+            <input type="text" name="identifier" required placeholder="e.g. jane or jane@example.com">
+            <label>Relationship (optional)</label>
+            <select name="relationship">
+                <option value="">—</option>
+                <option th:each="rel : ${relationshipOptions}" th:value="${rel}" th:text="${rel}"></option>
+            </select>
+            <div class="hint" style="margin:8px 0 18px">An invitation grants no data visibility — sharing permission level
+                is set separately, after they accept, from the Permission matrix above.</div>
+            <div style="display:flex;gap:10px">
+                <button type="button" class="btn-secondary" style="flex:1" onclick="document.getElementById('inviteModal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn" style="flex:1">Send invite</button>
+            </div>
+        </form>
+    </div>
+</div>
+<style>
+    .invite-modal { display: none; }
+    .invite-modal.open { display: flex; position: fixed; inset: 0; z-index: 301; align-items: center; justify-content: center; background: var(--scrim); }
+    .invite-modal-card { background: var(--surface); border-radius: 16px; padding: 28px; width: 420px; max-width: calc(100vw - 40px); }
+</style>
 </body>
 </html>

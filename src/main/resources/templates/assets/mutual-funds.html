@@ -1,52 +1,85 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head(${module.displayName})}"></head>
+<head th:replace="~{fragments/layout :: head('Mutual Funds')}"></head>
 <body th:class="${themeClass}">
 
 <div class="shell">
-    <nav th:replace="~{fragments/layout :: sidebar(${'assets-' + module.path})}"></nav>
+    <nav th:replace="~{fragments/layout :: sidebar('assets-investments')}"></nav>
     <main class="content">
-        <div th:with="newUrl=@{'/assets/' + ${module.path} + '/new'(loanType=${loanType})}"
-             style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:6px">
-            <h1 th:text="${module.displayName}">Module</h1>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:6px">
+            <div>
+                <h1 style="margin-bottom:4px">Mutual Funds</h1>
+                <p class="hint" style="margin:0">Track folios across equity, debt, hybrid and ELSS funds.</p>
+            </div>
             <button type="button" class="btn"
-                    th:attr="onclick=|openDrawer('${newUrl}', 'Add ${module.displayName}')|"
-                    th:text="'+ Add ' + ${module.displayName}">+ Add</button>
+                    th:attr="onclick=|openDrawer('${'/assets/mutual-funds/new'}', 'Add Mutual Funds')|">+ Add Fund</button>
         </div>
-        <p class="hint" th:if="${loanType != null and !loanType.isEmpty()}">
-            Filtered to <strong th:text="${#strings.replace(loanType, '_', ' ')}"></strong> —
-            <a th:href="@{'/assets/' + ${module.path}}">show all loan types</a>.</p>
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
-        <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-                <form method="get" th:action="@{'/assets/' + ${module.path}}">
-                    <input type="hidden" name="loanType" th:value="${loanType}">
-                    <select name="tag" onchange="this.form.submit()">
-                        <option value="">All family members</option>
-                        <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"
-                                th:selected="${tag == m.label}"></option>
-                    </select>
-                </form>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:18px 0">
+            <div class="card" style="margin-bottom:0">
+                <div class="hint" style="margin-bottom:6px">Invested</div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px" th:text="${fmt.money(invested, currentUser)}"></div>
             </div>
+            <div class="card" style="margin-bottom:0">
+                <div class="hint" style="margin-bottom:6px">Current value</div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px" th:text="${fmt.money(currentValue, currentUser)}"></div>
+            </div>
+            <div class="card" style="margin-bottom:0">
+                <div class="hint" style="margin-bottom:6px">Gain / loss</div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px"
+                     th:style="'color:' + (${gainLoss} != null and ${gainLoss.signum()} < 0 ? 'var(--pill-down-fg)' : 'var(--pill-up-fg)')"
+                     th:text="${fmt.money(gainLoss, currentUser)}"></div>
+            </div>
+            <div class="card" style="margin-bottom:0">
+                <div class="hint" style="margin-bottom:6px">Overall return</div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px"
+                     th:style="'color:' + (${returnPct} != null and ${returnPct} < 0 ? 'var(--pill-down-fg)' : 'var(--pill-up-fg)')"
+                     th:text="(${returnPct} != null and ${returnPct} >= 0 ? '+' : '') + ${returnPct} + '%'"></div>
+            </div>
+        </div>
 
+        <div class="pill-tabs" style="margin-bottom:16px">
+            <a class="pill-tab" th:classappend="${catClass == 'all'} ? ' active'" th:href="@{/assets/mutual-funds(catClass='all')}">All</a>
+            <a class="pill-tab" th:classappend="${catClass == 'equity'} ? ' active'" th:href="@{/assets/mutual-funds(catClass='equity')}">Equity</a>
+            <a class="pill-tab" th:classappend="${catClass == 'debt'} ? ' active'" th:href="@{/assets/mutual-funds(catClass='debt')}">Debt</a>
+            <a class="pill-tab" th:classappend="${catClass == 'hybrid'} ? ' active'" th:href="@{/assets/mutual-funds(catClass='hybrid')}">Hybrid</a>
+            <a class="pill-tab" th:classappend="${catClass == 'elss'} ? ' active'" th:href="@{/assets/mutual-funds(catClass='elss')}">ELSS</a>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
             <table class="data">
                 <thead>
                 <tr>
-                    <th th:each="entry : ${labels}" th:text="${entry.value}"></th>
+                    <th style="text-align:left">Fund</th>
+                    <th style="text-align:left">Category</th>
+                    <th style="text-align:right">Invested</th>
+                    <th style="text-align:right">Current</th>
+                    <th style="text-align:right">Gain/Loss</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="row : ${rows}">
-                    <td th:each="entry : ${labels}" class="mono"
-                        th:text="${fmt.cell(row[entry.key], currentUser)}"></td>
+                    <td>
+                        <div style="font-size:14px;font-weight:700" th:text="${row.fundName}"></div>
+                        <div style="font-size:12px;color:var(--text-muted)" th:text="'Folio ' + ${row.folioNumber}"></div>
+                    </td>
+                    <td>
+                        <span class="pill"
+                              th:classappend="${row.catClass == 'equity'} ? 'pill-blue' : (${row.catClass == 'debt'} ? 'pill-green' : (${row.catClass == 'hybrid'} ? 'pill-violet' : (${row.catClass == 'elss'} ? 'pill-amber' : 'pill-pink')))"
+                              th:text="${row.category}"></span>
+                    </td>
+                    <td style="text-align:right" th:text="${fmt.cell(row.invested, currentUser)}"></td>
+                    <td style="text-align:right;font-weight:600" th:text="${fmt.cell(row.currentValue, currentUser)}"></td>
+                    <td style="text-align:right;font-weight:700"
+                        th:style="${row.gainLoss} != null and ${row.gainLoss.signum()} < 0 ? 'text-align:right;font-weight:700;color:var(--pill-down-fg)' : 'text-align:right;font-weight:700;color:var(--pill-up-fg)'"
+                        th:text="${fmt.cell(row.gainLoss, currentUser)}"></td>
                     <td style="white-space:nowrap;text-align:right">
-                        <a th:if="${module.path == 'mutual-funds'}" class="btn btn-sm btn-secondary"
-                           th:href="@{'/assets/mutual-funds/' + ${row['id']} + '/transactions'}">Transactions</a>
+                        <a class="btn btn-sm btn-secondary" th:href="@{'/assets/mutual-funds/' + ${row.id} + '/transactions'}">Transactions</a>
                         <button type="button" class="btn-sm btn-secondary"
-                                th:attr="onclick=|openDrawer('${'/assets/' + module.path + '/' + row['id'] + '/edit'}', 'Edit ${module.displayName}')|">Edit</button>
-                        <form class="inline" th:action="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/delete'}"
+                                th:attr="onclick=|openDrawer('${'/assets/mutual-funds/' + row.id + '/edit'}', 'Edit Mutual Funds')|">Edit</button>
+                        <form class="inline" th:action="@{'/assets/mutual-funds/' + ${row.id} + '/delete'}"
                               method="post" onsubmit="return confirm('Delete this record?');">
                             <input type="hidden" name="_csrf" th:value="${csrf}">
                             <button type="submit" class="btn-sm btn-secondary">Delete</button>
@@ -54,7 +87,7 @@
                     </td>
                 </tr>
                 <tr th:if="${rows.isEmpty()}">
-                    <td th:colspan="${labels.size() + 1}" class="muted">Nothing here yet — add your first record.</td>
+                    <td colspan="6" class="muted">Nothing here yet — add your first fund.</td>
                 </tr>
                 </tbody>
             </table>
@@ -62,9 +95,6 @@
     </main>
 </div>
 
-<!-- Slide-over drawer: Add/Edit forms load here via fetch() instead of a full page navigation.
-     Falls back gracefully — /assets/{path}/new and /{id}/edit still work as real standalone
-     pages (form.html) if opened directly or if JS fails. -->
 <div class="drawer-scrim" id="drawerScrim" onclick="closeDrawer()"></div>
 <div class="drawer" id="assetDrawer">
     <div class="drawer-header">
@@ -117,9 +147,6 @@ function bindDrawerForm() {
             });
     });
 }
-// Conditional field visibility inside the drawer (e.g. Loan's per-type field groups) —
-// mirrors form.html's own standalone-page copy of this logic (assets/form.html), since
-// injected HTML doesn't execute its own embedded <script> tags.
 function applyDrawerVisibility() {
     document.querySelectorAll('#drawerBody [data-visible-if]').forEach(function (el) {
         var cond = el.getAttribute('data-visible-if');
@@ -135,8 +162,6 @@ function applyDrawerVisibility() {
 document.addEventListener('change', function (e) {
     if (e.target.closest && e.target.closest('#drawerBody')) applyDrawerVisibility();
 });
-// Mutual funds' live fund-picker, rebound each time the drawer content is (re)loaded —
-// mirrors form.html's own standalone-page copy of this logic.
 function bindDrawerFundPicker() {
     var searchBox = document.getElementById('fundPickerSearch');
     if (!searchBox) return;

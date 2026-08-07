@@ -2,6 +2,7 @@ package com.moneymap.repository;
 
 import com.moneymap.model.*;
 import com.moneymap.model.asset.*;
+import com.moneymap.model.expense.*;
 import com.moneymap.repository.json.JsonEntityRepository;
 import org.springframework.stereotype.Component;
 
@@ -66,6 +67,11 @@ public class Db {
     public final EntityRepository<OtherIncome> otherIncome;
     public final EntityRepository<SalaryProfile> salaryProfiles;
 
+    // Expense tracking, recurring transactions, documents (standalone modules)
+    public final EntityRepository<ExpenseEntry> expenseEntries;
+    public final EntityRepository<RecurringRule> recurringRules;
+    public final EntityRepository<Document> documents;
+
     public Db(JsonCollectionStore store) {
         familyGroups = new JsonEntityRepository<>(store, "family_groups", FamilyGroup.class);
         familyInvitations = new JsonEntityRepository<>(store, "family_invitations", FamilyInvitation.class);
@@ -104,5 +110,8 @@ public class Db {
         financialGoals = new JsonEntityRepository<>(store, "financial_goals", FinancialGoal.class);
         otherIncome = new JsonEntityRepository<>(store, "other_income", OtherIncome.class);
         salaryProfiles = new JsonEntityRepository<>(store, "salary_profiles", SalaryProfile.class);
+        expenseEntries = new JsonEntityRepository<>(store, "expense_entries", ExpenseEntry.class);
+        recurringRules = new JsonEntityRepository<>(store, "recurring_rules", RecurringRule.class);
+        documents = new JsonEntityRepository<>(store, "documents", Document.class);
     }
 }

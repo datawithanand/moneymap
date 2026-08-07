@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Admin')}"></head>
+<body th:class="${themeClass}">
+<div class="shell">
+    <nav th:replace="~{fragments/layout :: sidebar('admin-users')}"></nav>
+    <main class="content" style="max-width:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px">
+            <h1 style="margin:0">Admin</h1>
+            <span style="font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:100px;background:var(--badge-green-bg);color:var(--badge-green-fg)">System healthy</span>
+        </div>
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="pill-tabs">
+            <button type="button" class="pill-tab active" data-panel="users" onclick="selectAdminTab('users')">Users</button>
+            <button type="button" class="pill-tab" data-panel="tax" onclick="selectAdminTab('tax')">Tax Slabs</button>
+            <button type="button" class="pill-tab" data-panel="funds" onclick="selectAdminTab('funds')">Fund Master</button>
+            <button type="button" class="pill-tab" data-panel="health" onclick="selectAdminTab('health')">System Health</button>
+            <button type="button" class="pill-tab" data-panel="audit" onclick="selectAdminTab('audit')">Audit Log</button>
+        </div>
+
+        <!-- Users -->
+        <div id="panel-users" class="admin-panel">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:15px">All users</div>
+                <a class="btn" th:href="@{/admin/users}">Manage users →</a>
+            </div>
+            <div class="card" style="padding:0;overflow:hidden">
+                <table class="data">
+                    <thead><tr><th>User</th><th>Role</th><th>Status</th><th style="text-align:right">Last login</th></tr></thead>
+                    <tbody>
+                    <tr th:each="u : ${allUsers}">
+                        <td><div style="font-weight:700" th:text="${u.fullName}"></div><div style="font-size:12px;color:var(--text-muted)" th:text="${u.email}"></div></td>
+                        <td th:text="${u.role}"></td>
+                        <td>
+                            <span class="pill" th:classappend="${u.status.name() == 'ACTIVE'} ? 'pill-active' : (${u.status.name() == 'PENDING_DELETION'} ? 'pill-pending' : 'pill-disabled')"
+                                  th:text="${u.status}"></span>
+                        </td>
+                        <td style="text-align:right" th:text="${u.lastActiveAt != null ? fmt.dateTime(u.lastActiveAt) : '—'}"></td>
+                    </tr>
+                    <tr th:if="${allUsers.isEmpty()}"><td colspan="4" class="muted">No users yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tax Slabs -->
+        <div id="panel-tax" class="admin-panel" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:15px">Tax slabs (editable)</div>
+                <a class="btn" th:href="@{/admin/tax-slabs}">Edit tax slabs →</a>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
+                <div class="card" th:each="set : ${taxSlabSets}">
+                    <div style="font-size:13px;font-weight:700;margin-bottom:12px" th:text="${set.financialYear} + ' — ' + ${set.regime} + ' regime'"></div>
+                    <div th:each="sl : ${set.slabs}" style="display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--border);font-size:13.5px">
+                        <span th:text="${sl.upTo != null ? 'Up to ' + fmt.money(sl.upTo, currentUser) : 'Above ' + fmt.money(set.slabs[set.slabs.size()-2].upTo, currentUser)}"></span>
+                        <span style="font-weight:700" th:text="${sl.rate} + '%'"></span>
+                    </div>
+                </div>
+                <p th:if="${taxSlabSets.isEmpty()}" class="muted">No tax slab sets configured yet.</p>
+            </div>
+        </div>
+
+        <!-- Fund Master -->
+        <div id="panel-funds" class="admin-panel" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div>
+                    <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:15px">Fund master data</div>
+                    <div class="hint" th:text="${fundSchemeCount} + ' schemes cached' + (${fundLastSyncedAt} != null ? ' · last synced ' + fmt.dateTime(fundLastSyncedAt) : ' · never synced')"></div>
+                </div>
+                <form th:action="@{/admin/fund-master/sync}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${csrf}">
+                    <button type="submit" class="btn">Sync NAVs</button>
+                </form>
+            </div>
+            <div class="card" style="padding:0;overflow:hidden">
+                <table class="data">
+                    <thead><tr><th>Fund</th><th>AMC</th><th style="text-align:right">NAV</th><th style="text-align:right">Last updated</th></tr></thead>
+                    <tbody>
+                    <tr th:each="f : ${fundMasterRows}">
+                        <td style="font-weight:700" th:text="${f.schemeName}"></td>
+                        <td th:text="${f.fundHouse ?: '—'}"></td>
+                        <td style="text-align:right" th:text="${f.latestNav != null ? fmt.money(f.latestNav, currentUser) : '—'}"></td>
+                        <td style="text-align:right" th:text="${f.lastEnrichedAt != null ? fmt.dateTime(f.lastEnrichedAt) : '—'}"></td>
+                    </tr>
+                    <tr th:if="${fundMasterRows.isEmpty()}"><td colspan="4" class="muted">No cached funds yet — click "Sync NAVs".</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- System Health -->
+        <div id="panel-health" class="admin-panel" style="display:none">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
+                <div class="card" style="margin-bottom:0"><div class="hint">Users</div><div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:18px" th:text="${healthUserCount}"></div></div>
+                <div class="card" style="margin-bottom:0"><div class="hint">Failed logins (24h)</div><div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:18px" th:text="${healthFailedLogins24h}"></div></div>
+                <div class="card" style="margin-bottom:0"><div class="hint">Data directory size</div><div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:18px" th:text="${healthDataDirSize}"></div></div>
+                <div class="card" style="margin-bottom:0"><div class="hint">Uptime</div><div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:18px" th:text="${healthUptime}"></div></div>
+            </div>
+            <div class="card">
+                <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;margin-bottom:16px">Backups</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;font-size:13.5px">
+                    <span th:text="${healthLastBackupAt != null ? 'Last marked: ' + fmt.dateTime(healthLastBackupAt) : 'No backup marked yet'}"></span>
+                    <form th:action="@{/admin/health/mark-backup}" method="post">
+                        <input type="hidden" name="_csrf" th:value="${csrf}">
+                        <button type="submit" class="btn-sm btn-secondary">Mark backup taken</button>
+                    </form>
+                </div>
+                <div class="hint" style="margin-top:10px">MoneyMap doesn't run its own backup job — back up the <code>data/</code> directory
+                    with your own scheduled task, then record it here.</div>
+            </div>
+        </div>
+
+        <!-- Audit Log -->
+        <div id="panel-audit" class="admin-panel" style="display:none">
+            <div class="card" style="padding:0;overflow:hidden">
+                <table class="data">
+                    <thead><tr><th>Event</th><th>User</th><th style="text-align:right">Timestamp</th></tr></thead>
+                    <tbody>
+                    <tr th:each="a : ${auditEntries}">
+                        <td th:text="${a.actionType} + (${a.details} != null ? ' — ' + a.details : '')"></td>
+                        <td th:text="${a.actorUsername}"></td>
+                        <td style="text-align:right" th:text="${fmt.dateTime(a.timestamp)}"></td>
+                    </tr>
+                    <tr th:if="${auditEntries.isEmpty()}"><td colspan="3" class="muted">No audit events yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    function selectAdminTab(key) {
+        document.querySelectorAll('.admin-panel').forEach(function (p) { p.style.display = p.id === 'panel-' + key ? '' : 'none'; });
+        document.querySelectorAll('.pill-tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-panel') === key); });
+    }
+</script>
+</body>
+</html>

@@ -7,6 +7,7 @@
     <nav th:replace="~{fragments/layout :: sidebar('trend')}"></nav>
     <main class="content">
         <h1>Net Worth Trend</h1>
+        <div th:replace="~{fragments/layout :: analyticsTabs('trend')}"></div>
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
         <div class="card">

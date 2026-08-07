@@ -1,52 +1,78 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head(${module.displayName})}"></head>
+<head th:replace="~{fragments/layout :: head(${categoryTitle})}"></head>
 <body th:class="${themeClass}">
 
 <div class="shell">
-    <nav th:replace="~{fragments/layout :: sidebar(${'assets-' + module.path})}"></nav>
+    <nav th:replace="~{fragments/layout :: sidebar(${'assets-' + categoryKey})}"></nav>
     <main class="content">
-        <div th:with="newUrl=@{'/assets/' + ${module.path} + '/new'(loanType=${loanType})}"
-             style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:6px">
-            <h1 th:text="${module.displayName}">Module</h1>
-            <button type="button" class="btn"
-                    th:attr="onclick=|openDrawer('${newUrl}', 'Add ${module.displayName}')|"
-                    th:text="'+ Add ' + ${module.displayName}">+ Add</button>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:6px">
+            <div>
+                <h1 style="margin-bottom:4px" th:text="${categoryTitle}">Category</h1>
+                <p class="hint" style="margin:0" th:text="${categoryDescription}"></p>
+            </div>
+            <button type="button" class="btn" th:if="${genericCrud}"
+                    th:with="newUrl=@{'/assets/' + ${activeModulePath} + '/new'(loanType=${newUrlLoanType})}"
+                    th:attr="onclick=|openDrawer('${newUrl}', 'Add ${activeTabLabel}')|"
+                    th:text="'+ Add ' + ${activeTabLabel}">+ Add</button>
         </div>
-        <p class="hint" th:if="${loanType != null and !loanType.isEmpty()}">
-            Filtered to <strong th:text="${#strings.replace(loanType, '_', ' ')}"></strong> —
-            <a th:href="@{'/assets/' + ${module.path}}">show all loan types</a>.</p>
         <th:block th:replace="~{fragments/layout :: flash}"></th:block>
 
-        <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-                <form method="get" th:action="@{'/assets/' + ${module.path}}">
-                    <input type="hidden" name="loanType" th:value="${loanType}">
-                    <select name="tag" onchange="this.form.submit()">
-                        <option value="">All family members</option>
-                        <option th:each="m : ${household}" th:value="${m.label}" th:text="${m.label}"
-                                th:selected="${tag == m.label}"></option>
-                    </select>
-                </form>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:18px 0">
+            <div class="card" style="margin-bottom:0" th:each="k : ${kpis}">
+                <div class="hint" style="margin-bottom:6px" th:text="${k.label}"></div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px"
+                     th:if="${k.type == 'money'}" th:text="${fmt.money(k.value, currentUser)}"></div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px"
+                     th:if="${k.type == 'percent'}" th:text="(${k.value} != null and ${k.value} >= 0 ? '+' : '') + ${k.value} + '%'"></div>
+                <div style="font-family:'Manrope',sans-serif;font-weight:800;font-size:19px"
+                     th:if="${k.type == 'count'}" th:text="${k.value}"></div>
             </div>
+        </div>
 
+        <div class="pill-tabs" style="margin-bottom:16px">
+            <a th:each="t : ${tabs}" th:href="@{''(tab=${t.key})}"
+               class="pill-tab" th:classappend="${t.active} ? ' active'" th:text="${t.label}"></a>
+        </div>
+
+        <p class="hint" th:if="${categoryNote}" th:utext="${categoryNote}" style="margin-top:-8px;margin-bottom:14px"></p>
+
+        <div class="card" th:if="${activeModule == null}">
+            <p class="muted" style="margin:0">There's no dedicated module for
+                <strong th:text="${activeTabLabel}"></strong> yet — nothing to show here.</p>
+        </div>
+
+        <div class="card" th:if="${activeModule != null and !genericCrud}">
+            <p class="muted" style="margin:0"><strong th:text="${activeTabLabel}"></strong> has its own dedicated
+                page — <a th:href="@{'/assets/' + ${activeModulePath}}">open it</a>.</p>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden" th:if="${activeModule != null and genericCrud}">
             <table class="data">
                 <thead>
                 <tr>
-                    <th th:each="entry : ${labels}" th:text="${entry.value}"></th>
+                    <th th:each="label,it : ${columnLabels}" th:text="${label}"
+                        th:style="'text-align:' + ${columnAlign[it.index]}"></th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="row : ${rows}">
-                    <td th:each="entry : ${labels}" class="mono"
-                        th:text="${fmt.cell(row[entry.key], currentUser)}"></td>
+                    <td>
+                        <div style="font-size:14px;font-weight:700" th:text="${row.c0}"></div>
+                        <div style="font-size:12px;color:var(--text-muted)" th:if="${row.sub != null and !#strings.isEmpty(row.sub)}" th:text="${row.sub}"></div>
+                    </td>
+                    <td th:text="${fmt.cell(row.c1, currentUser)}"></td>
+                    <td style="text-align:right" th:text="${fmt.cell(row.c2, currentUser)}"></td>
+                    <td style="text-align:right;font-weight:700"
+                        th:style="${row.c3Color} != null ? 'text-align:right;font-weight:700;color:' + ${row.c3Color} : 'text-align:right;font-weight:700'"
+                        th:text="${fmt.cell(row.c3, currentUser)}"></td>
                     <td style="white-space:nowrap;text-align:right">
-                        <a th:if="${module.path == 'mutual-funds'}" class="btn btn-sm btn-secondary"
-                           th:href="@{'/assets/mutual-funds/' + ${row['id']} + '/transactions'}">Transactions</a>
+                        <a th:if="${activeModulePath == 'mutual-funds'}" class="btn btn-sm btn-secondary"
+                           th:href="@{'/assets/mutual-funds/' + ${row.id} + '/transactions'}">Transactions</a>
                         <button type="button" class="btn-sm btn-secondary"
-                                th:attr="onclick=|openDrawer('${'/assets/' + module.path + '/' + row['id'] + '/edit'}', 'Edit ${module.displayName}')|">Edit</button>
-                        <form class="inline" th:action="@{'/assets/' + ${module.path} + '/' + ${row['id']} + '/delete'}"
+                                th:attr="onclick=|openDrawer('${'/assets/' + activeModulePath + '/' + row.id + '/edit'}', 'Edit ${activeTabLabel}')|">Edit</button>
+                        <form class="inline" th:action="@{'/assets/' + ${activeModulePath} + '/' + ${row.id} + '/delete'}"
                               method="post" onsubmit="return confirm('Delete this record?');">
                             <input type="hidden" name="_csrf" th:value="${csrf}">
                             <button type="submit" class="btn-sm btn-secondary">Delete</button>
@@ -54,7 +80,7 @@
                     </td>
                 </tr>
                 <tr th:if="${rows.isEmpty()}">
-                    <td th:colspan="${labels.size() + 1}" class="muted">Nothing here yet — add your first record.</td>
+                    <td colspan="5" class="muted">Nothing here yet — add your first record.</td>
                 </tr>
                 </tbody>
             </table>
@@ -117,9 +143,6 @@ function bindDrawerForm() {
             });
     });
 }
-// Conditional field visibility inside the drawer (e.g. Loan's per-type field groups) —
-// mirrors form.html's own standalone-page copy of this logic (assets/form.html), since
-// injected HTML doesn't execute its own embedded <script> tags.
 function applyDrawerVisibility() {
     document.querySelectorAll('#drawerBody [data-visible-if]').forEach(function (el) {
         var cond = el.getAttribute('data-visible-if');
@@ -135,8 +158,6 @@ function applyDrawerVisibility() {
 document.addEventListener('change', function (e) {
     if (e.target.closest && e.target.closest('#drawerBody')) applyDrawerVisibility();
 });
-// Mutual funds' live fund-picker, rebound each time the drawer content is (re)loaded —
-// mirrors form.html's own standalone-page copy of this logic.
 function bindDrawerFundPicker() {
     var searchBox = document.getElementById('fundPickerSearch');
     if (!searchBox) return;
